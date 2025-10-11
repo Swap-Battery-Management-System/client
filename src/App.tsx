@@ -35,7 +35,7 @@ function App() {
           <Route path="bang-phi" element={<BangPhi />} />
           <Route path="lich-su-thanh-toan" element={<LichSuThanhToan />} />
           <Route path="bao-cao" element={<BaoCao />} /> 
-          <Route path="dang-xuat" element={<BaoCao />}*/}
+          <Route path="dang-xu" element={<BaoCao />}*/}
         </Route>
       </Routes>
     </>

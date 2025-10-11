@@ -13,6 +13,7 @@ import {
   FileText,
   MessageSquare,
   HelpCircle,
+  Bike,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -23,7 +24,6 @@ interface SidebarProps {
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   return (
     <>
-
       {/* Sidebar chính */}
       <div
         className={`fixed top-0 left-0 h-full bg-white shadow-xl w-64 transform transition-transform duration-300 z-50 rounded-r-2xl
@@ -54,7 +54,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               <NavItem
                 to="/thong-tin-ca-nhan"
                 icon={<User />}
-                label="Thông tin cá nhân"
+                label=" Thông tin cá nhân"
                 onClick={onClose}
               />
               <NavItem
@@ -93,6 +93,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 to="/dat-lich"
                 icon={<Calendar />}
                 label="Đặt lịch"
+                onClick={onClose}
+              />
+              <NavItem
+                to="/dang-ky-xe"
+                icon={<Bike />}
+                label="Đăng ký xe"
                 onClick={onClose}
               />
               <NavItem
