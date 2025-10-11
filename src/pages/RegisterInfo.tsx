@@ -3,8 +3,16 @@ import { Button } from "@/components/ui/button"
 import { Label } from "@/components/ui/label"
 import { Card } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
+import { useNavigate } from "react-router-dom";
+import { Eye, EyeOff } from "lucide-react";
+import { useState } from "react";
 
-export default function RegisterPage() {
+
+export default function RegisterInfo() {
+    const navigate = useNavigate();
+    const [showPassword, setShowPassword] = useState(false);
+    const [showConfirm, setShowConfirm] = useState(false);
+
     return (
         <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-emerald-300 via-teal-400 to-cyan-500">
             <Card className="w-[800px] p-6 rounded-2xl shadow-lg bg-white">
@@ -37,21 +45,16 @@ export default function RegisterPage() {
                     </div>
                     <div>
                         <Label className="mb-2">Địa chỉ</Label>
-                        <Input placeholder="Nhập địa chỉ" className="px-2 py-1.5 border-2 border-emerald-500 rounded-md" />
+                        <Input
+                            placeholder="Nhập địa chỉ"
+                            className="px-2 py-1.5 border-2 border-emerald-500 rounded-md w-full"
+                            maxLength={255}
+                        />
                     </div>
 
-                    {/* Giới tính / Ngày sinh */}
-                    <div>
-                        <Label className="mb-2">Giới tính</Label>
-                        <div className="flex items-center gap-4 mt-1">
-                            <label className="flex items-center gap-1">
-                                <input type="radio" name="gender" value="male" /> Nam
-                            </label>
-                            <label className="flex items-center gap-1">
-                                <input type="radio" name="gender" value="female" /> Nữ
-                            </label>
-                        </div>
-                    </div>
+                    {/* Mật khẩu / Ngày sinh */}
+
+
                     <div>
                         <Label className="mb-2">Ngày sinh</Label>
                         <div className="flex gap-2">
@@ -80,33 +83,60 @@ export default function RegisterPage() {
                         </div>
                     </div>
 
-                    {/* Email / Mật khẩu */}
-                    <div>
-                        <Label className="mb-2">Email</Label>
-                        <Input type="email" placeholder="example@gmail.com" className="px-2 py-1.5 border-2 border-emerald-500 rounded-md" />
-                    </div>
-                    <div>
+
+                    <div className="relative">
                         <Label className="mb-2">Mật khẩu</Label>
-                        <Input type="password" placeholder="Nhập mật khẩu" className="px-2 py-1.5 border-2 border-emerald-500 rounded-md" />
+                        <Input
+                            type={showPassword ? "text" : "password"}
+                            placeholder="Nhập mật khẩu"
+                            className="px-2 py-1.5 border-2 border-emerald-500 rounded-md pr-10"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPassword(!showPassword)}
+                            className="absolute top-9 right-2 text-gray-500 hover:text-gray-700"
+                        >
+                            {showPassword ? <Eye size={20} /> : <EyeOff size={20} />}
+                        </button>
                     </div>
 
-                    {/* OTP / Nhập lại mật khẩu */}
+
+
+                    {/* Giới tính * /Xác nhận mật khẩu/ */}
+
                     <div>
-                        <Label className="mb-2">Xác thực OTP</Label>
-                        <Input placeholder="Nhập OTP" className="px-2 py-1.5 border-2 border-emerald-500 rounded-md" />
-                        <button className="text-sm text-blue-500 mt-1 hover:underline">Resend OTP</button>
+                        <Label className="mb-2">Giới tính</Label>
+                        <div className="flex items-center gap-4 mt-1">
+                            <label className="flex items-center gap-1">
+                                <input type="radio" name="gender" value="male" /> Nam
+                            </label>
+                            <label className="flex items-center gap-1">
+                                <input type="radio" name="gender" value="female" /> Nữ
+                            </label>
+                        </div>
                     </div>
-                    <div>
+
+
+                    <div className="relative">
                         <Label className="mb-2">Xác nhận mật khẩu</Label>
-                        <Input type="password" placeholder="Nhập lại mật khẩu" className="px-2 py-1.5 border-2 border-emerald-500 rounded-md" />
+                        <Input
+                            type={showConfirm ? "text" : "password"}
+                            placeholder="Nhập lại mật khẩu"
+                            className="px-2 py-1.5 border-2 border-emerald-500 rounded-md pr-10"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowConfirm(!showConfirm)}
+                            className="absolute top-9 right-2 text-gray-500 hover:text-gray-700"
+                        >
+                            {showConfirm ? <Eye size={20} /> : <EyeOff size={20} />}
+                        </button>
                     </div>
 
                     {/* Nút đăng ký */}
                     <div className="col-span-2 flex flex-col items-center mt-6">
                         <Button className="px-2 py-1.5 mt-3 w-1/2 bg-[#57CC99] text-white hover:bg-purple-700">Đăng ký</Button>
-                        <p className="text-center text-sm mt-2">
-                            Đã có tài khoản? <a href="#" className="text-blue-500 hover:underline">Đăng nhập</a>
-                        </p>
+
                     </div>
                 </div>
             </Card>
