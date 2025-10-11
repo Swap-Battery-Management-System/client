@@ -167,27 +167,30 @@ function App() {
         </div>
       </section>
 
-      {/* ===== STATISTICS SECTION =====
+      {/* ===== STATISTICS SECTION ===== */}
+      {/*
+<section className="mt-24 bg-white/60 rounded-2xl py-12 text-center">
+  <h2 className="text-2xl font-bold text-[#2F3E46] mb-8">
+    Vì sao nên chọn chúng tôi?
+  </h2>
+  <div className="grid md:grid-cols-3 gap-6">
+    <div>
+      <p className="text-4xl font-bold text-green-600">95%</p>
+      <p className="text-gray-600">Người dùng hài lòng</p>
+    </div>
+    <div>
+      <p className="text-4xl font-bold text-green-600">200+</p>
+      <p className="text-gray-600">Trạm đổi pin hoạt động</p>
+    </div>
+    <div>
+      <p className="text-4xl font-bold text-green-600">1.5M+</p>
+      <p className="text-gray-600">Lượt đổi pin mỗi năm</p>
+    </div>
+  </div>
+</section>
+*/}
 
-      <section className="mt-24 bg-white/60 rounded-2xl py-12 text-center">
-        <h2 className="text-2xl font-bold text-[#2F3E46] mb-8">
-          Vì sao nên chọn chúng tôi?
-        </h2>
-        <div className="grid md:grid-cols-3 gap-6">
-          <div>
-            <p className="text-4xl font-bold text-green-600">95%</p>
-            <p className="text-gray-600">Người dùng hài lòng</p>
-          </div>
-          <div>
-            <p className="text-4xl font-bold text-green-600">200+</p>
-            <p className="text-gray-600">Trạm đổi pin hoạt động</p>
-          </div>
-          <div>
-            <p className="text-4xl font-bold text-green-600">1.5M+</p>
-            <p className="text-gray-600">Lượt đổi pin mỗi năm</p>
-          </div>
-        </div>
-      </section> */}
+
 
       {/* ===== FOOTER ===== */}
       <Footer />
