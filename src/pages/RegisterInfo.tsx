@@ -135,7 +135,10 @@ export default function RegisterInfo() {
 
                     {/* Nút đăng ký */}
                     <div className="col-span-2 flex flex-col items-center mt-6">
-                        <Button className="px-2 py-1.5 mt-3 w-1/2 bg-[#57CC99] text-white hover:bg-purple-700">Đăng ký</Button>
+                        <Button
+                            className="px-2 py-1.5 mt-3 w-1/2 bg-[#57CC99] text-white hover:bg-purple-700"
+                            onClick={() => navigate("/home")}
+                        >Đăng ký</Button>
                     </div>
                 </div>
             </Card>
