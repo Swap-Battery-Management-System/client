@@ -16,7 +16,7 @@ function App() {
   const navigate = useNavigate();
   const handleLogin = () => navigate("/dang-nhap");
 
-  const handleSignUp = () => navigate("/dang-ky");
+  const handleSignUp = () => navigate("/register");
   return (
     <div
       className="min-h-screen flex flex-col bg-gradient-to-b from-white to-blue-50 text-[#2F3E46]"

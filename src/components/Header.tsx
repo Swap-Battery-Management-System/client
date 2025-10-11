@@ -9,7 +9,6 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 
-
 export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const notifications = [
     {
@@ -33,7 +32,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
   ];
   return (
     <>
-      <header className="sticky top-0 bg-white px-8 py-4 flex justify-center">
+      <header className="bg-white px-8 py-4 flex justify-center">
         <div className="bg-white border border-[#38A3A5] w-full max-w-8xl rounded-full px-6 py-3 flex items-center justify-between">
           {/* Logo + Menu icon */}
           <div className="flex items-center gap-3">
