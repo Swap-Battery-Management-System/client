@@ -14,13 +14,12 @@ import { useNavigate } from "react-router-dom";
 
 function App() {
   const navigate = useNavigate();
-  const handleLogin = () => navigate("/login");
+  const handleLogin = () => navigate("/dang-nhap");
 
-  const handleSignUp = () => navigate("/signup");
+  const handleSignUp = () => navigate("/dang-ky");
   return (
     <div
-      className="min-h-screen flex flex-col bg-gradient-to-b from-white to-blue-50
- text-[#2F3E46]"
+      className="min-h-screen flex flex-col bg-gradient-to-b from-white to-blue-50 text-[#2F3E46]"
     >
       {/* HÌNH TRÒN LỚN */}
       <div className="absolute top-0 right-0 w-60 h-60 md:w-80 md:h-80 bg-[#38A3A5]/30 rounded-full translate-x-1/4 -translate-y-1/4 pointer-events-none"></div>
