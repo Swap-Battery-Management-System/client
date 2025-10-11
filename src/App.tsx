@@ -1,20 +1,34 @@
-import { BrowserRouter } from "react-router"
+import { BrowserRouter } from "react-router";
 import { Route, Routes } from "react-router";
 import Landing from "./pages/Landing";
+import Layout from "./layout/layout";
+import Home from "./pages/Home";
 
 function App() {
-
-
   return (
     <>
-      <BrowserRouter>
       <Routes>
+        {/* Trang công khai */}
         <Route path="/" element={<Landing />} />
-        <Route path="/login" element=""/>
-        <Route path="/signup" element=""/>
-        <Route path="/home" element=""/>
+        <Route path="/dang-nhap" element="" />
+        <Route path="/dang-ky" element="" />
+
+        {/* Layout người dùng */}
+        <Route path="/trang-chu" element={<Layout />}>
+          <Route index element={<Home />} />
+          {/* <Route path="thong-tin-ca-nhan" element={<ThongTinCaNhan />} />
+          <Route path="phuong-tien-cua-toi" element={<PhuongTienCuaToi />} />
+          <Route path="cai-dat-bao-mat" element={<CaiDatBaoMat />} />
+          <Route path="tim-tram" element={<TimTram />} />
+          <Route path="dat-lich" element={<DatLich />} />
+          <Route path="lich-su-doi-pin" element={<LichSuDoiPin />} />
+          <Route path="goi-thue-bao" element={<GoiThueBao />} />
+          <Route path="bang-phi" element={<BangPhi />} />
+          <Route path="lich-su-thanh-toan" element={<LichSuThanhToan />} />
+          <Route path="bao-cao" element={<BaoCao />} /> 
+          <Route path="dang-xuat" element={<BaoCao />}*/}
+        </Route>
       </Routes>
-      </BrowserRouter>
     </>
   );
 }
