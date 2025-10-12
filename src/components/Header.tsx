@@ -31,9 +31,20 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
       time: "2 giờ trước",
     },
   ];
+
+  const menuItems = [
+    { path: "/trang-chu", label: "Trang chủ", exact: true },
+    { path: "/tim-tram", label: "Tìm trạm", exact: true },
+    { path: "/trang-chu/dat-lich", label: "Đặt lịch", exact: true },
+    { path: "/trang-chu/lich-su-dat-lich", label: "Lịch sử đặt lịch", exact: true },
+    { path: "/dang-ky-xe", label: "Đăng ký xe", exact: true },
+    { path: "/ho-tro", label: "Hỗ trợ", exact: true },
+  ];
+
+
   return (
     <>
-      <header className="sticky top-0 bg-white px-8 py-4 flex justify-center">
+      <header className="sticky top-0 bg-white px-8 py-4 z-50 flex justify-center">
         <div className="bg-white border border-[#38A3A5] w-full max-w-8xl rounded-full px-6 py-3 flex items-center justify-between">
           {/* Logo + Menu icon */}
           <div className="flex items-center gap-3">
@@ -53,27 +64,20 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
 
           {/* Menu */}
           <nav className="flex items-center gap-8 text-sm font-medium text-black">
-            {[
-              ["trang-chu", "Trang chủ"],
-              ["tim-tram", "Tìm trạm"],
-              ["dat-lich", "Đặt lịch"],
-              ["lich-su-dat-lich", "Lịch sử đặt lịch"],
-              ["dang-ky-xe", "Đăng ký xe"],
-              ["ho-tro", "Hỗ trợ"],
-            ].map(([path, label]) => (
+            {menuItems.map((item) => (
               <NavLink
-                key={path}
-                to={`/${path}`}
+                key={item.path}
+                to={item.path}
+                end={item.exact}
                 className={({ isActive }) =>
-                  `hover:text-[#38A3A5] transition ${
-                    isActive ? "font-bold text-[#38A3A5]" : ""
-                  }`
+                  `hover:text-[#38A3A5] transition ${isActive ? "font-bold text-[#38A3A5]" : ""}`
                 }
               >
-                {label}
+                {item.label}
               </NavLink>
             ))}
           </nav>
+
           {/* Icons: Thông báo + Account */}
           <div className="flex items-center gap-4">
             {/* Dropdown Thông báo */}

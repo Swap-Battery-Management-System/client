@@ -23,7 +23,11 @@ export default function OtpVerify() {
     const handleVerify = () => {
         const enteredOtp = otp.join("");
         console.log("OTP nhập:", enteredOtp);
+<<<<<<< HEAD
         navigate("/register/info");
+=======
+        navigate("/dang-ki/thong-tin");
+>>>>>>> feature/booking-page
     };
 
     const handleResend = () => {

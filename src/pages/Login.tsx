@@ -8,7 +8,11 @@ export default function Login() {
 
     const handleLogin = (e: React.FormEvent) => {
         e.preventDefault();
+<<<<<<< HEAD
         navigate("/home"); // 👉 chuyển sang trang chính sau khi đăng nhập
+=======
+        navigate("/trang-chu"); // 👉 chuyển sang trang chính sau khi đăng nhập
+>>>>>>> feature/booking-page
     };
 
     return (
@@ -120,7 +124,11 @@ export default function Login() {
                     <p className="text-center text-sm text-[#2F3E46]/80 mt-5">
                         Chưa có tài khoản?{" "}
                         <span
+<<<<<<< HEAD
                             onClick={() => navigate("/signup")}
+=======
+                            onClick={() => navigate("/dang-ki")}
+>>>>>>> feature/booking-page
                             className="text-[#38A3A5] hover:underline cursor-pointer font-medium"
                         >
                             Đăng ký ngay

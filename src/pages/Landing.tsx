@@ -14,9 +14,15 @@ import { useNavigate } from "react-router-dom";
 
 function App() {
   const navigate = useNavigate();
+<<<<<<< HEAD
   const handleLogin = () => navigate("/login");
 
   const handleSignUp = () => navigate("/register");
+=======
+  const handleLogin = () => navigate("/dang-nhap");
+
+  const handleSignUp = () => navigate("/dang-ki");
+>>>>>>> feature/booking-page
   return (
     <div
       className="min-h-screen flex flex-col bg-gradient-to-b from-white to-blue-50 text-[#2F3E46]"

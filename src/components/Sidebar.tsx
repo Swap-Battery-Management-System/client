@@ -96,7 +96,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 onClick={onClose}
               />
               <NavItem
-                to="/lich-su-doi-pin"
+                to="/lich-su-dat-lich"
                 icon={<History />}
                 label="Lịch sử đổi pin"
                 onClick={onClose}
@@ -168,8 +168,7 @@ function NavItem({ to, icon, label, onClick, className = "" }: NavItemProps) {
       to={to}
       onClick={onClick}
       className={({ isActive }) =>
-        `flex items-center gap-2 px-3 py-2 rounded-md transition-colors duration-200 hover:bg-[#e8f7f7] hover:text-[#38A3A5] ${
-          isActive ? "bg-[#dff5f5] text-[#38A3A5]" : "text-gray-700"
+        `flex items-center gap-2 px-3 py-2 rounded-md transition-colors duration-200 hover:bg-[#e8f7f7] hover:text-[#38A3A5] ${isActive ? "bg-[#dff5f5] text-[#38A3A5]" : "text-gray-700"
         } ${className}`
       }
     >

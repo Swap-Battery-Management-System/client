@@ -33,7 +33,7 @@ export default function Register() {
           <div className="flex justify-end">
             <Button
               className="bg-[#57CC99] hover:bg-purple-700 text-white w-1/3 py-2 mt-4"
-              onClick={() => navigate("/register/verify")}
+              onClick={() => navigate("/dang-ki/xac-thuc")}
             >
               Tiếp tục
             </Button>
@@ -42,7 +42,7 @@ export default function Register() {
             Đã có tài khoản?{" "}
             <span
               className="text-blue-500 hover:underline cursor-pointer"
-              onClick={() => navigate("/login")}
+              onClick={() => navigate("/dang-nhap")}
             >
               Đăng nhập
             </span>
