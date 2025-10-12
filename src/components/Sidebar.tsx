@@ -96,7 +96,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 onClick={onClose}
               />
               <NavItem
-                to="/lich-su-doi-pin"
+                to="/lich-su-dat-lich"
                 icon={<History />}
                 label="Lịch sử đổi pin"
                 onClick={onClose}

@@ -53,7 +53,6 @@ export default function Booking() {
     description: "",
   });
 
-  const [success, setSuccess] = useState(false);
 
   const handleSelectChange = (name: string, value: string) => {
     setForm({
@@ -236,12 +235,12 @@ export default function Booking() {
 
                     {/* Nút và link nằm cùng hàng */}
                     <div className="flex justify-between items-center mt-20">
-                      <a
-                        href="/booking-details"
-                        className="text-sm text-blue-600 hover:underline"
+                      <span
+                        onClick={() => navigate("/trang-chu/lich-su-dat-lich")}
+                        className="text-sm text-blue-600 hover:underline cursor-pointer"
                       >
                         Xem chi tiết
-                      </a>
+                      </span>
 
                       <button
                         onClick={() => navigate("/trang-chu")}

@@ -35,8 +35,8 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const menuItems = [
     { path: "/trang-chu", label: "Trang chủ", exact: true },
     { path: "/tim-tram", label: "Tìm trạm", exact: true },
-    { path: "/trang-chu/dat-lich", label: "Đặt lịch", exact: false },
-    { path: "/lich-su-dat-lich", label: "Lịch sử đặt lịch", exact: true },
+    { path: "/trang-chu/dat-lich", label: "Đặt lịch", exact: true },
+    { path: "/trang-chu/lich-su-dat-lich", label: "Lịch sử đặt lịch", exact: true },
     { path: "/dang-ky-xe", label: "Đăng ký xe", exact: true },
     { path: "/ho-tro", label: "Hỗ trợ", exact: true },
   ];
@@ -68,10 +68,10 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
               <NavLink
                 key={item.path}
                 to={item.path}
-                className={({ isActive }) => {
-                  const active = isActive || (!item.exact && window.location.pathname.startsWith(item.path));
-                  return `hover:text-[#38A3A5] transition ${active ? "font-bold text-[#38A3A5]" : ""}`;
-                }}
+                end={item.exact}
+                className={({ isActive }) =>
+                  `hover:text-[#38A3A5] transition ${isActive ? "font-bold text-[#38A3A5]" : ""}`
+                }
               >
                 {item.label}
               </NavLink>
