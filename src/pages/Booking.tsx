@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { MapPin } from "lucide-react";
 import {
   Select,
   SelectTrigger,
@@ -27,7 +28,6 @@ export default function Booking() {
 
   const [showModal, setShowModal] = useState(false);
 
-  const mockUserName = "Nguyễn Văn A";     // Thay bằng dữ liệu thực tế nếu có
 
   const now = new Date();
   const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
@@ -44,7 +44,7 @@ export default function Booking() {
 
 
   const [form, setForm] = useState<BookingForm>({
-    userName: mockUserName,
+    userName: "",
     station: "",
     vehicleType: "",
     batteryType: "",
@@ -103,7 +103,7 @@ export default function Booking() {
               <form onSubmit={handleSubmit} className="flex flex-col gap-4">
                 {/* 1. Tên người dùng (readonly) */}
                 <div>
-                  <Label className="mb-2" htmlFor="userName">Tên người dùng</Label>
+                  <Label className="mb-2 block" htmlFor="userName">Tên người dùng</Label>
                   <Input
                     id="userName"
                     name="userName"
@@ -115,28 +115,41 @@ export default function Booking() {
 
                 {/* 2. Tên trạm */}
                 <div>
-                  <Label className="mb-2">Tên trạm</Label>
-                  <Select
-                    onValueChange={(value) => handleSelectChange("station", value)}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Chọn trạm" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Trạm 1">Trạm 1</SelectItem>
-                      <SelectItem value="Trạm 2">Trạm 2</SelectItem>
-                      <SelectItem value="Trạm 3">Trạm 3</SelectItem>
-                    </SelectContent>
-                  </Select>
+                  <Label className="mb-2 block">Tên trạm</Label>
+
+                  <div className="relative">
+                    <Select onValueChange={(value) => handleSelectChange("station", value)}>
+                      <SelectTrigger className="w-full pr-10"> {/* chừa chỗ cho nút */}
+                        <SelectValue placeholder="Chọn trạm" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Trạm 1">Trạm 1</SelectItem>
+                        <SelectItem value="Trạm 2">Trạm 2</SelectItem>
+                        <SelectItem value="Trạm 3">Trạm 3</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {/* Nút Google Map nằm bên trong khung */}
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 text-red-500 hover:text-red-600"
+                      onClick={() => window.open("https://www.google.com/maps", "_blank")}
+                    >
+                      <MapPin className="w-5 h-5" />
+                    </Button>
+                  </div>
                 </div>
+
 
                 {/* 3. Loại xe */}
                 <div>
-                  <Label className="mb-2">Loại xe</Label>
+                  <Label className="mb-2 block">Loại xe</Label>
                   <Select
                     onValueChange={(value) => handleSelectChange("vehicleType", value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Chọn loại xe" />
                     </SelectTrigger>
                     <SelectContent>
@@ -149,11 +162,11 @@ export default function Booking() {
 
                 {/* 4. Loại pin */}
                 <div>
-                  <Label className="mb-2">Loại pin</Label>
+                  <Label className="mb-2 block">Loại pin</Label>
                   <Select
                     onValueChange={(value) => handleSelectChange("batteryType", value)}
                   >
-                    <SelectTrigger>
+                    <SelectTrigger className="w-full">
                       <SelectValue placeholder="Chọn loại pin" />
                     </SelectTrigger>
                     <SelectContent>
@@ -166,7 +179,7 @@ export default function Booking() {
 
 
                 <div>
-                  <Label className="mb-2">Ngày</Label>
+                  <Label className="mb-2 block">Ngày</Label>
                   <Input
                     type="date"
                     name="date"
@@ -178,7 +191,7 @@ export default function Booking() {
                 </div>
 
                 <div>
-                  <Label className="mb-2">Giờ</Label>
+                  <Label className="mb-2 block">Giờ</Label>
                   <Input
                     type="time"
                     name="time"
@@ -194,7 +207,7 @@ export default function Booking() {
 
                 {/* 7. Ghi chú (optional) */}
                 <div>
-                  <Label className="mb-2" htmlFor="description">Ghi chú (không bắt buộc)</Label>
+                  <Label className="mb-2 block" htmlFor="description">Ghi chú (không bắt buộc)</Label>
                   <textarea
                     id="description"
                     name="description"
