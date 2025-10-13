@@ -7,6 +7,8 @@ import { Route, Routes } from "react-router";
 import Landing from "./pages/Landing";
 import Layout from "./layout/layout";
 import Home from "./pages/Home";
+import RegisterVehicle from "./pages/RegisterVehicle";
+import MyVehicles from "./pages/MyVehicles";
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
         {/* Layout người dùng */}
         <Route path="/trang-chu" element={<Layout />}>
           <Route index element={<Home />} />
+          <Route path="/dang-ky-xe" element={<RegisterVehicle />} />
+          <Route path="/phuong-tien-cua-toi" element={<MyVehicles />} />
           {/* <Route path="thong-tin-ca-nhan" element={<ThongTinCaNhan />} />
           <Route path="phuong-tien-cua-toi" element={<PhuongTienCuaToi />} />
           <Route path="cai-dat-bao-mat" element={<CaiDatBaoMat />} />
