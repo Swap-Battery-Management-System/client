@@ -8,6 +8,7 @@ import Layout from "./layout/layout";
 import Home from "./pages/Home";
 import Booking from "./pages/Booking";
 import BookingHistory from "./pages/BookingHistory";
+import Subscription from "./pages/Subcription";
 
 function App() {
   return (
@@ -23,12 +24,14 @@ function App() {
 
         <Route path="/dat-lich" element={<Navigate to="/trang-chu/dat-lich" />} />
         <Route path="/lich-su-dat-lich" element={<Navigate to="/trang-chu/lich-su-dat-lich" />} />
+        <Route path="/goi-thue-bao" element={<Navigate to="/trang-chu/goi-thue-bao" />} />
 
 
         <Route path="/trang-chu" element={<Layout />}>
           <Route index element={<Home />} />
           <Route path="dat-lich" element={<Booking />} />
           <Route path="lich-su-dat-lich" element={<BookingHistory />} />
+          <Route path="goi-thue-bao" element={<Subscription />} />
           {/* <Route path="thong-tin-ca-nhan" element={<ThongTinCaNhan />} />
           <Route path="phuong-tien-cua-toi" element={<PhuongTienCuaToi />} />
           <Route path="cai-dat-bao-mat" element={<CaiDatBaoMat />} />
