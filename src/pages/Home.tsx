@@ -2,7 +2,10 @@ import SearchStation from "@/components/SearchStation";
 import StationCard from "@/components/StationCard";
 import { Footer } from "@/components/Footer";
 
+
+
 export default function Home() {
+ 
   const stations = [
     {
       id: "S1",
@@ -110,7 +113,7 @@ export default function Home() {
         </div>
 
         {/* Grid các thẻ */}
-        <div className="flex flex-wrap justify-center gap-8 relative z-10">
+        <div className="grid md:grid-cols-3 gap-3 max-w-6xl mx-auto px-6 relative z-10">
           {stations.map((station) => (
             <StationCard
               key={station.id}
@@ -119,7 +122,7 @@ export default function Home() {
               pinAvailable={station.pinAvailable}
               rating={station.rating}
               address={station.address}
-              sizeClass="w-72 h-60"
+              sizeClass="w-75 h-60"
             />
           ))}
         </div>

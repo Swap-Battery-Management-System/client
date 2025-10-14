@@ -1,13 +1,18 @@
 import { Search } from "lucide-react";
 import { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+
 
 export default function SearchStation() {
   const [keyword, setKeyword] = useState("");
+  const navigate = useNavigate();
+  
 
-  const handleSearch = () => {
+  const handleSearch = ( e :React.FormEvent) => {
+     e.preventDefault;
     if (keyword.trim()) {
       console.log("Tìm trạm:", keyword);
-      // TODO: Gọi API hoặc điều hướng đến trang kết quả
+       navigate(`/find-station?keyword=${encodeURIComponent(keyword)}`);
     }
   };
 
@@ -30,7 +35,7 @@ export default function SearchStation() {
 
       {/* Nút tìm */}
       <button
-        onClick={handleSearch}
+        onClick={(e)=>handleSearch}
         className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white font-semibold px-6 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300"
       >
         Tìm

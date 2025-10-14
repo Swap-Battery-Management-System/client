@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, replace, useNavigate } from "react-router-dom";
 import { Bell, User, Menu } from "lucide-react";
 import {
   DropdownMenu,
@@ -8,8 +8,36 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
+import { useAuth } from "@/context/AuthContext";
+import { useEffect, useState } from "react";
+import { Notification } from "./Notification";
 
 export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
+  const { logout, message } = useAuth();
+  const navigate = useNavigate();
+  const [type, setType] = useState<"success" | "error">("success");
+
+  useEffect(() => {
+    if (!message) return;
+
+    if (type === "success") {
+      Notification.success({ message });
+    } else {
+      Notification.error({ message });
+    }
+  }, [message, type]);
+
+  const handleLogout = async () => {
+    await logout();
+    setTimeout(() => {
+      navigate("/", { replace: true });
+    }, 3000);
+    // logout(() =>
+    //   setTimeout(() => {
+    //     navigate("/", { replace: true });
+    //   },3000)
+    // ); // truyền callback redirect
+  };
   const notifications = [
     {
       title: "Đặt lịch đổi pin thành công cho xe Wave Alpha - Trạm Bến Thành",
@@ -53,12 +81,12 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
           {/* Menu */}
           <nav className="flex items-center gap-8 text-sm font-medium text-black">
             {[
-              ["trang-chu", "Trang chủ"],
-              ["tim-tram", "Tìm trạm"],
-              ["dat-lich", "Đặt lịch"],
-              ["lich-su-dat-lich", "Lịch sử đặt lịch"],
-              ["dang-ky-xe", "Đăng ký xe"],
-              ["ho-tro", "Hỗ trợ"],
+              ["home", "Trang chủ"],
+              ["find-station", "Tìm trạm"],
+              ["booking", "Đặt lịch"],
+              ["booking-history", "Lịch sử đặt lịch"],
+              ["register-vehicle", "Đăng ký xe"],
+              ["support", "Hỗ trợ"],
             ].map(([path, label]) => (
               <NavLink
                 key={path}
@@ -111,7 +139,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <NavLink
-                    to="/thong-bao"
+                    to="/notifications"
                     className="w-full text-center text-[#38A3A5] py-2 hover:underline"
                   >
                     Xem tất cả thông báo
@@ -131,19 +159,24 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
                 <DropdownMenuLabel>Tài khoản</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <NavLink to="/quan-ly-tai-khoan">Thông tin cá nhân</NavLink>
+                  <NavLink to="/profile">Thông tin cá nhân</NavLink>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <NavLink to="/quan-ly-xe">Phương tiện của tôi</NavLink>
+                  <NavLink to="/my-vehicles">Phương tiện của tôi</NavLink>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <NavLink to="/quan-ly-xe">Cài đặt bảo mật</NavLink>
+                  <NavLink to="/security-settings">Cài đặt bảo mật</NavLink>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <NavLink to="/quan-ly-xe">Gói thuê bao của tôi</NavLink>
+                  <NavLink to="/my-subscription-packages">
+                    Gói thuê bao của tôi
+                  </NavLink>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem className="text-red-500 cursor-pointer hover:bg-red-50">
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-red-500 cursor-pointer hover:bg-red-50"
+                >
                   Đăng xuất
                 </DropdownMenuItem>
               </DropdownMenuContent>
