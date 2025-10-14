@@ -102,7 +102,7 @@ export default function Subscription() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-[#014d2b] via-[#00381f] to-[#0a0a0f] text-white flex flex-col items-center py-16">
+        <div className="min-h-screen bg-gradient-to-b from-blue-100 via-white to-purple-100 animate-gradientSlow text-white flex flex-col items-center py-16">
             <h1 className="text-5xl font-extrabold mb-4 bg-gradient-to-r from-purple-400 via-pink-500 to-blue-500 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(168,85,247,0.5)]">
                 Gói dịch vụ trạm đổi pin
             </h1>

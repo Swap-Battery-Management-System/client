@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { motion, AnimatePresence } from "framer-motion";
 import {
     Dialog,
     DialogContent,
@@ -70,7 +71,7 @@ export default function BookingHistory() {
 
     const [filterFrom, setFilterFrom] = useState("");
     const [filterTo, setFilterTo] = useState("");
-    const [filterStatus, setFilterStatus] = useState<"Tất cả" | "Đang tiến hành" | "Đã kết thúc">("Đang tiến hành");
+    const [filterStatus, setFilterStatus] = useState<"Đang tiến hành" | "Đã kết thúc">("Đang tiến hành");
     const [sortStatus, setSortStatus] = useState<"Tất cả" | "Đã hoàn thành" | "Hủy đặt lịch" | "Quá hạn">("Tất cả");
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
@@ -118,7 +119,7 @@ export default function BookingHistory() {
         if (confirm(`Bạn có chắc muốn hủy đặt lịch ${id} không?`)) {
             setHistory((prev) =>
                 prev.map((item) =>
-                    item.id === id ? { ...item, status: "Hủy đặt lịch", note: "Người dùng hủy đặt lịch." } : item
+                    item.id === id ? { ...item, status: "Hủy đặt lịch" } : item
                 )
             );
             setIsModalOpen(false);
@@ -127,34 +128,40 @@ export default function BookingHistory() {
 
 
     return (
-        <div className="min-h-screen bg-gray-100 p-4">
-            <h1 className="text-2xl font-bold mb-4">Lịch sử đặt lịch</h1>
 
-            <div className="flex justify-center gap-4 mb-4">
-                <Button
-                    variant={filterStatus === "Đang tiến hành" ? "default" : "outline"}
-                    onClick={() => {
-                        setFilterStatus("Đang tiến hành");
-                        setSortStatus("Tất cả");
-                        setCurrentPage(1);
-                    }}
-                >
-                    Lịch đang tiến hành
-                </Button>
-                <Button
-                    variant={filterStatus === "Đã kết thúc" ? "default" : "outline"}
-                    onClick={() => {
-                        setFilterStatus("Đã kết thúc");
-                        setSortStatus("Tất cả");
-                        setCurrentPage(1);
-                    }}
-                >
-                    Lịch đã kết thúc
-                </Button>
+        <div className="min-h-screen bg-gradient-to-b from-blue-100 via-white to-purple-100 animate-gradientSlow p-6">
+            <h1 className="text-3xl font-extrabold mb-6 text-center text-blue-700">Lịch sử đặt lịch</h1>
+
+            {/* Bộ lọc trạng thái */}
+            <div className="flex justify-center mb-4">
+                <div className="relative flex justify-center gap-4 mb-4 flex-wrap bg-gray-800 rounded-full p-2 w-[320px]">
+                    {["Đang tiến hành", "Đã kết thúc"].map((status) => (
+                        <button
+                            key={status}
+                            onClick={() => {
+                                setFilterStatus(status as "Đang tiến hành" | "Đã kết thúc");
+                                setSortStatus("Tất cả");
+                                setCurrentPage(1);
+                            }}
+                            className={`relative z-10 flex-1 text-center py-2 text-sm font-medium transition-colors duration-200 rounded-full ${filterStatus === status ? "text-white" : "text-gray-300 hover:text-white"
+                                }`}
+                        >
+                            {status}
+                            {filterStatus === status && (
+                                <motion.div
+                                    layoutId="activeFilter"
+                                    className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 rounded-full z-[-1]"
+                                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                />
+                            )}
+                        </button>
+                    ))}
+                </div>
             </div>
 
+
             <div className="flex justify-center gap-2 mb-6 items-center">
-                <span>from</span>
+                <span className="font-semibold text-gray-700">from</span>
                 <Input
                     type="date"
                     value={filterFrom}
