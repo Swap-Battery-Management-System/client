@@ -122,7 +122,7 @@ export default function Home() {
               pinAvailable={station.pinAvailable}
               rating={station.rating}
               address={station.address}
-              sizeClass="w-75 h-60"
+              sizeClass="w-75 h-50"
             />
           ))}
         </div>

@@ -4,11 +4,10 @@ import { Button } from "../components/ui/button";
 import { useState } from "react";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { Notification } from "@/components/Notification";
 import { Input } from "../components/ui/input";
 import { GoogleLogin } from "@react-oauth/google";
 import { useEffect } from "react";
-import { Toaster } from "@/components/ui/sonner";
+import { useNotification } from "@/hooks/useNotification";
 
 interface FormData {
   phone: string;
@@ -35,18 +34,21 @@ export default function Login() {
     null
   );
 
+
   const [loading, setLoading] = useState(false);
+
+  const {success, error}=useNotification();
 
   useEffect(() => {
     if (!message) return;
 
     if (type === "success") {
-      Notification.success({ message });
+      success({message:message });
     } else {
-      Notification.error({ message });
+      error({message:message});
     }
 
-    setMessage("");
+   setTimeout(() => setMessage(""), 2000);
   }, [message, type]);
 
   // Hàm redirect theo role
@@ -68,6 +70,11 @@ export default function Login() {
     409: "⚠️ Email hoặc username đã tồn tại.",
     500: "⚠️ Lỗi server, vui lòng thử lại sau.",
     401: "❌ Email hoặc mật khẩu không đúng.",
+  };
+
+  const sucessMessage: Record<number, string> = {
+    200: "Đăng nhập thành công!",
+    201: "Tài khoản mới được tạo tự động!",
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -116,7 +123,7 @@ export default function Login() {
   };
 
   // ========================
-  // 🔹 Google Login
+  // Google Login
   // ========================
   const handleGoogleLogin = async (credentialResponse: any) => {
     try {
@@ -128,20 +135,28 @@ export default function Login() {
         { credential },
         { withCredentials: true }
       );
-      const data = res.data;
+      const user = res.data.user;
+      console.log("gg:",res.data);
 
-      setUser(res.data);
-      setMessage(
-        data.authenticated
-          ? "Đăng nhập Google thành công!"
-          : "Tài khoản mới được tạo tự động!"
-      );
+      setUser(user);
       setType("success");
-      redirectByRole(data.role); // redirect theo role
-    } catch (err) {
-      console.error(err);
-      setMessage("⚠️ Đăng nhập Google thất bại, vui lòng thử lại.");
+      setMessage(
+       sucessMessage[res.status]
+      );
+      setTimeout(() => {
+        redirectByRole(user.role);
+      }, 3000); // redirect theo role
+    } catch (err:any) {
       setType("error");
+      if (err.response) {
+        setMessage(
+          errorMessages[err.response.status] || "⚠️ Lỗi không xác định."
+        );
+      } else {
+        // Không có phản hồi từ server (network error)
+        setMessage("⚠️ Không thể kết nối đến máy chủ.");
+        setType("error");
+      }
     }
   };
 
@@ -195,7 +210,6 @@ export default function Login() {
 
   return (
     <>
-      <Toaster richColors  position="top-right" />
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#38A3A5] via-[#57CC99] to-[#C7F9CC] relative overflow-hidden">
         {/* Nền trang trí */}
         <div className="absolute w-40 h-40 bg-white/20 rounded-full top-10 left-20 blur-3xl"></div>

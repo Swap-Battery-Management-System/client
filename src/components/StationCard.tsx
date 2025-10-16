@@ -1,7 +1,7 @@
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 
 interface StationCardProps {
   id: string;
@@ -50,13 +50,19 @@ export default function StationCard({
       </CardContent>
 
       <CardFooter>
-        <Button
+        <NavLink
+          to={"station-detail"}
+          className="text-[#38A3A5] font-semibold hover:text-[#1e6f71] hover:font-bold transition-all duration-200 ml-auto"
+        >
+          Xem chi tiết
+        </NavLink>
+        {/* <Button
           variant="outline"
           className="w-full text-[#38A3A5] font-semibold hover:bg-[#e0f7f8]"
           onClick={handleViewMore}
         >
           Xem chi tiết
-        </Button>
+        </Button> */}
       </CardFooter>
     </Card>
   );

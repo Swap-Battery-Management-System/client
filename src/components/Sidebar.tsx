@@ -49,19 +49,19 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <p className="font-semibold mb-3 text-gray-900">👤 Hồ sơ</p>
             <div className="ml-3 flex flex-col gap-2 text-sm">
               <NavItem
-                to="/profile"
+                to="profile"
                 icon={<User />}
                 label="Thông tin cá nhân"
                 onClick={onClose}
               />
               <NavItem
-                to="/my-vehicles"
+                to="my-vehicles"
                 icon={<Car />}
                 label="Phương tiện của tôi"
                 onClick={onClose}
               />
               <NavItem
-                to="/security-settings"
+                to="security-settings"
                 icon={<Lock />}
                 label="Cài đặt bảo mật"
                 onClick={onClose}
@@ -81,37 +81,37 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <p className="font-semibold mb-3 text-gray-900">💡 Dịch vụ</p>
             <div className="ml-3 flex flex-col gap-2 text-sm">
               <NavItem
-                to="/find-station"
+                to="find-station"
                 icon={<MapPin />}
                 label="Tìm trạm đổi pin"
                 onClick={onClose}
               />
               <NavItem
-                to="/booking"
+                to="booking"
                 icon={<Calendar />}
                 label="Đặt lịch"
                 onClick={onClose}
               />
               <NavItem
-                to="/register-vehicle"
+                to="register-vehicle"
                 icon={<Bike />}
                 label="Đăng ký xe"
                 onClick={onClose}
               />
               <NavItem
-                to="/booking-history"
+                to="booking-history"
                 icon={<History />}
                 label="Lịch sử đặt lịch"
                 onClick={onClose}
               />
               <NavItem
-                to="/subscription-packages"
+                to="subscription-packages"
                 icon={<Package />}
                 label="Gói thuê bao"
                 onClick={onClose}
               />
               <NavItem
-                to="/pricing"
+                to="pricing"
                 icon={<DollarSign />}
                 label="Bảng phí"
                 onClick={onClose}
@@ -124,7 +124,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <p className="font-semibold mb-3 text-gray-900">🧾 Hóa đơn</p>
             <div className="ml-3 flex flex-col gap-2 text-sm">
               <NavItem
-                to="/payment-history"
+                to="payment-history"
                 icon={<FileText />}
                 label="Lịch sử thanh toán"
                 onClick={onClose}
@@ -137,7 +137,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <p className="font-semibold mb-3 text-gray-900">💬 Hỗ trợ</p>
             <div className="ml-3 flex flex-col gap-2 text-sm">
               <NavItem
-                to="/report"
+                to="report"
                 icon={<MessageSquare />}
                 label="Báo cáo sự cố / Feedback"
                 onClick={onClose}

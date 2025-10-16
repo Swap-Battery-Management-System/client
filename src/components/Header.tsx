@@ -10,34 +10,34 @@ import {
 } from "./ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
 import { useEffect, useState } from "react";
-import { Notification } from "./Notification";
+import LocationPermissionModal from "./LocationPermissionModal";
+import { useNotification } from "@/hooks/useNotification";
 
 export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const { logout, message } = useAuth();
   const navigate = useNavigate();
   const [type, setType] = useState<"success" | "error">("success");
+  const [showModal, setShowModal] = useState(false);
+  const {success, error}=useNotification();
 
   useEffect(() => {
     if (!message) return;
 
     if (type === "success") {
-      Notification.success({ message });
+       success({message:message});
     } else {
-      Notification.error({ message });
+      error({message:message});
     }
   }, [message, type]);
 
   const handleLogout = async () => {
-    await logout();
-    setTimeout(() => {
-      navigate("/", { replace: true });
-    }, 3000);
-    // logout(() =>
-    //   setTimeout(() => {
-    //     navigate("/", { replace: true });
-    //   },3000)
-    // ); // truyền callback redirect
+    logout(() =>
+      setTimeout(() => {
+        navigate("/", { replace: true });
+      }, 3000)
+    ); // truyền callback redirect
   };
+
   const notifications = [
     {
       title: "Đặt lịch đổi pin thành công cho xe Wave Alpha - Trạm Bến Thành",
@@ -70,10 +70,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
             >
               <Menu className="w-6 h-6" />
             </button>
-            <NavLink
-              to="/trang-chu"
-              className="text-2xl font-bold text-[#38A3A5]"
-            >
+            <NavLink to="" className="text-2xl font-bold text-[#38A3A5]">
               SwapNet
             </NavLink>
           </div>
@@ -81,7 +78,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
           {/* Menu */}
           <nav className="flex items-center gap-8 text-sm font-medium text-black">
             {[
-              ["home", "Trang chủ"],
+              ["", "Trang chủ"],
               ["find-station", "Tìm trạm"],
               ["booking", "Đặt lịch"],
               ["booking-history", "Lịch sử đặt lịch"],
@@ -90,7 +87,9 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
             ].map(([path, label]) => (
               <NavLink
                 key={path}
-                to={`/${path}`}
+                to={`${path}`}
+                state={path==="find-station"?{openShowModal:true}:null}
+                end={path === ""}
                 className={({ isActive }) =>
                   `hover:text-[#38A3A5] transition ${
                     isActive ? "font-bold text-[#38A3A5]" : ""

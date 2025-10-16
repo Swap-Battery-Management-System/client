@@ -13,10 +13,12 @@ export const ProtectedRoute=({roles,children}:ProtectedRouteProps)=>{
     if(!user){
         return <Navigate to={"/"} replace/>
     }
+    console.log("test role:",user);
 
     switch (user.status) {
+      
       case "pending":
-        return <Navigate to={`/register/info/${user.id}`} replace />;
+        return <Navigate to={`/register/info?id:${user.id}`} replace />;
       case "inactive":
         return <Navigate to="/" replace />;
       case "blocked":

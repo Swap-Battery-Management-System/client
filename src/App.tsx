@@ -8,6 +8,9 @@ import Landing from "./pages/Landing";
 import Layout from "./layout/layout";
 import Home from "./pages/Home";
 import { ProtectedRoute } from "./components/ProtectedRoute";
+import FindStation from "./pages/FindStation";
+import { Toaster } from "sonner";
+import StationDetail from "./pages/StationDetail";
 
 function App() {
   return (
@@ -29,10 +32,12 @@ function App() {
           }
         >
           <Route index element={<Home />} />
+          <Route path="find-station" element={<FindStation />} />
+          <Route path="find-station/station-detail" element={<StationDetail />} />
           {/* <Route path="thong-tin-ca-nhan" element={<ThongTinCaNhan />} />
           <Route path="phuong-tien-cua-toi" element={<PhuongTienCuaToi />} />
           <Route path="cai-dat-bao-mat" element={<CaiDatBaoMat />} />
-          <Route path="tim-tram" element={<TimTram />} />
+          
           <Route path="dat-lich" element={<DatLich />} />
           <Route path="lich-su-doi-pin" element={<LichSuDoiPin />} />
           <Route path="goi-thue-bao" element={<GoiThueBao />} />
@@ -42,6 +47,7 @@ function App() {
           <Route path="dang-xu" element={<BaoCao />}*/}
         </Route>
       </Routes>
+      <Toaster position="top-center" richColors />
     </>
   );
 }

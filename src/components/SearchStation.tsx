@@ -9,10 +9,10 @@ export default function SearchStation() {
   
 
   const handleSearch = ( e :React.FormEvent) => {
-     e.preventDefault;
+     e.preventDefault();
     if (keyword.trim()) {
       console.log("Tìm trạm:", keyword);
-       navigate(`/find-station?keyword=${encodeURIComponent(keyword)}`);
+       navigate(`find-station?keyword=${encodeURIComponent(keyword)}`);
     }
   };
 
