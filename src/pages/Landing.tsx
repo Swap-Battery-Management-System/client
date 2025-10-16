@@ -11,16 +11,39 @@ import {
 } from "lucide-react";
 import { Footer } from "../components/Footer";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { useAuth } from "@/context/AuthContext";
 
 function App() {
   const navigate = useNavigate();
-  const handleLogin = () => navigate("/dang-nhap");
+  const handleLogin = () => navigate("/login");
+  const { user, initialized } = useAuth();
 
-  const handleSignUp = () => navigate("/dang-ky");
+  useEffect(() => {
+    if (initialized && user) {
+      const timer = setTimeout(() => {
+        switch (user.role) {
+          case "admin":
+            navigate("/admin", { replace: true });
+            break;
+          case "staff":
+            navigate("/moderator", { replace: true });
+            break;
+          case "driver":
+            navigate("/home", { replace: true });
+            break;
+          default:
+            navigate("/", { replace: true });
+        }
+      }, 300); // delay 200ms để DOM kịp render
+
+      return () => clearTimeout(timer); // cleanup
+    }
+  }, [user, initialized, navigate]);
+
+  const handleSignUp = () => navigate("/register");
   return (
-    <div
-      className="min-h-screen flex flex-col bg-gradient-to-b from-white to-blue-50 text-[#2F3E46]"
-    >
+    <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-blue-50 text-[#2F3E46]">
       {/* HÌNH TRÒN LỚN */}
       <div className="absolute top-0 right-0 w-60 h-60 md:w-80 md:h-80 bg-[#38A3A5]/30 rounded-full translate-x-1/4 -translate-y-1/4 pointer-events-none"></div>
 
@@ -188,8 +211,6 @@ function App() {
   </div>
 </section>
 */}
-
-
 
       {/* ===== FOOTER ===== */}
       <Footer />

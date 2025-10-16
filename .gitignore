@@ -24,6 +24,8 @@ vite.config.ts.timestamp-*
 
 # Environment variables
 .env
+.env.development
+.env.production
 .env.*.local
 .env.local
 .local
