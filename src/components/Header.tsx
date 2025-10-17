@@ -145,7 +145,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
                   <NavLink to="/quan-ly-xe">Cài đặt bảo mật</NavLink>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <NavLink to="/quan-ly-xe">Gói thuê bao của tôi</NavLink>
+                  <NavLink to="/goi-cua-toi">Gói thuê bao của tôi</NavLink>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem className="text-red-500 cursor-pointer hover:bg-red-50">
