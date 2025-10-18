@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log("thất bại",err);
       setMessage("Đăng xuất thất bại!");
     }finally{
-
+      setLoading(false);
     }
   };
 

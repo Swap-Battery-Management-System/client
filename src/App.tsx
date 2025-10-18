@@ -5,12 +5,15 @@ import RegisterInfo from "./pages/RegisterInfo";
 // import RegisterLayout from "./layout/RegisterLayout";
 import { Route, Routes } from "react-router";
 import Landing from "./pages/Landing";
+
 import Layout from "./layout/layout";
 import Home from "./pages/Home";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import FindStation from "./pages/FindStation";
 import { Toaster } from "sonner";
 import StationDetail from "./pages/StationDetail";
+
+import StaffLayout from "./layout/StaffLayout";
 
 function App() {
   return (
@@ -27,13 +30,16 @@ function App() {
           path="/home"
           element={
             // <ProtectedRoute roles={["driver"]}>
-              <Layout />
+            <Layout />
             // </ProtectedRoute>
           }
         >
           <Route index element={<Home />} />
           <Route path="find-station" element={<FindStation />} />
-          <Route path="find-station/station-detail" element={<StationDetail />} />
+          <Route
+            path="find-station/station-detail"
+            element={<StationDetail />}
+          />
           {/* <Route path="thong-tin-ca-nhan" element={<ThongTinCaNhan />} />
           <Route path="phuong-tien-cua-toi" element={<PhuongTienCuaToi />} />
           <Route path="cai-dat-bao-mat" element={<CaiDatBaoMat />} />
@@ -45,6 +51,22 @@ function App() {
           <Route path="lich-su-thanh-toan" element={<LichSuThanhToan />} />
           <Route path="bao-cao" element={<BaoCao />} /> 
           <Route path="dang-xu" element={<BaoCao />}*/}
+        </Route>
+
+        {/* === Staff Routes === */}
+        <Route
+          path="/staff"
+          element={
+            // <ProtectedRoute roles={["staff"]}>
+            <StaffLayout />
+            // </ProtectedRoute>
+          }
+        >
+          {/* <Route index element={<StaffDashboard />} />
+          <Route path="battery" element={<StaffBattery />} />
+          <Route path="booking" element={<StaffBooking />} />
+          <Route path="report" element={<StaffReport />} />
+          <Route path="safety" element={<StaffSafety />} /> */}
         </Route>
       </Routes>
       <Toaster position="top-center" richColors />
