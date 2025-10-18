@@ -7,6 +7,12 @@ import { Route, Routes } from "react-router";
 import Landing from "./pages/Landing";
 import Layout from "./layout/layout";
 import Home from "./pages/Home";
+import { ProtectedRoute } from "./components/ProtectedRoute";
+import FindStation from "./pages/FindStation";
+import { Toaster } from "sonner";
+import StationDetail from "./pages/StationDetail";
+import RegisterPassword from "./pages/RegisterPassword";
+
 
 function App() {
   return (
@@ -18,6 +24,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/register/verify" element={<OtpVerify />} />
         <Route path="/register/info" element={<RegisterInfo />} />
+        <Route path="/register/password" element={<RegisterPassword />} />
         {/* Layout người dùng */}
         <Route path="/trang-chu" element={<Layout />}>
           <Route index element={<Home />} />
