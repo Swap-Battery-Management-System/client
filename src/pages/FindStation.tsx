@@ -5,21 +5,51 @@ import LocationPermissionModal from "@/components/LocationPermissionModal";
 import { MdMyLocation } from "react-icons/md";
 import { useLocation, useNavigate } from "react-router-dom";
 
+type Station = {
+  id: string;
+  name: string;
+  pinAvailable: number;
+  rating: number;
+  address: string;
+};
+
+
+type locationState = {
+  id?: string;
+};
 
 export default function FindStation() {
   const navigate=useNavigate();
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false); // state loading
-  const location=useLocation();
   const [showModal, setShowModal] = useState(false);
-  const [coords, setCoords] = useState<{ lat: Number; lng: number } | null>(
-    null
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
+    () => {
+      const saved = localStorage.getItem("userCoords");
+      return saved ? JSON.parse(saved) : null;
+    }
   );
  
-  
+  useEffect(() => {
+    if (coords) {
+      localStorage.setItem("userCoords", JSON.stringify(coords));
+    }
+  }, [coords]);
 
-  //xử lý đống ý truy cập vị trí
-  const handleAllow = () => {
+  //theo dõi theo thời gian thực
+  useEffect(() => {
+    const permission = localStorage.getItem("permissionUserLocation");
+    if (permission === "granted") {
+      startWatchingLocation();
+    } else if (permission === "denied") {
+      setShowModal(false);
+    } else {
+      setShowModal(true);
+    }
+  }, []);
+
+
+  const startWatchingLocation=()=>{
     if (!navigator.geolocation) {
       setMessage("Trình duyệt không hỗ trợ định vị!");
       setShowModal(false);
@@ -28,33 +58,49 @@ export default function FindStation() {
 
     setLoading(true);
 
-    navigator.geolocation.getCurrentPosition(
+    const watchId=navigator.geolocation.watchPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
-        setCoords({ lat: latitude, lng: longitude });
+        const newCoords = { lat: latitude, lng: longitude };
+        setCoords(newCoords);
+        localStorage.setItem("userCoords", JSON.stringify(newCoords));
         console.log("Vị trí hiện tại:", latitude, longitude);
-        setShowModal(false);
         setLoading(false);
       },
       (error) => {
-        alert("Không thể lấy vị trí. Vui lòng thử lại.");
-        setShowModal(false);
+        console.error("Không thể lấy vị trí. Vui lòng thử lại.",error);
         setLoading(false);
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 10000,
+        timeout: 5000,
       }
     );
+    return ()=>navigator.geolocation.clearWatch(watchId);
+  };
+  
+
+  //xử lý đống ý truy cập vị trí
+  const handleAllow = () => {
+    localStorage.setItem("permissionUserLocation","granted");
+    setShowModal(false);
+    startWatchingLocation();
   };
 
   const handleDeny = () => {
+    localStorage.setItem("permissionUserLocation","denied");
     setShowModal(false);
   };
 
-  // Khi component mount
-  useEffect(() => {
-    if (location.state?.openShowModal) {
-      setShowModal(true);
-      navigate(location.pathname, { replace: true, state: {} });
-    }
-  }, [location.state, location.pathname, navigate]);
+ const handleViewDetail = (station: Station) => {
+   navigate(`/home/find-station/station-detail`, {
+     state: { id: station.id } satisfies locationState,
+   });
+ };
+
+  
+
 
   //du lieu demo
   const stations = [
@@ -105,13 +151,9 @@ export default function FindStation() {
         <div className="max-w-5xl mx-auto space-y-6">
           {stations.map((station) => (
             <StationCard
-              key={station.id}
-              id={station.id}
-              name={station.name}
-              pinAvailable={station.pinAvailable}
-              rating={station.rating}
-              address={station.address}
-              sizeClass="w-full max-w-4xl"
+              station={station}
+              onclick={()=>handleViewDetail(station)}
+                           
             />
           ))}
         </div>

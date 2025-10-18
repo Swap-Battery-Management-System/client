@@ -26,9 +26,9 @@ function App() {
         <Route
           path="/home"
           element={
-            <ProtectedRoute roles={["driver"]}>
+            // <ProtectedRoute roles={["driver"]}>
               <Layout />
-            </ProtectedRoute>
+            // </ProtectedRoute>
           }
         >
           <Route index element={<Home />} />

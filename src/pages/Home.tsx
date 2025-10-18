@@ -116,12 +116,7 @@ export default function Home() {
         <div className="grid md:grid-cols-3 gap-3 max-w-6xl mx-auto px-6 relative z-10">
           {stations.map((station) => (
             <StationCard
-              key={station.id}
-              id={station.id}
-              name={station.name}
-              pinAvailable={station.pinAvailable}
-              rating={station.rating}
-              address={station.address}
+              station={station}
               sizeClass="w-75 h-50"
             />
           ))}

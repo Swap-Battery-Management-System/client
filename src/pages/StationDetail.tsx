@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useLocation } from "react-router-dom";
 
 type Station = {
   id: string;
@@ -10,7 +11,10 @@ type Station = {
   lng: number;
 };
 
+
 export default function StationDetail() {
+  const location = useLocation();
+  const stationId=location.state.id;
   const [station] = useState<Station>({
     id: "1",
     name: "Trạm Nguyễn Văn Cừ",
@@ -20,6 +24,11 @@ export default function StationDetail() {
     lat: 10.757375,
     lng: 106.684611,
   });
+
+  const permission=localStorage.getItem("permissionUserLocation");
+
+  const mapUrl=permission==="granted"? `https://www.google.com/maps?saddr=My+Location&daddr=${station.lat},${station.lng}&hl=vi&output=embed`
+    : `https://www.google.com/maps?q=${station.lat},${station.lng}&hl=vi&output=embed`;
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -34,7 +43,7 @@ export default function StationDetail() {
             loading="lazy"
             allowFullScreen
             referrerPolicy="no-referrer-when-downgrade"
-            src={`https://www.google.com/maps?saddr=My+Location&daddr=${station.lat},${station.lng}&hl=vi&output=embed`}
+            src={mapUrl}
           />
         </div>
 
