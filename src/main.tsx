@@ -12,9 +12,9 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <GoogleOAuthProvider clientId={clientId}>
       <BrowserRouter>
-        <AuthProvider>
-          <App />
-        </AuthProvider>
+        {/* <AuthProvider> */}
+        <App />
+        {/* </AuthProvider> */}
       </BrowserRouter>
     </GoogleOAuthProvider>
   </StrictMode>
