@@ -11,7 +11,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import FindStation from "./pages/FindStation";
 import { Toaster } from "sonner";
 import StationDetail from "./pages/StationDetail";
-
+import RegisterPassword from "./pages/RegisterPassword";
 function App() {
   return (
     <>
@@ -22,6 +22,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/register/verify" element={<OtpVerify />} />
         <Route path="/register/info" element={<RegisterInfo />} />
+        <Route path="/register/password" element={<RegisterPassword />} />
         {/* Layout người dùng */}
         <Route
           path="/home"
