@@ -8,6 +8,8 @@ import { Input } from "../components/ui/input";
 import { GoogleLogin } from "@react-oauth/google";
 import { useEffect } from "react";
 import { useNotification } from "@/hooks/useNotification";
+import { useNavigate } from "react-router-dom";
+
 
 interface FormData {
   phone: string;
@@ -35,6 +37,7 @@ export default function Login() {
 
 
   const [loading, setLoading] = useState(false);
+  const navigate=useNavigate();
 
   const {success, error}=useNotification();
 
