@@ -10,6 +10,7 @@ import Booking from "./pages/Booking";
 import BookingHistory from "./pages/BookingHistory";
 import Subscription from "./pages/Subcription";
 import MySubcription from "./pages/MySubcription";
+import AdminVehicleManagement from "./pages/AdminVehicleManagement";
 
 function App() {
   return (
@@ -24,6 +25,8 @@ function App() {
         <Route path="/dang-ki/thong-tin" element={<RegisterInfo />} />
 
         <Route path="/goi-cua-toi" element={< MySubcription />} />
+
+        <Route path="/quan-ly-xe-admin" element={< AdminVehicleManagement />} />
 
         <Route path="/dat-lich" element={<Navigate to="/trang-chu/dat-lich" />} />
         <Route path="/lich-su-dat-lich" element={<Navigate to="/trang-chu/lich-su-dat-lich" />} />
@@ -54,3 +57,4 @@ function App() {
 
 export default App;
 
+``
