@@ -19,6 +19,8 @@ import Booking from "./pages/Booking";
 import BookingHistory from "./pages/BookingHistory";
 import Subscription from "./pages/Subcription";
 import MySubcription from "./pages/MySubcription";
+import RegisterPassword from "./pages/RegisterPassword";
+
 import AdminVehicleManagement from "./pages/AdminVehicleManagement";
 
 function App() {

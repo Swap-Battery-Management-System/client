@@ -1,5 +1,4 @@
 import * as React from "react";
-import axios from "axios";
 import { Mail, Lock, Phone } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { useState } from "react";
@@ -25,7 +24,6 @@ export default function Login() {
   const [message, setMessage] = useState("");
   const [type, setType] = useState<"success" | "error">("success");
   const { setUser } = useAuth();
-  const navigate = useNavigate();
   const [usePhoneLogin, setUsePhoneLogin] = useState(false);
   const [showForgot, setShowForgot] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
