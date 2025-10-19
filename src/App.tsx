@@ -4,16 +4,22 @@ import OtpVerify from "./pages/OtpVerify";
 import RegisterInfo from "./pages/RegisterInfo";
 // import RegisterLayout from "./layout/RegisterLayout";
 import { Route, Routes } from "react-router";
-import Landing from "./pages/Landing";
-
-import Layout from "./layout/layout";
-import Home from "./pages/Home";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import FindStation from "./pages/FindStation";
 import { Toaster } from "sonner";
-import StationDetail from "./pages/StationDetail";
+
+import { ProtectedRoute } from "./components/ProtectedRoute";
+
 
 import StaffLayout from "./layout/StaffLayout";
+import Landing from "./pages/Landing";
+import Layout from "./layout/layout";
+import Home from "./pages/Home";
+import FindStation from "./pages/FindStation";
+import StationDetail from "./pages/StationDetail";
+import Booking from "./pages/Booking";
+import BookingHistory from "./pages/BookingHistory";
+import Subscription from "./pages/Subcription";
+import MySubcription from "./pages/MySubcription";
+import AdminVehicleManagement from "./pages/AdminVehicleManagement";
 
 function App() {
   return (
