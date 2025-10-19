@@ -22,6 +22,8 @@ import MySubcription from "./pages/MySubcription";
 import RegisterPassword from "./pages/RegisterPassword";
 
 import AdminVehicleManagement from "./pages/AdminVehicleManagement";
+import BatteryManagement from "./pages/BatteryManagement";
+import AdminLayout from "./layout/AdminLayout";
 
 function App() {
   return (
@@ -63,9 +65,8 @@ function App() {
           <Route path="bao-cao" element={<BaoCao />} /> 
           <Route path="dang-xu" element={<BaoCao />}*/}
         </Route>
-        //can fix lai 
+        //can fix lai
         <Route path="my-subscription-packages" element={<MySubcription />} />
-
         {/* === Staff Routes === */}
         <Route
           path="/staff"
@@ -75,11 +76,16 @@ function App() {
             // </ProtectedRoute>
           }
         >
+          <Route path="manage-battery" element={<BatteryManagement />} />
           {/* <Route index element={<StaffDashboard />} />
-          <Route path="battery" element={<StaffBattery />} />
+         
           <Route path="booking" element={<StaffBooking />} />
           <Route path="report" element={<StaffReport />} />
           <Route path="safety" element={<StaffSafety />} /> */}
+        </Route>
+
+        <Route path="/admin" element={<AdminLayout/>}>
+        
         </Route>
       </Routes>
       <Toaster position="top-center" richColors />

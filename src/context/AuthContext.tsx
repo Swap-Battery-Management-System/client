@@ -34,9 +34,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const res = await api.get("auth/me", { withCredentials: true });
         console.log("useAuth:", res.data);
-        const userData = res.data.user;
+        const userData = res.data.data.user;
         const user: User = {
-          id: userData._id,
+          id: userData.id,
           username: userData.username,
           role: userData.roles.name,
           status: userData.status,

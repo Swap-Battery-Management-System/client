@@ -97,7 +97,7 @@ export default function Login() {
       const res = await api.post("/auth/login", payload, {
         withCredentials: true,
       });
-      const user = res.data.user;
+      const user = res.data.data.user;
 
       setUser(user);
       console.log(user.role);
@@ -137,7 +137,7 @@ export default function Login() {
         { credential },
         { withCredentials: true }
       );
-      const user = res.data.user;
+      const user = res.data.data.user;
       console.log("gg:",res.data);
 
       setUser(user);
