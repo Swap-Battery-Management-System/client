@@ -1,5 +1,6 @@
-import { useNavigate } from "react-router-dom";
-import { Mail, Lock, Phone, Zap } from "lucide-react"; // ⚡ dùng Zap thay cho ShieldCheck
+import * as React from "react";
+import axios from "axios";
+import { Mail, Lock, Phone } from "lucide-react";
 import { Button } from "../components/ui/button";
 import { useState } from "react";
 import api from "@/lib/api";

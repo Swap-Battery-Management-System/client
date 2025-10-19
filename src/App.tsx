@@ -31,6 +31,7 @@ function App() {
         <Route path="/register" element={<Register />} />
         <Route path="/register/verify" element={<OtpVerify />} />
         <Route path="/register/info" element={<RegisterInfo />} />
+        <Route path="/register/password" element={<RegisterPassword />} />
         {/* Layout người dùng */}
         <Route
           path="/home"
