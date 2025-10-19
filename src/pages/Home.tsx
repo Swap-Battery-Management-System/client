@@ -1,55 +1,56 @@
 import SearchStation from "@/components/SearchStation";
 import StationCard from "@/components/StationCard";
 import { Footer } from "@/components/Footer";
+import type { Station } from "@/types/station";
 
 
 
 export default function Home() {
  
-  const stations = [
-    {
-      id: "S1",
-      name: "Trạm 1",
-      pinAvailable: 5,
-      rating: 4.5,
-      address: "123 Đường A",
-    },
-    {
-      id: "S2",
-      name: "Trạm 2",
-      pinAvailable: 3,
-      rating: 4.2,
-      address: "456 Đường B",
-    },
-    {
-      id: "S3",
-      name: "Trạm 3",
-      pinAvailable: 6,
-      rating: 4.8,
-      address: "789 Đường C",
-    },
-    {
-      id: "S4",
-      name: "Trạm 4",
-      pinAvailable: 2,
-      rating: 4.0,
-      address: "321 Đường D",
-    },
-    {
-      id: "S5",
-      name: "Trạm 5",
-      pinAvailable: 4,
-      rating: 4.6,
-      address: "654 Đường E",
-    },
-    {
-      id: "S6",
-      name: "Trạm 6",
-      pinAvailable: 3,
-      rating: 4.7,
-      address: "987 Đường F",
-    },
-  ];
+  // const stations:Station[] = [
+  //   {
+  //     id: "S1",
+  //     name: "Trạm 1",
+  //     pinAvailable: 5,
+  //     rating: 4.5,
+  //     address: "123 Đường A",
+  //   },
+  //   {
+  //     id: "S2",
+  //     name: "Trạm 2",
+  //     pinAvailable: 3,
+  //     rating: 4.2,
+  //     address: "456 Đường B",
+  //   },
+  //   {
+  //     id: "S3",
+  //     name: "Trạm 3",
+  //     pinAvailable: 6,
+  //     rating: 4.8,
+  //     address: "789 Đường C",
+  //   },
+  //   {
+  //     id: "S4",
+  //     name: "Trạm 4",
+  //     pinAvailable: 2,
+  //     rating: 4.0,
+  //     address: "321 Đường D",
+  //   },
+  //   {
+  //     id: "S5",
+  //     name: "Trạm 5",
+  //     pinAvailable: 4,
+  //     rating: 4.6,
+  //     address: "654 Đường E",
+  //   },
+  //   {
+  //     id: "S6",
+  //     name: "Trạm 6",
+  //     pinAvailable: 3,
+  //     rating: 4.7,
+  //     address: "987 Đường F",
+  //   },
+  // ];
 
   const handleViewTopRated = () => {
     console.log("Xem các trạm được đánh giá cao nhất");
@@ -114,12 +115,12 @@ export default function Home() {
 
         {/* Grid các thẻ */}
         <div className="grid md:grid-cols-3 gap-3 max-w-6xl mx-auto px-6 relative z-10">
-          {stations.map((station) => (
+          {/* {stations.map((station) => (
             <StationCard
               station={station}
               sizeClass="w-75 h-50"
             />
-          ))}
+          ))} */}
         </div>
 
         {/* CTA */}

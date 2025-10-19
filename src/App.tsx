@@ -46,7 +46,7 @@ function App() {
           <Route index element={<Home />} />
           <Route path="find-station" element={<FindStation />} />
           <Route
-            path="find-station/station-detail"
+            path="find-station/station-detail/:id"
             element={<StationDetail />}
           />
           <Route path="booking" element={<Booking />} />

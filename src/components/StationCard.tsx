@@ -1,24 +1,14 @@
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { Star } from "lucide-react";
-import { NavLink, useNavigate } from "react-router-dom";
-
-interface StationCardProps {
-  id: string;
-  name: string;
-  pinAvailable: number;
-  rating: number;
-  address: string;
-  coords?: { lat: number; lng: number } | null;
-}
+import type { Station } from "@/types/station";
 
 type Props = {
-  station: StationCardProps;
+  station: Station;
   onclick?: () => void;
   sizeClass?: string;
+  pinAvailable:number;
 };
-export default function StationCard({ station, onclick, sizeClass }: Props) {
-  const navigate = useNavigate();
+export default function StationCard({ station, onclick, sizeClass,pinAvailable }: Props) {
 
 
   return (
@@ -30,14 +20,14 @@ export default function StationCard({ station, onclick, sizeClass }: Props) {
           <h3 className="text-xl font-bold text-[#38A3A5]">{station.name}</h3>
           <div className="flex items-center space-x-1 text-yellow-500">
             <Star size={16} />
-            <span className="text-sm font-medium text-gray-700">{station.rating}</span>
+            <span className="text-sm font-medium text-gray-700">{station.avgRating}</span>
           </div>
         </div>
 
         <div className="text-gray-700 text-sm">
           <p className="font-medium">
             Số pin có sẵn:{" "}
-            <span className="text-[#38A3A5]">{station.pinAvailable}</span>
+            <span className="text-[#38A3A5]">{pinAvailable}</span>
           </p>
         </div>
 

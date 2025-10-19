@@ -97,10 +97,10 @@ export default function Login() {
       const res = await api.post("/auth/login", payload, {
         withCredentials: true,
       });
-      const user = res.data.user;
-
+      const user = res.data.data.user;
+      console.log(user);
       setUser(user);
-      console.log(user.role);
+      
       setType("success");
       setMessage("Đăng nhập thành công!");
 
@@ -130,6 +130,7 @@ export default function Login() {
   const handleGoogleLogin = async (credentialResponse: any) => {
     try {
       const credential = credentialResponse.credential;
+      console.log(credential);
       if (!credential) return;
 
       const res = await api.post(
@@ -137,7 +138,7 @@ export default function Login() {
         { credential },
         { withCredentials: true }
       );
-      const user = res.data.user;
+      const user = res.data.data.user;
       console.log("gg:",res.data);
 
       setUser(user);
