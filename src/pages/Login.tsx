@@ -166,7 +166,7 @@ export default function Login() {
   };
 
   // ========================
-  // 🔹 Forgot Password flow
+  //  Forgot Password flow
   // ========================
   const handleSendOtp = async () => {
     try {

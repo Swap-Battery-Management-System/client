@@ -14,6 +14,7 @@ import { Toaster } from "sonner";
 import StationDetail from "./pages/StationDetail";
 
 import StaffLayout from "./layout/StaffLayout";
+import BatteryManagement from "./pages/BatteryManagement";
 
 function App() {
   return (
@@ -62,8 +63,9 @@ function App() {
             // </ProtectedRoute>
           }
         >
+          <Route path="manage-battery" element={<BatteryManagement />} />
           {/* <Route index element={<StaffDashboard />} />
-          <Route path="battery" element={<StaffBattery />} />
+          
           <Route path="booking" element={<StaffBooking />} />
           <Route path="report" element={<StaffReport />} />
           <Route path="safety" element={<StaffSafety />} /> */}
