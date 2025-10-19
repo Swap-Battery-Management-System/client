@@ -22,6 +22,9 @@ import MySubcription from "./pages/MySubcription";
 import RegisterPassword from "./pages/RegisterPassword";
 
 import AdminVehicleManagement from "./pages/AdminVehicleManagement";
+import AdminUserManagement from "./pages/AdminUserManagement";
+import AdminStationManagement from "./pages/AdminStationManageMent";
+
 import BatteryManagement from "./pages/BatteryManagement";
 import AdminLayout from "./layout/AdminLayout";
 
@@ -84,8 +87,10 @@ function App() {
           <Route path="safety" element={<StaffSafety />} /> */}
         </Route>
 
-        <Route path="/admin" element={<AdminLayout/>}>
-        
+        <Route path="/admin" element={<AdminLayout />}>
+          <Route path="manage-users" element={<AdminUserManagement />} />
+          <Route path="manage-stations" element={<AdminStationManagement />} />
+          <Route path="manage-vehicles" element={<AdminVehicleManagement />} />
         </Route>
       </Routes>
       <Toaster position="top-center" richColors />
