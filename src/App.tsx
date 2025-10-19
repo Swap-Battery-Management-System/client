@@ -46,18 +46,22 @@ function App() {
             path="find-station/station-detail"
             element={<StationDetail />}
           />
+          <Route path="booking" element={<Booking />} />
+          <Route path="booking-history" element={<BookingHistory />} />
+          <Route path="subscription-packages" element={<Subscription />} />
+
           {/* <Route path="thong-tin-ca-nhan" element={<ThongTinCaNhan />} />
           <Route path="phuong-tien-cua-toi" element={<PhuongTienCuaToi />} />
-          <Route path="cai-dat-bao-mat" element={<CaiDatBaoMat />} />
+          <Route path="cai-dat-bao-mat" element={<CaiDatBaoMat />} /> 
           
-          <Route path="dat-lich" element={<DatLich />} />
-          <Route path="lich-su-doi-pin" element={<LichSuDoiPin />} />
-          <Route path="goi-thue-bao" element={<GoiThueBao />} />
+          
           <Route path="bang-phi" element={<BangPhi />} />
           <Route path="lich-su-thanh-toan" element={<LichSuThanhToan />} />
           <Route path="bao-cao" element={<BaoCao />} /> 
           <Route path="dang-xu" element={<BaoCao />}*/}
         </Route>
+        //can fix lai 
+        <Route path="my-subscription-packages" element={<MySubcription />} />
 
         {/* === Staff Routes === */}
         <Route
