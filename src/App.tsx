@@ -20,6 +20,7 @@ import BookingHistory from "./pages/BookingHistory";
 import Subscription from "./pages/Subcription";
 import MySubcription from "./pages/MySubcription";
 import RegisterPassword from "./pages/RegisterPassword";
+import RegisterVehicle from "./pages/RegisterVehicle";
 
 import AdminVehicleManagement from "./pages/AdminVehicleManagement";
 import AdminUserManagement from "./pages/AdminUserManagement";
@@ -59,12 +60,12 @@ function App() {
           <Route path="booking" element={<Booking />} />
           <Route path="booking-history" element={<BookingHistory />} />
           <Route path="subscription-packages" element={<Subscription />} />
+          <Route path="register-vehicle" element={<RegisterVehicle />} />
 
           {/* <Route path="thong-tin-ca-nhan" element={<ThongTinCaNhan />} />
           <Route path="phuong-tien-cua-toi" element={<PhuongTienCuaToi />} />
           <Route path="cai-dat-bao-mat" element={<CaiDatBaoMat />} /> 
-          
-          
+                  
           <Route path="bang-phi" element={<BangPhi />} />
           <Route path="lich-su-thanh-toan" element={<LichSuThanhToan />} />
           <Route path="bao-cao" element={<BaoCao />} /> 
@@ -88,7 +89,6 @@ function App() {
           <Route path="report" element={<StaffReport />} />
           <Route path="safety" element={<StaffSafety />} /> */}
         </Route>
-
         <Route path="/admin" element={<AdminLayout />}>
           <Route path="manage-users" element={<AdminUserManagement />} />
           <Route path="manage-stations" element={<AdminStationManagement />} />

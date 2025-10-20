@@ -18,17 +18,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const navigate = useNavigate();
   const [type, setType] = useState<"success" | "error">("success");
   const [showModal, setShowModal] = useState(false);
-  // const {success, error}=useNotification();
 
-  // useEffect(() => {
-  //   if (!message) return;
-
-  //   if (type === "success") {
-  //      success({message:message});
-  //   } else {
-  //     error({message:message});
-  //   }
-  // }, [message, type]);
 
   const handleLogout = async () => {
     logout(() =>
@@ -183,15 +173,6 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
           </div>
         </div>
       </header>
-
-      {/* Sidebar
-      <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/10"
-          onClick={() => setSidebarOpen(false)}
-        ></div>
-      )} */}
     </>
   );
 }

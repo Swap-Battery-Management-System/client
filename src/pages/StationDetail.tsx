@@ -1,6 +1,6 @@
 import api from "@/lib/api";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import type { Station } from "@/types/station";
 
 export default function StationDetail() {
@@ -8,6 +8,7 @@ export default function StationDetail() {
   const [station, setStation] = useState<Station | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const navigate=useNavigate();
 
   const permission = localStorage.getItem("permissionUserLocation");
 
@@ -18,6 +19,7 @@ export default function StationDetail() {
       return;
     }
 
+    //Lấy thông tin trạm
     const fetchStation = async () => {
       try {
         const res = await api.get(`stations/${id}`, { withCredentials: true });
@@ -36,6 +38,7 @@ export default function StationDetail() {
 
     console.log("station:", station);
 
+    //Xử lý loading
   if (loading)
     return (
       <div className="p-6 text-center text-gray-700">
@@ -53,10 +56,16 @@ export default function StationDetail() {
       <div className="p-6 text-center text-gray-700">Không tìm thấy trạm.</div>
     );
 
+
+    //link map
   const mapUrl =
     permission === "granted"
       ? `https://www.google.com/maps?saddr=My+Location&daddr=${station.latitude},${station.longitude}&hl=vi&output=embed`
       : `https://www.google.com/maps?q=${station.latitude},${station.longitude}&hl=vi&output=embed`;
+
+  const handleBooking=()=>{
+    navigate("");
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -95,7 +104,8 @@ export default function StationDetail() {
           <p className="text-gray-700">Đánh giá: {station.avgRating} ⭐</p>
 
           <div className="flex justify-end mt-4">
-            <button className="px-6 py-2 bg-[#38A3A5] text-white font-semibold rounded-lg hover:bg-[#2e827f] transition-colors">
+            <button className="px-6 py-2 bg-[#38A3A5] text-white font-semibold rounded-lg hover:bg-[#2e827f] transition-colors"
+            onClick={handleBooking}>
               Đặt lịch
             </button>
           </div>

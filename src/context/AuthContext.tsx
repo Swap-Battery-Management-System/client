@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const user: User = {
           id: userData.id,
           username: userData.username,
-          role: userData.role,
+          role: userData.role.name,
           status: userData.status,
         };
         console.log("user",user);
@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   //log out
   const logout = async (onSuccess?:()=>void) => {
     try {
-      await api.post("/auth/logout",{}, { withCredentials: true });
+      await api.get("/auth/logout", { withCredentials: true });
       console.log("log out");
       setUser(null);
       setMessage("Đăng xuất thành công!");
