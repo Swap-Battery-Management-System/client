@@ -22,6 +22,7 @@ import MySubcription from "./pages/MySubcription";
 import RegisterPassword from "./pages/RegisterPassword";
 
 import AdminVehicleManagement from "./pages/AdminVehicleManagement";
+import ResetPassword from "./pages/ResetPassword";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
         {/* Trang công khai */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/login/reset-password" element={<ResetPassword />} />
         <Route path="/register" element={<Register />} />
         <Route path="/register/verify" element={<OtpVerify />} />
         <Route path="/register/info" element={<RegisterInfo />} />
@@ -63,9 +65,8 @@ function App() {
           <Route path="bao-cao" element={<BaoCao />} /> 
           <Route path="dang-xu" element={<BaoCao />}*/}
         </Route>
-        //can fix lai 
+        //can fix lai
         <Route path="my-subscription-packages" element={<MySubcription />} />
-
         {/* === Staff Routes === */}
         <Route
           path="/staff"
