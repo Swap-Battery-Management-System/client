@@ -46,7 +46,7 @@ export default function Login() {
         navigate("/admin");
         break;
       case "staff":
-        navigate("/moderator");
+        navigate("/staff");
         break;
       case "driver":
         navigate("/home");
@@ -114,7 +114,7 @@ export default function Login() {
         { withCredentials: true }
       );
       const user = res.data.data.user;
-      console.log("gg:",res.data);
+      console.log("gg:", res.data);
 
       setUser(user);
 
@@ -139,8 +139,8 @@ export default function Login() {
   };
 
 
-  const handleResetPassword = (e:React.MouseEvent) => {
-    e.preventDefault;
+  const handleResetPassword = (e: React.MouseEvent) => {
+    e.preventDefault();
     navigate("/login/reset-password");
   };
 
