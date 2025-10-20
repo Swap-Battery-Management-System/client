@@ -4,22 +4,15 @@ import { use, useEffect, useState } from "react";
 import LocationPermissionModal from "@/components/LocationPermissionModal";
 import { MdMyLocation } from "react-icons/md";
 import { useLocation, useNavigate } from "react-router-dom";
-
-type Station = {
-  id: string;
-  name: string;
-  pinAvailable: number;
-  rating: number;
-  address: string;
-};
-
+import api from "@/lib/api";
+import type { Station } from "@/types/station";
 
 type locationState = {
   id?: string;
 };
 
 export default function FindStation() {
-  const navigate=useNavigate();
+  const navigate = useNavigate();
   const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(false); // state loading
   const [showModal, setShowModal] = useState(false);
@@ -29,7 +22,46 @@ export default function FindStation() {
       return saved ? JSON.parse(saved) : null;
     }
   );
- 
+  const location = useLocation();
+  const keyword = (location.state as { keyword?: string })?.keyword || "";
+  const [stations, setStations] = useState<Station[]>([]);
+  const [filteredStation, setFilteredStation] = useState<Station[]>([]);
+
+  //lấy danh sách trạm
+  const featchAllStation = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("/stations", { withCredentials: true });
+      const data: Station[] = res.data.data.station;
+      setStations(data);
+      console.log("ds tram: ",res.data);
+    } catch (err) {
+      console.log("Lỗi khi lấy danh sách trạm:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  //Lọc theo từ khóa
+  const filterByKeyword = (kw: string) => {
+    if (!kw.trim()) {
+      setFilteredStation(stations);
+      return;
+    }
+    const result = stations.filter(
+      (s) =>
+        s.name.toLowerCase().includes(kw.toLowerCase()) ||
+        s.address.toLowerCase().includes(kw.toLowerCase())
+    );
+    setFilteredStation(result);
+  };
+
+  //Lọc theo vị trí (tính khoảng cách)
+  const filterByLocation = () => {
+    setFilteredStation(stations);
+  };
+
+  //lưu vị trí vô localStorage
   useEffect(() => {
     if (coords) {
       localStorage.setItem("userCoords", JSON.stringify(coords));
@@ -48,8 +80,23 @@ export default function FindStation() {
     }
   }, []);
 
+  //lấy danh sách trạm
+  useEffect(()=>{
+    featchAllStation();
+  },[]);
 
-  const startWatchingLocation=()=>{
+  //khi có keyword hoặc coords
+  useEffect(() => {
+    if (keyword) {
+      filterByKeyword(keyword);
+    } else if (coords) {
+      filterByLocation();
+    } else {
+      setFilteredStation(stations);
+    }
+  }, [keyword, coords, stations]);
+
+  const startWatchingLocation = () => {
     if (!navigator.geolocation) {
       setMessage("Trình duyệt không hỗ trợ định vị!");
       setShowModal(false);
@@ -58,7 +105,7 @@ export default function FindStation() {
 
     setLoading(true);
 
-    const watchId=navigator.geolocation.watchPosition(
+    const watchId = navigator.geolocation.watchPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
         const newCoords = { lat: latitude, lng: longitude };
@@ -68,7 +115,7 @@ export default function FindStation() {
         setLoading(false);
       },
       (error) => {
-        console.error("Không thể lấy vị trí. Vui lòng thử lại.",error);
+        console.error("Không thể lấy vị trí. Vui lòng thử lại.", error);
         setLoading(false);
       },
       {
@@ -77,55 +124,25 @@ export default function FindStation() {
         timeout: 5000,
       }
     );
-    return ()=>navigator.geolocation.clearWatch(watchId);
+    return () => navigator.geolocation.clearWatch(watchId);
   };
-  
 
   //xử lý đống ý truy cập vị trí
   const handleAllow = () => {
-    localStorage.setItem("permissionUserLocation","granted");
+    localStorage.setItem("permissionUserLocation", "granted");
     setShowModal(false);
     startWatchingLocation();
   };
 
   const handleDeny = () => {
-    localStorage.setItem("permissionUserLocation","denied");
+    localStorage.setItem("permissionUserLocation", "denied");
     setShowModal(false);
   };
 
- const handleViewDetail = (station: Station) => {
-   navigate(`/home/find-station/station-detail`, {
-     state: { id: station.id } satisfies locationState,
-   });
- };
+  const handleViewDetail = (station: Station) => {
+    navigate(`/home/find-station/station-detail/${station.id}`);
+  };
 
-  
-
-
-  //du lieu demo
-  const stations = [
-    {
-      id: "1",
-      name: "Trạm Nguyễn Văn Cừ",
-      pinAvailable: 5,
-      rating: 4.8,
-      address: "123 Nguyễn Văn Cừ, Quận 5, TP.HCM",
-    },
-    {
-      id: "2",
-      name: "Trạm Lê Văn Việt",
-      pinAvailable: 2,
-      rating: 4.5,
-      address: "45 Lê Văn Việt, Quận 9, TP.Thủ Đức",
-    },
-    {
-      id: "3",
-      name: "Trạm Cộng Hòa",
-      pinAvailable: 8,
-      rating: 4.9,
-      address: "88 Cộng Hòa, Quận Tân Bình, TP.HCM",
-    },
-  ];
 
   return (
     <>
@@ -136,6 +153,7 @@ export default function FindStation() {
           loading={loading}
         />
       )}
+
       <div className="min-h-screen bg-gray-50 py-10 px-4">
         {/* Thanh search */}
         <div className="mb-10 flex justify-center">
@@ -149,13 +167,24 @@ export default function FindStation() {
 
         {/* Danh sách trạm */}
         <div className="max-w-5xl mx-auto space-y-6">
-          {stations.map((station) => (
-            <StationCard
-              station={station}
-              onclick={()=>handleViewDetail(station)}
-                           
-            />
-          ))}
+          {loading ? (
+            <div className="text-center py-10 text-gray-500">
+              Loading… Chỉ một lát thôi 😄
+            </div>
+          ) : !filteredStation || filteredStation.length === 0 ? (
+            <div className="text-center py-10 text-gray-500">
+              Hiện tại không tìm thấy trạm nào 😢
+            </div>
+          ) : (
+            filteredStation.map((station) => (
+              <StationCard
+                key={station.id} 
+                pinAvailable={20}
+                station={station}
+                onclick={() => handleViewDetail(station)}
+              />
+            ))
+          )}
         </div>
       </div>
       {/* Button định vị cố định góc phải dưới màn hình */}

@@ -23,10 +23,11 @@ import RegisterPassword from "./pages/RegisterPassword";
 
 import AdminVehicleManagement from "./pages/AdminVehicleManagement";
 import AdminUserManagement from "./pages/AdminUserManagement";
-import AdminStationManagement from "./pages/AdminStationManageMent";
+import AdminStationManagement from "./pages/AdminVehicleManagement";
 
 import BatteryManagement from "./pages/BatteryManagement";
 import AdminLayout from "./layout/AdminLayout";
+import ResetPassword from "./pages/ResetPassword";
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
         {/* Trang công khai */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/login/reset-password" element={<ResetPassword />} />
         <Route path="/register" element={<Register />} />
         <Route path="/register/verify" element={<OtpVerify />} />
         <Route path="/register/info" element={<RegisterInfo />} />
@@ -51,7 +53,7 @@ function App() {
           <Route index element={<Home />} />
           <Route path="find-station" element={<FindStation />} />
           <Route
-            path="find-station/station-detail"
+            path="find-station/station-detail/:id"
             element={<StationDetail />}
           />
           <Route path="booking" element={<Booking />} />

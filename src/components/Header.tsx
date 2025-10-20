@@ -18,17 +18,17 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const navigate = useNavigate();
   const [type, setType] = useState<"success" | "error">("success");
   const [showModal, setShowModal] = useState(false);
-  const {success, error}=useNotification();
+  // const {success, error}=useNotification();
 
-  useEffect(() => {
-    if (!message) return;
+  // useEffect(() => {
+  //   if (!message) return;
 
-    if (type === "success") {
-       success({message:message});
-    } else {
-      error({message:message});
-    }
-  }, [message, type]);
+  //   if (type === "success") {
+  //      success({message:message});
+  //   } else {
+  //     error({message:message});
+  //   }
+  // }, [message, type]);
 
   const handleLogout = async () => {
     logout(() =>

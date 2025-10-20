@@ -2,18 +2,14 @@ import { Search } from "lucide-react";
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-
 export default function SearchStation() {
-  const [keyword, setKeyword] = useState("");
+  const [input,setInput] = useState("");
   const navigate = useNavigate();
   
 
   const handleSearch = ( e :React.FormEvent) => {
-     e.preventDefault();
-    if (keyword.trim()) {
-      console.log("Tìm trạm:", keyword);
-       navigate(`find-station?keyword=${encodeURIComponent(keyword)}`);
-    }
+     e.preventDefault();   
+     navigate("/home/find-station",{state:{keyword:input.trim()}});
   };
 
   return (
@@ -27,15 +23,15 @@ export default function SearchStation() {
       {/* Ô nhập */}
       <input
         type="text"
-        value={keyword}
-        onChange={(e) => setKeyword(e.target.value)}
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
         placeholder="Nhập vị trí để tìm trạm đổi pin gần nhất..."
         className="w-full pl-12 pr-28 py-4 rounded-full text-gray-700 placeholder-gray-400 shadow-lg border border-teal-200 focus:border-teal-400 focus:ring-2 focus:ring-teal-300/40 focus:outline-none transition-all duration-300 bg-white backdrop-blur-sm"
       />
 
       {/* Nút tìm */}
       <button
-        onClick={(e)=>handleSearch}
+        onClick={handleSearch}
         className="absolute right-2 top-1/2 -translate-y-1/2 bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white font-semibold px-6 py-2 rounded-full shadow-md hover:shadow-lg transition-all duration-300"
       >
         Tìm
