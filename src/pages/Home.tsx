@@ -10,7 +10,7 @@ import { useNavigate } from "react-router-dom";
 export default function Home() {
   const [loading, setLoading] = useState(false);
   const [stations, setStations] = useState<Station[]>([]);
-  const navigate=useNavigate();
+  const navigate = useNavigate();
   //lấy danh sách trạm
   const featchAllStation = async () => {
     try {

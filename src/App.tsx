@@ -21,6 +21,7 @@ import Subscription from "./pages/Subcription";
 import MySubcription from "./pages/MySubcription";
 import RegisterPassword from "./pages/RegisterPassword";
 import RegisterVehicle from "./pages/RegisterVehicle";
+import MyVehicles from "./pages/MyVehicles";
 
 import AdminVehicleManagement from "./pages/AdminVehicleManagement";
 import AdminUserManagement from "./pages/AdminUserManagement";
@@ -61,6 +62,7 @@ function App() {
           <Route path="booking-history" element={<BookingHistory />} />
           <Route path="subscription-packages" element={<Subscription />} />
           <Route path="register-vehicle" element={<RegisterVehicle />} />
+          <Route path="my-vehicles" element={<MyVehicles />} />
 
           {/* <Route path="thong-tin-ca-nhan" element={<ThongTinCaNhan />} />
           <Route path="phuong-tien-cua-toi" element={<PhuongTienCuaToi />} />
