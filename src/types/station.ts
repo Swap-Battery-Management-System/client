@@ -1,3 +1,5 @@
+import type { Battery } from "./battery";
+
 export type Station = {
   id: string;
   name: string;
@@ -7,4 +9,10 @@ export type Station = {
   longitude:number;
   status:string;
   avgRating: number|null;
+  batteries: Battery[];
 };
+
+export type StationWithDistance=Station &{
+  distance:number,
+  duration:number,
+}

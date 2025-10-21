@@ -30,6 +30,7 @@ import BatteryManagement from "./pages/BatteryManagement";
 import AdminLayout from "./layout/AdminLayout";
 import ResetPassword from "./pages/ResetPassword";
 
+
 function App() {
   return (
     <>
@@ -43,26 +44,26 @@ function App() {
         <Route path="/register/info" element={<RegisterInfo />} />
         <Route path="/register/password" element={<RegisterPassword />} />
         {/* Layout người dùng */}
-        <Route
-          path="/home"
-          element={
-            // <ProtectedRoute roles={["driver"]}>
-            <Layout />
-            // </ProtectedRoute>
-          }
-        >
-          <Route index element={<Home />} />
-          <Route path="find-station" element={<FindStation />} />
           <Route
-            path="find-station/station-detail/:id"
-            element={<StationDetail />}
-          />
-          <Route path="booking" element={<Booking />} />
-          <Route path="booking-history" element={<BookingHistory />} />
-          <Route path="subscription-packages" element={<Subscription />} />
-          <Route path="register-vehicle" element={<RegisterVehicle />} />
+            path="/home"
+            element={
+              // <ProtectedRoute roles={["driver"]}>
+              <Layout />
+              // </ProtectedRoute>
+            }
+          >
+            <Route index element={<Home />} />
+            <Route path="find-station" element={<FindStation />} />
+            <Route
+              path="find-station/station-detail/:id"
+              element={<StationDetail />}
+            />
+            <Route path="booking" element={<Booking />} />
+            <Route path="booking-history" element={<BookingHistory />} />
+            <Route path="subscription-packages" element={<Subscription />} />
+            <Route path="register-vehicle" element={<RegisterVehicle />} />
 
-          {/* <Route path="thong-tin-ca-nhan" element={<ThongTinCaNhan />} />
+            {/* <Route path="thong-tin-ca-nhan" element={<ThongTinCaNhan />} />
           <Route path="phuong-tien-cua-toi" element={<PhuongTienCuaToi />} />
           <Route path="cai-dat-bao-mat" element={<CaiDatBaoMat />} /> 
                   
@@ -70,7 +71,8 @@ function App() {
           <Route path="lich-su-thanh-toan" element={<LichSuThanhToan />} />
           <Route path="bao-cao" element={<BaoCao />} /> 
           <Route path="dang-xu" element={<BaoCao />}*/}
-        </Route>
+          </Route>
+      
         //can fix lai
         <Route path="my-subscription-packages" element={<MySubcription />} />
         {/* === Staff Routes === */}
