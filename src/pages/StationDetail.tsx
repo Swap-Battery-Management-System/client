@@ -8,7 +8,7 @@ export default function StationDetail() {
   const [station, setStation] = useState<Station | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const navigate=useNavigate();
+  const navigate = useNavigate();
 
   const permission = localStorage.getItem("permissionUserLocation");
 
@@ -23,8 +23,8 @@ export default function StationDetail() {
     const fetchStation = async () => {
       try {
         const res = await api.get(`stations/${id}`, { withCredentials: true });
-        setStation(res.data.data.station); 
-        console.log(res.data);             
+        setStation(res.data.data.station);
+        console.log(res.data);
       } catch (err) {
         setError("⚠ Không thể tải thông tin trạm.");
         console.log(err);
@@ -36,9 +36,9 @@ export default function StationDetail() {
     fetchStation();
   }, [id]);
 
-    console.log("station:", station);
+  console.log("station:", station);
 
-    //Xử lý loading
+  //Xử lý loading
   if (loading)
     return (
       <div className="p-6 text-center text-gray-700">
@@ -57,7 +57,7 @@ export default function StationDetail() {
     );
 
 
-    //link map
+  //link map
   const mapUrl =
     permission === "granted"
       ? `https://www.google.com/maps?saddr=My+Location&daddr=${station.latitude},${station.longitude}&hl=vi&output=embed`
@@ -106,7 +106,7 @@ export default function StationDetail() {
 
           <div className="flex justify-end mt-4">
             <button className="px-6 py-2 bg-[#38A3A5] text-white font-semibold rounded-lg hover:bg-[#2e827f] transition-colors"
-            onClick={handleBooking}>
+              onClick={handleBooking}>
               Đặt lịch
             </button>
           </div>
