@@ -1,162 +1,213 @@
-"use client";
-
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { toast } from "sonner";
+import api from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogFooter,
+    DialogDescription,
 } from "@/components/ui/dialog";
 
+interface Vehicle {
+    id: string;
+    licensePlates: string;
+    VIN: string;
+    status: string; // “pending”, “approved”, “rejected”...
+    model?: {
+        id: string;
+        name: string;
+        manufacturer?: string;
+    };
+    createdAt: string;
+    modelId?: string;
+}
+
 export default function MyVehicles() {
+    const { user } = useAuth();
+    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+    const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
     const [open, setOpen] = useState(false);
-    const [selectedVehicle, setSelectedVehicle] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
 
-    // 🔹 Dữ liệu tạm
-    const vehicles = [
-        {
-            id: "0b2333e5-149a-4af1-a234-634f84295e89",
-            licensePlates: "59A3-456.78",
-            VIN: "VF60FELIZS015",
-            status: "pending",
-            model: {
-                name: "Feliz S",
-                brand: "VinFast",
-                batteryType: "LiFePO4 72V 30Ah",
-            },
-            createdAt: "2025-10-18",
-        },
-        {
-            id: "8ae238f2-1db4-41cc-b58b-cad1b1c60f5c",
-            licensePlates: "51B2-999.66",
-            VIN: "VF60KLARA001",
-            status: "active",
-            model: {
-                name: "Klara A1",
-                brand: "VinFast",
-                batteryType: "Lithium-ion 60V 20Ah",
-            },
-            createdAt: "2025-09-20",
-        },
-    ];
+    // 🧠 Lấy danh sách xe người dùng hiện tại
+    const fetchVehicles = async () => {
+        try {
+            setLoading(true);
+            const token = localStorage.getItem("access_token");
+            if (!token) {
+                toast.error("Bạn cần đăng nhập để xem danh sách xe!");
+                return;
+            }
 
-    const getStatusColor = (status: string) => {
-        switch (status) {
-            case "active":
-                return "text-green-600 font-semibold";
-            case "pending":
-                return "text-yellow-500 font-semibold";
-            default:
-                return "text-gray-600";
+            const res = await api.get("/vehicles", {
+                headers: { Authorization: `Bearer ${token}` },
+                withCredentials: true,
+            });
+
+            console.log("🚗 API trả về:", res.data);
+
+            const data =
+                res?.data?.data?.vehicle ||
+                res?.data?.vehicle ||
+                res?.data?.data ||
+                [];
+
+            if (!Array.isArray(data)) {
+                throw new Error("Phản hồi không hợp lệ từ máy chủ.");
+            }
+
+            setVehicles(data);
+        } catch (err) {
+            console.error("❌ Lỗi khi lấy danh sách xe:", err);
+            toast.error("Không thể tải danh sách xe!");
+        } finally {
+            setLoading(false);
         }
     };
 
-    return (
-        <div className="p-6">
-            <h2 className="text-xl font-semibold mb-4 text-[#38A3A5]">
-                Xe của tôi
-            </h2>
+    useEffect(() => {
+        fetchVehicles();
+    }, []);
 
-            <div className="overflow-hidden rounded-xl border bg-white shadow">
-                <table className="min-w-full text-left">
-                    <thead className="bg-[#38A3A5] text-white">
-                        <tr>
-                            <th className="px-4 py-3">Biển số</th>
-                            <th className="px-4 py-3">Model</th>
-                            <th className="px-4 py-3">Hãng</th>
-                            <th className="px-4 py-3">Loại pin</th>
-                            <th className="px-4 py-3">Trạng thái</th>
-                            <th className="px-4 py-3 text-center">Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+    // 📖 Mở modal xem chi tiết
+    const handleViewDetails = (vehicle: Vehicle) => {
+        setSelectedVehicle(vehicle);
+        setOpen(true);
+    };
+
+    return (
+        <div className="flex h-screen bg-[#E9F8F8]">
+            <main className="flex-1 p-8">
+                <h1 className="text-3xl text-center font-semibold mb-6 text-[#38A3A5]">
+                    Danh sách xe của tôi
+                </h1>
+
+                {/* 🌀 Loading */}
+                {loading && (
+                    <div className="text-center text-gray-500 mt-10 animate-pulse">
+                        Đang tải danh sách xe...
+                    </div>
+                )}
+
+                {/* Nếu chưa có xe */}
+                {!loading && vehicles.length === 0 && (
+                    <div className="text-center text-gray-500 mt-10">
+                        Bạn chưa đăng ký xe nào.
+                    </div>
+                )}
+
+                {/* Danh sách xe */}
+                {!loading && vehicles.length > 0 && (
+                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {vehicles.map((v) => (
-                            <tr
+                            <Card
                                 key={v.id}
-                                className="border-b hover:bg-gray-50 transition-all"
+                                className="p-5 bg-white/80 border border-[#BCE7E8] shadow-md hover:shadow-lg transition-all duration-300"
                             >
-                                <td className="px-4 py-3 font-medium text-gray-800">
-                                    {v.licensePlates}
-                                </td>
-                                <td className="px-4 py-3">{v.model.name}</td>
-                                <td className="px-4 py-3">{v.model.brand}</td>
-                                <td className="px-4 py-3">{v.model.batteryType}</td>
-                                <td className={`px-4 py-3 ${getStatusColor(v.status)}`}>
-                                    {v.status === "active"
-                                        ? "Đã duyệt"
-                                        : "Đang chờ duyệt"}
-                                </td>
-                                <td className="px-4 py-3 text-center">
+                                <div className="space-y-2">
+                                    <h2 className="text-xl font-semibold text-[#38A3A5]">
+                                        {v.licensePlates}
+                                    </h2>
+                                    <p className="text-sm text-gray-600">
+                                        Model: {v.model?.name || "Không rõ"}
+                                    </p>
+                                    <p className="text-sm text-gray-600 truncate">
+                                        Số khung (VIN): {v.VIN}
+                                    </p>
+                                    <p
+                                        className={`text-sm font-medium ${v.status === "approved"
+                                            ? "text-green-600"
+                                            : v.status === "pending"
+                                                ? "text-yellow-600"
+                                                : "text-red-600"
+                                            }`}
+                                    >
+                                        Trạng thái:{" "}
+                                        {v.status === "pending"
+                                            ? "Đang chờ duyệt"
+                                            : v.status === "approved"
+                                                ? "Đã duyệt"
+                                                : "Từ chối"}
+                                    </p>
+                                </div>
+
+                                <div className="flex justify-end mt-4">
                                     <Button
-                                        className="bg-[#38A3A5] hover:bg-[#2d898a] text-white"
-                                        onClick={() => {
-                                            setSelectedVehicle(v);
-                                            setOpen(true);
-                                        }}
+                                        variant="outline"
+                                        className="text-[#38A3A5] border-[#38A3A5] hover:bg-[#38A3A5] hover:text-white transition-all"
+                                        onClick={() => handleViewDetails(v)}
                                     >
                                         Xem chi tiết
                                     </Button>
-                                </td>
-                            </tr>
+                                </div>
+                            </Card>
                         ))}
-                    </tbody>
-                </table>
-            </div>
+                    </div>
+                )}
 
-            {/* 🔹 Dialog Chi tiết xe */}
-            <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent className="max-w-lg">
-                    <DialogHeader>
-                        <DialogTitle>Thông tin xe</DialogTitle>
-                    </DialogHeader>
+                {/* Modal xem chi tiết */}
+                <Dialog open={open} onOpenChange={setOpen}>
+                    <DialogContent className="max-w-md bg-white rounded-2xl">
+                        <DialogHeader>
+                            <DialogTitle className="text-[#38A3A5] text-lg">
+                                Chi tiết xe
+                            </DialogTitle>
+                            <DialogDescription>
+                                Thông tin chi tiết về xe bạn đã đăng ký
+                            </DialogDescription>
+                        </DialogHeader>
 
-                    {selectedVehicle && (
-                        <div className="space-y-3 text-gray-700">
-                            <p>
-                                <span className="font-semibold">Biển số:</span>{" "}
-                                {selectedVehicle.licensePlates}
-                            </p>
-                            <p>
-                                <span className="font-semibold">Model:</span>{" "}
-                                {selectedVehicle.model.name}
-                            </p>
-                            <p>
-                                <span className="font-semibold">Hãng:</span>{" "}
-                                {selectedVehicle.model.brand}
-                            </p>
-                            <p>
-                                <span className="font-semibold">Loại pin:</span>{" "}
-                                {selectedVehicle.model.batteryType}
-                            </p>
-                            <p>
-                                <span className="font-semibold">VIN:</span>{" "}
-                                {selectedVehicle.VIN}
-                            </p>
-                            <p>
-                                <span className="font-semibold">Trạng thái:</span>{" "}
-                                {selectedVehicle.status === "active"
-                                    ? "Đã duyệt"
-                                    : "Đang chờ duyệt"}
-                            </p>
-                            <p>
-                                <span className="font-semibold">Ngày đăng ký:</span>{" "}
-                                {selectedVehicle.createdAt}
-                            </p>
+                        {selectedVehicle && (
+                            <div className="space-y-3 mt-3">
+                                <div>
+                                    <Label className="text-[#38A3A5]">Biển số:</Label>
+                                    <p>{selectedVehicle.licensePlates}</p>
+                                </div>
+                                <div>
+                                    <Label className="text-[#38A3A5]">Model:</Label>
+                                    <p>{selectedVehicle.model?.name || "Không rõ"}</p>
+                                </div>
+                                <div>
+                                    <Label className="text-[#38A3A5]">Số khung (VIN):</Label>
+                                    <p>{selectedVehicle.VIN}</p>
+                                </div>
+                                <div>
+                                    <Label className="text-[#38A3A5]">Trạng thái:</Label>
+                                    <p>
+                                        {selectedVehicle.status === "pending"
+                                            ? "Đang chờ duyệt"
+                                            : selectedVehicle.status === "approved"
+                                                ? "Đã duyệt"
+                                                : "Từ chối"}
+                                    </p>
+                                </div>
+                                <div>
+                                    <Label className="text-[#38A3A5]">Ngày đăng ký:</Label>
+                                    <p>
+                                        {new Date(
+                                            selectedVehicle.createdAt
+                                        ).toLocaleString("vi-VN")}
+                                    </p>
+                                </div>
+                            </div>
+                        )}
+
+                        <div className="flex justify-end mt-6">
+                            <Button
+                                onClick={() => setOpen(false)}
+                                className="bg-[#38A3A5] hover:bg-[#2C8C8E] text-white"
+                            >
+                                Đóng
+                            </Button>
                         </div>
-                    )}
-
-                    <DialogFooter className="flex justify-end mt-6">
-                        <Button
-                            className="bg-[#38A3A5] hover:bg-[#2d898a] text-white"
-                            onClick={() => setOpen(false)}
-                        >
-                            Đóng
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+                    </DialogContent>
+                </Dialog>
+            </main>
         </div>
     );
 }

@@ -89,7 +89,7 @@ export default function RegisterVehicle() {
       // 🔍 Kiểm tra theo cấu trúc thật của API
       if (res.data?.status === "success" && res.data?.code === 201) {
         toast.success("🚗 Đăng ký xe thành công! Chúng tôi sẽ duyệt hồ sơ sớm nhất.");
-        console.log("✅ Vehicle registered:", res.data.data);
+        console.log("✅ Vehicle registered successfully:", res.data.data);
 
         // Reset form
         setPlate("");
@@ -134,7 +134,7 @@ export default function RegisterVehicle() {
             <div>
               <Label className="text-[#38A3A5]">Biển số xe</Label>
               <Input
-                placeholder="Nhập biển số xe (VD: 59A1-678.90)"
+                placeholder="Nhập biển số xe "
                 value={plate}
                 onChange={(e) => setPlate(e.target.value)}
                 className="border-[#BCE7E8] focus:ring-[#38A3A5] focus:border-[#38A3A5]"
@@ -164,7 +164,7 @@ export default function RegisterVehicle() {
             <div>
               <Label className="text-[#38A3A5]">Số khung (VIN)</Label>
               <Input
-                placeholder="Nhập số VIN (VD: VF60FELIZS002)"
+                placeholder="Nhập số VIN "
                 value={vin}
                 onChange={(e) => setVin(e.target.value)}
                 className="border-[#BCE7E8] focus:ring-[#38A3A5] focus:border-[#38A3A5]"
