@@ -6,7 +6,6 @@ import RegisterInfo from "./pages/RegisterInfo";
 import { Route, Routes } from "react-router";
 import { Toaster } from "sonner";
 
-import { ProtectedRoute } from "./components/ProtectedRoute";
 
 
 import StaffLayout from "./layout/StaffLayout";
@@ -19,7 +18,7 @@ import Booking from "./pages/Booking";
 import BookingHistory from "./pages/BookingHistory";
 import Subscription from "./pages/Subcription";
 import MySubcription from "./pages/MySubcription";
-import RegisterPassword from "./pages/RegisterPassword";
+import RegisterPassword from "./pages/SetPassword";
 import RegisterVehicle from "./pages/RegisterVehicle";
 
 import AdminVehicleManagement from "./pages/AdminVehicleManagement";
