@@ -6,34 +6,15 @@ import api from "@/lib/api";
 import { useState } from "react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { useStation } from "@/context/StationContext";
 
 export default function Home() {
-  const [loading, setLoading] = useState(false);
-  const [stations, setStations] = useState<Station[]>([]);
   const navigate=useNavigate();
-  //lấy danh sách trạm
-  const featchAllStation = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get("/stations", { withCredentials: true });
-      const data: Station[] = res.data.data.station;
-      const sortedData = data.sort((a, b) => {
-        const ratingA = a.avgRating ?? -1; // nếu null thì -1
-        const ratingB = b.avgRating ?? -1;
-        return ratingB - ratingA; // giảm dần
-      });
-      setStations(sortedData);
-      console.log("ds tram: ", res.data);
-    } catch (err) {
-      console.log("Lỗi khi lấy danh sách trạm:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  const {fetchAllStation, stations, loading}=useStation();
+  
   //lấy danh sách trạm
   useEffect(() => {
-    featchAllStation();
+    fetchAllStation();
   }, []);
 
   const handleViewDetail = (station: Station) => {
@@ -107,7 +88,7 @@ export default function Home() {
             <StationCard
               key={station.id}
               station={station}
-              pinAvailable={20}
+              pinAvailable={station.batteries.filter((b)=>b.status==="available").length}
               onclick={() => handleViewDetail(station)}
               sizeClass="w-75 h-60"
             />

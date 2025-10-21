@@ -46,7 +46,7 @@ export default function Login() {
         navigate("/admin");
         break;
       case "staff":
-        navigate("/moderator");
+        navigate("/staff");
         break;
       case "driver":
         navigate("/home");

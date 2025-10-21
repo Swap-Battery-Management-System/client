@@ -1,6 +1,6 @@
 import api from "@/lib/api";
 import { useEffect, useState } from "react";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import type { Station } from "@/types/station";
 
 export default function StationDetail() {
@@ -8,6 +8,7 @@ export default function StationDetail() {
   const [station, setStation] = useState<Station | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const navigate=useNavigate();
 
   const permission = localStorage.getItem("permissionUserLocation");
 
@@ -58,6 +59,10 @@ export default function StationDetail() {
       ? `https://www.google.com/maps?saddr=My+Location&daddr=${station.latitude},${station.longitude}&hl=vi&output=embed`
       : `https://www.google.com/maps?q=${station.latitude},${station.longitude}&hl=vi&output=embed`;
 
+  const handleBooking=()=>{
+    navigate(`/home/booking`);
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* Map phía trên */}
@@ -91,11 +96,12 @@ export default function StationDetail() {
         <div className="bg-white rounded-xl shadow-md p-6 space-y-4">
           <h1 className="text-2xl font-bold">{station.name}</h1>
           <p className="text-gray-700">Địa chỉ: {station.address}</p>
-          <p className="text-gray-700">Pin khả dụng: {20}</p>
+
+          <p className="text-gray-700">Pin khả dụng: {station.batteries.filter((s)=>s.status==="available").length}</p>
           <p className="text-gray-700">Đánh giá: {station.avgRating} ⭐</p>
 
           <div className="flex justify-end mt-4">
-            <button className="px-6 py-2 bg-[#38A3A5] text-white font-semibold rounded-lg hover:bg-[#2e827f] transition-colors">
+            <button onClick={handleBooking} className="px-6 py-2 bg-[#38A3A5] text-white font-semibold rounded-lg hover:bg-[#2e827f] transition-colors">
               Đặt lịch
             </button>
           </div>
