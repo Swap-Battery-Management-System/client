@@ -9,15 +9,10 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
-import { useEffect, useState } from "react";
-import LocationPermissionModal from "./LocationPermissionModal";
-import { useNotification } from "@/hooks/useNotification";
 
 export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
-  const { logout, message } = useAuth();
+  const { logout} = useAuth();
   const navigate = useNavigate();
-  const [type, setType] = useState<"success" | "error">("success");
-  const [showModal, setShowModal] = useState(false);
 
 
   const handleLogout = async () => {

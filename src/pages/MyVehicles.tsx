@@ -34,22 +34,17 @@ export default function MyVehicles() {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    // 🧠 Lấy danh sách xe người dùng hiện tại
+    // Lấy danh sách xe người dùng hiện tại
     const fetchVehicles = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem("access_token");
-            if (!token) {
-                toast.error("Bạn cần đăng nhập để xem danh sách xe!");
-                return;
-            }
+         
 
             const res = await api.get("/vehicles", {
-                headers: { Authorization: `Bearer ${token}` },
                 withCredentials: true,
             });
 
-            console.log("🚗 API trả về:", res.data);
+            console.log("API trả về:", res.data);
 
             const data =
                 res?.data?.data?.vehicle ||
@@ -74,7 +69,7 @@ export default function MyVehicles() {
         fetchVehicles();
     }, []);
 
-    // 📖 Mở modal xem chi tiết
+    //  Mở modal xem chi tiết
     const handleViewDetails = (vehicle: Vehicle) => {
         setSelectedVehicle(vehicle);
         setOpen(true);
@@ -87,7 +82,7 @@ export default function MyVehicles() {
                     Danh sách xe của tôi
                 </h1>
 
-                {/* 🌀 Loading */}
+                {/* Loading */}
                 {loading && (
                     <div className="text-center text-gray-500 mt-10 animate-pulse">
                         Đang tải danh sách xe...

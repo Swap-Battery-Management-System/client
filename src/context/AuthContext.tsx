@@ -1,14 +1,6 @@
-import type { Role } from "@/types/roles";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import api from "@/lib/api";
-import { useNavigate } from "react-router-dom";
-
-interface User {
-  id: string;
-  username?: string;
-  role: Role;
-  status: String;
-}
+import type { User } from "@/types/user";
 
 interface AuthContextType {
   user: User | null;
@@ -34,12 +26,25 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const res = await api.get("auth/me", { withCredentials: true });
         console.log("useAuth:", res.data);
-        const userData = res.data.data.user;
+        const userData = res.data.data;
         const user: User = {
           id: userData.id,
           username: userData.username,
-          role: userData.role.name,
+          fullName: userData.fullName,
+          email: userData.email,
+          phoneNumber: userData.phoneNumber,
+          dateOfBirth: userData.dateOfBirth,
+          gender: userData.gender,
+          address: userData.address,
+          avatarUrl: userData.avatarUrl,
+          role:
+            typeof userData.role === "object"
+              ? userData.role.name
+              : userData.role, // nếu API trả object thì lấy name
+          roleId: userData.roleId,
           status: userData.status,
+          googleId: userData.googleId,
+          createdAt: userData.createdAt,
         };
         console.log("user",user);
         setUser(user);

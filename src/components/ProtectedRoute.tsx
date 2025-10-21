@@ -10,7 +10,9 @@ interface ProtectedRouteProps {
 export const ProtectedRoute=({roles,children}:ProtectedRouteProps)=>{
     const { user, initialized } = useAuth();
      if (!initialized) return null;
+     
     if(!user){
+      console.log("user",user);
         return <Navigate to={"/"} replace/>
     }
     console.log("test role:",user.role);

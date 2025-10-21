@@ -2,8 +2,6 @@ import SearchStation from "@/components/SearchStation";
 import StationCard from "@/components/StationCard";
 import { Footer } from "@/components/Footer";
 import type { Station } from "@/types/station";
-import api from "@/lib/api";
-import { useState } from "react";
 import { useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useStation } from "@/context/StationContext";

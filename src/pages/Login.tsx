@@ -6,8 +6,8 @@ import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { Input } from "../components/ui/input";
 import { GoogleLogin } from "@react-oauth/google";
-import { useNotification } from "@/hooks/useNotification";
 import { useNavigate } from "react-router-dom";
+import { toast } from "sonner";
 
 interface FormData {
   identifier: string;
@@ -22,22 +22,15 @@ export default function Login() {
   const [message, setMessage] = useState("");
   const [type, setType] = useState<"success" | "error">("success");
   const { setUser } = useAuth();
-  const [showForgot, setShowForgot] = useState(false);
-  const [otpSent, setOtpSent] = useState(false);
-  const [otp, setOtp] = useState("");
-  const [newPassword, setNewPassword] = useState("");
-
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { success, error } = useNotification();
 
   useEffect(() => {
     if (!message) return;
 
-    if (type === "success") success({ message });
-    else error({ message });
+    if (type === "success") toast.success(message, {duration:1000});
+    else toast.error(message,{duration:1000});
 
-    setTimeout(() => setMessage(""), 2000);
   }, [message, type]);
 
   const redirectByRole = (role: string) => {
@@ -81,13 +74,15 @@ export default function Login() {
       const res = await api.post("/auth/login", payload, {
         withCredentials: true,
       });
+
       const user = res.data.data.user;
-      console.log(res.data);
+      console.log("login", res.data);
       setUser(user);
 
       setType("success");
       setMessage("Đăng nhập thành công!");
-      setTimeout(() => redirectByRole(user.role), 3000);
+      console.log(user.role);
+      setTimeout(() => redirectByRole(user.role), 2000);
     } catch (err: any) {
       setType("error");
       if (err.response) {
@@ -120,7 +115,7 @@ export default function Login() {
 
       setType("success");
       setMessage(successMessage[res.status]);
-      setTimeout(() => redirectByRole(user.role), 3000);
+      setTimeout(() => redirectByRole(user.role), 2000);
     } catch (err: any) {
       setType("error");
       if (err.response) {
@@ -137,7 +132,6 @@ export default function Login() {
     setMessage("⚠️ Đăng nhập Google bị hủy hoặc thất bại.");
     setType("error");
   };
-
 
   const handleResetPassword = (e: React.MouseEvent) => {
     e.preventDefault();

@@ -7,10 +7,7 @@ import { useLocation, useNavigate } from "react-router-dom";
 import type { Station } from "@/types/station";
 import { useStation } from "@/context/StationContext";
 
-
 export default function FindStation() {
-  
-
   const navigate = useNavigate();
   const location = useLocation();
   const keyword = (location.state as { keyword?: string })?.keyword || "";
@@ -24,7 +21,12 @@ export default function FindStation() {
   );
   const [showModal, setShowModal] = useState(false);
   const [loadingCoords, setLoadingCoords] = useState(false);
-  const { fetchAllStation, stations, loading: loadingStations, getStationWithDistance } = useStation();
+  const {
+    fetchAllStation,
+    stations,
+    loading: loadingStations,
+    getStationWithDistance,
+  } = useStation();
 
   // Lấy danh sách trạm
   useEffect(() => {
@@ -33,36 +35,34 @@ export default function FindStation() {
 
   // Lọc theo từ khóa hoặc coords
   useEffect(() => {
-    const filterStations=async()=>{
+    const filterStations = async () => {
       if (keyword.trim()) {
-        const filtered=stations.filter(
+        const filtered = stations.filter(
           (s) =>
             s.name.toLowerCase().includes(keyword.toLowerCase()) ||
             s.address.toLowerCase().includes(keyword.toLowerCase())
         );
-         if (coords) {
-           const stationWithDistance = await getStationWithDistance(
-             coords,
-             filtered
-           );
-           setFilteredStation(stationWithDistance);
-         }else{
+        if (coords) {
+          const stationWithDistance = await getStationWithDistance(
+            coords,
+            filtered
+          );
+          setFilteredStation(stationWithDistance);
+        } else {
           setFilteredStation(filtered);
-         }
-         return;
-      } 
-       else if(coords) {
-         const stationWithDistance = await getStationWithDistance(
-           coords,
-           stations
-         );
-         setFilteredStation(stationWithDistance);
-         return;
-       }
-       setFilteredStation(stations);
-    }
+        }
+        return;
+      } else if (coords) {
+        const stationWithDistance = await getStationWithDistance(
+          coords,
+          stations
+        );
+        setFilteredStation(stationWithDistance);
+        return;
+      }
+      setFilteredStation(stations);
+    };
     filterStations();
-   
   }, [keyword, coords, stations]);
 
   // Lưu vị trí vào localStorage
@@ -97,7 +97,6 @@ export default function FindStation() {
     return () => navigator.geolocation.clearWatch(watchId);
   };
 
-  
   const handleAllow = () => {
     localStorage.setItem("permissionUserLocation", "granted");
     setShowModal(false);
