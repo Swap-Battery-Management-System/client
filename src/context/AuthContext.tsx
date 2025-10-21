@@ -34,11 +34,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const res = await api.get("auth/me", { withCredentials: true });
         console.log("useAuth:", res.data);
-        const userData = res.data.user;
+        const userData = res.data.data.user;
         const user: User = {
-          id: userData._id,
+          id: userData.id,
           username: userData.username,
-          role: userData.roles.name,
+          role: userData.role.name,
           status: userData.status,
         };
         console.log("user",user);
@@ -56,7 +56,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   //log out
   const logout = async (onSuccess?:()=>void) => {
     try {
-      await api.post("/auth/logout",{}, { withCredentials: true });
+      await api.get("/auth/logout", { withCredentials: true });
       console.log("log out");
       setUser(null);
       setMessage("Đăng xuất thành công!");
@@ -65,7 +65,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       console.log("thất bại",err);
       setMessage("Đăng xuất thất bại!");
     }finally{
-
+      setLoading(false);
     }
   };
 
