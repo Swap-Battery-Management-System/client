@@ -38,18 +38,9 @@ export default function MyVehicles() {
     const fetchVehicles = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem("access_token");
-            if (!token) {
-                toast.error("Bạn cần đăng nhập để xem danh sách xe!");
-                return;
-            }
+            const res = await api.get("/vehicles", { withCredentials: true });
 
-            const res = await api.get("/vehicles", {
-                headers: { Authorization: `Bearer ${token}` },
-                withCredentials: true,
-            });
-
-            console.log("🚗 API trả về:", res.data);
+            console.log("API trả về:", res.data);
 
             const data =
                 res?.data?.data?.vehicle ||
@@ -61,9 +52,14 @@ export default function MyVehicles() {
                 throw new Error("Phản hồi không hợp lệ từ máy chủ.");
             }
 
-            setVehicles(data);
+            const myVehicles = data.filter(
+                (v: any) => v.userId === user?.id
+            );
+
+            console.log("Xe của tôi:", myVehicles);
+            setVehicles(myVehicles);
         } catch (err) {
-            console.error("❌ Lỗi khi lấy danh sách xe:", err);
+            console.error(" Lỗi khi lấy danh sách xe:", err);
             toast.error("Không thể tải danh sách xe!");
         } finally {
             setLoading(false);
@@ -87,7 +83,7 @@ export default function MyVehicles() {
                     Danh sách xe của tôi
                 </h1>
 
-                {/* 🌀 Loading */}
+                {/* Loading */}
                 {loading && (
                     <div className="text-center text-gray-500 mt-10 animate-pulse">
                         Đang tải danh sách xe...
@@ -120,7 +116,7 @@ export default function MyVehicles() {
                                         Số khung (VIN): {v.VIN}
                                     </p>
                                     <p
-                                        className={`text-sm font-medium ${v.status === "approved"
+                                        className={`text-sm font-medium ${v.status === "active"
                                             ? "text-green-600"
                                             : v.status === "pending"
                                                 ? "text-yellow-600"
@@ -130,7 +126,7 @@ export default function MyVehicles() {
                                         Trạng thái:{" "}
                                         {v.status === "pending"
                                             ? "Đang chờ duyệt"
-                                            : v.status === "approved"
+                                            : v.status === "active"
                                                 ? "Đã duyệt"
                                                 : "Từ chối"}
                                     </p>
@@ -181,7 +177,7 @@ export default function MyVehicles() {
                                     <p>
                                         {selectedVehicle.status === "pending"
                                             ? "Đang chờ duyệt"
-                                            : selectedVehicle.status === "approved"
+                                            : selectedVehicle.status === "active"
                                                 ? "Đã duyệt"
                                                 : "Từ chối"}
                                     </p>
