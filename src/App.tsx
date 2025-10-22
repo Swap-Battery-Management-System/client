@@ -25,7 +25,7 @@ import MyVehicles from "./pages/MyVehicles";
 
 import AdminVehicleManagement from "./pages/AdminVehicleManagement";
 import AdminUserManagement from "./pages/AdminUserManagement";
-import AdminStationManagement from "./pages/AdminVehicleManagement";
+import AdminStationManagement from "./pages/AdminStationManagement";
 
 import BatteryManagement from "./pages/BatteryManagement";
 import AdminLayout from "./layout/AdminLayout";

@@ -34,7 +34,7 @@ export default function MyVehicles() {
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    // 🧠 Lấy danh sách xe người dùng hiện tại
+    //  Lấy danh sách xe người dùng hiện tại
     const fetchVehicles = async () => {
         try {
             setLoading(true);
@@ -74,7 +74,7 @@ export default function MyVehicles() {
         fetchVehicles();
     }, []);
 
-    // 📖 Mở modal xem chi tiết
+    //  Mở modal xem chi tiết
     const handleViewDetails = (vehicle: Vehicle) => {
         setSelectedVehicle(vehicle);
         setOpen(true);
