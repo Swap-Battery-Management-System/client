@@ -1,5 +1,7 @@
+
 export type Model={
-    id:string,
-    name:string,
-    batteryTypeId:string,
+     id: string;
+  name: string;
+  brand: string;
+  batteryTypeId: string;
 };

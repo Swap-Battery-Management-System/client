@@ -1,10 +1,10 @@
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
-import { MapPin } from "lucide-react";
+import { MapPin, AlertTriangle, CheckCircle2 } from "lucide-react";
 import {
   Select,
   SelectTrigger,
@@ -12,44 +12,40 @@ import {
   SelectItem,
   SelectValue,
 } from "@/components/ui/select";
-import type { Station } from "@/types/station";
+
 import api from "@/lib/api";
+import { useAuth } from "@/context/AuthContext";
+import { useStation } from "@/context/StationContext";
+
 
 interface BookingForm {
   userName: string;
-  station: string;
-  vehicleType: string;
-  batteryType: string;
+  stationId: string;
+  vehicleId: string;
   date: string;
   time: string;
-  description: string;
+  note: string;
+}
+interface BookingPayload {
+  scheduleTime: string;
+  note?: string;
+  vehicleId: string;
+  stationId: string;
+}
+
+interface Vehicle {
+  id: string;
+  status: "pending" | "active" | "inactive";
+  batteryTypeId: string;
 }
 
 export default function Booking() {
   const navigate = useNavigate();
-  const [stations,setStations]=useState<Station[]>([]);
+  const { user } = useAuth();
+  const { fetchAllStation, stations } = useStation();
 
-  // 🔹 Data test sẵn
-  const userName = "Nguyễn Văn A";
-  // const stations = [
-  //   "Trạm Vincom Đồng Khởi",
-  //   "Trạm Landmark 81",
-  //   "Trạm Quận 7",
-  //   "Trạm Gò Vấp",
-  // ];
-  const fetchAllStation = async () => {
-    try {
-      const res = await api.get("/stations", { withCredentials: true });
-      const data: Station[] = res.data.data.station;
-      setStations(data);
-      console.log("ds tram: ", res.data);
-    } catch (err) {
-      console.log("Lỗi khi lấy danh sách trạm:", err);
-    } 
-  };
-
-  const vehicles = ["VinFast Klara S", "VinFast Feliz", "VinFast VF3"];
-
+  // const vehicles = ["VinFast Klara S", "VinFast Feliz", "VinFast VF3"];
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [showModal, setShowModal] = useState(false);
 
   const now = new Date();
@@ -59,21 +55,58 @@ export default function Booking() {
   const maxDate = in24h.toISOString().split("T")[0];
   const minTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
   const maxTime = "23:59";
+  const location = useLocation();
+  const defaultStationId = location.state?.id ?? "";
+  const [hasCompatibleBattery, setHasCompatibleBattery] = useState<
+    boolean | null
+  >(null);
+  // const [vehicles,setVehicles]=useState<
 
   const [form, setForm] = useState<BookingForm>({
-    userName,
-    station: "",
-    vehicleType: "",
-    batteryType: "",
+    userName: user?.fullName ?? "",
+    stationId: defaultStationId,
+    vehicleId: "",
     date: "",
     time: "",
-    description: "",
+    note: "",
   });
 
+  const fetchAllAvailableVehicle = async () => {
+    try {
+      const res = await api.get("/vehicles", { withCredentials: true });
+      const data = res.data.data.vehicle;
 
-//xử lý thay đổi
+      const filtered: Vehicle[] = data
+        .filter((v: any) => v.status === "active" && v.userId === user?.id)
+        .map((v: any) => ({
+          id: v.id,
+          status: v.status,
+          batteryTypeId: v.model.batteryType.id,
+        }));
+      console.log(res.data);
+      console.log("payloadVehicle:",filtered);
+      setVehicles(filtered);
+    } catch (err) {
+      console.log("khong the lay ds xe:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchAllStation();
+    fetchAllAvailableVehicle();
+  }, []);
+
+  //gọi hàm kiểm tra pin available khi stationId or VehicleId thay đổi
+  useEffect(()=>{
+    if(form.stationId&&form.vehicleId){
+      checkAvailableBattery();
+    }
+  },[form.stationId,form.vehicleId])
+
+  //xử lý khi select
   const handleSelectChange = (name: string, value: string) => {
-    setForm({ ...form, [name]: value });
+    const updatedForm = { ...form, [name]: value };
+    setForm(updatedForm);
   };
 
   const handleChange = (
@@ -82,33 +115,51 @@ export default function Booking() {
     setForm({ ...form, [e.target.name]: e.target.value });
   };
 
-  //xử lý submit
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    const { station, vehicleType, batteryType, date, time } = form;
-
-    if (!station || !vehicleType || !batteryType || !date || !time) {
-      alert("⚠️ Vui lòng điền đầy đủ tất cả thông tin bắt buộc!");
-      return;
+  //kiểm tra có pin phù hợp hay không
+  const checkAvailableBattery = () => {
+    const vehicle = vehicles.find((v) => v.id === form.vehicleId);
+    const station = stations.find((s) => s.id === form.stationId);
+    if (vehicle) {
+      if (station) {
+        const compatible = station.batteries.some(
+          (b) => b.batteryTypeId === vehicle.batteryTypeId && b.status === "available"
+        );
+        if (!compatible) {
+          setHasCompatibleBattery(false);
+        } else {
+          setHasCompatibleBattery(true);
+        }
+      }
     }
-
-    const now = new Date();
-    const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
-    const selected = new Date(`${form.date}T${form.time}`);
-
-    if (selected < now || selected > in24h) {
-      alert("⚠️ Vui lòng chọn ngày giờ trong vòng 24 giờ!");
-      return;
-    }
-
-    console.log("Booking submitted:", form);
-    setShowModal(true);
   };
 
-  useEffect(()=>{
-    fetchAllStation();
-  },[])
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const { stationId, vehicleId, date, time, note } = form;
+
+    if (!stationId || !vehicleId || !date || !time) {
+      alert("⚠️ Vui lòng điền đầy đủ thông tin bắt buộc!");
+      return;
+    }
+
+    const scheduleTime = new Date(`${date}T${time}`).toISOString();
+    const payload: BookingPayload = {
+      scheduleTime,
+      note,
+      vehicleId,
+      stationId,
+    };
+
+    console.log(payload);
+
+    try {
+      const res=await api.post("/bookings", payload, { withCredentials: true });
+      setShowModal(true);     
+    } catch (err) {
+      console.log(err);
+      alert("Đặt lịch thất bại!");
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-[#E8F6EF] via-white to-[#EAFDF6] flex items-start py-12">
@@ -119,7 +170,6 @@ export default function Booking() {
           </h1>
 
           <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-6">
-            {/* Cột trái */}
             <div className="flex flex-col gap-4">
               <div>
                 <Label htmlFor="userName" className="text-[#38A3A5] mb-2 block">
@@ -138,8 +188,9 @@ export default function Booking() {
                 <Label className="text-[#38A3A5] mb-2 block">Tên trạm</Label>
                 <div className="relative">
                   <Select
+                    value={form.stationId}
                     onValueChange={(value) =>
-                      handleSelectChange("station", value)
+                      handleSelectChange("stationId", value)
                     }
                   >
                     <SelectTrigger className="w-full pr-10">
@@ -172,7 +223,7 @@ export default function Booking() {
                 <Label className="text-[#38A3A5] mb-2 block">Xe của bạn</Label>
                 <Select
                   onValueChange={(value) =>
-                    handleSelectChange("vehicleType", value)
+                    handleSelectChange("vehicleId", value)
                   }
                 >
                   <SelectTrigger className="w-full">
@@ -180,35 +231,30 @@ export default function Booking() {
                   </SelectTrigger>
                   <SelectContent>
                     {vehicles.map((vh) => (
-                      <SelectItem key={vh} value={vh}>
-                        {vh}
+                      <SelectItem key={vh.id} value={vh.id}>
+                        {vh.id}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
+
+                {hasCompatibleBattery === false && (
+                  <div className="flex items-center gap-2 mt-2 text-red-500 text-sm">
+                    <AlertTriangle className="w-4 h-4" />
+                    <span>Trạm này không có pin phù hợp với xe bạn.</span>
+                  </div>
+                )}
+
+                {hasCompatibleBattery === true && (
+                  <div className="flex items-center gap-2 mt-2 text-green-600 text-sm">
+                    <CheckCircle2 className="w-4 h-4" />
+                    <span>Có pin phù hợp, bạn có thể đặt lịch.</span>
+                  </div>
+                )}
               </div>
             </div>
 
-            {/* Cột phải */}
             <div className="flex flex-col gap-4">
-              <div>
-                <Label className="text-[#38A3A5] mb-2 block">Loại pin</Label>
-                <Select
-                  onValueChange={(value) =>
-                    handleSelectChange("batteryType", value)
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <SelectValue placeholder="Chọn loại pin" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Pin 48V">Pin 48V</SelectItem>
-                    <SelectItem value="Pin 60V">Pin 60V</SelectItem>
-                    <SelectItem value="Pin 72V">Pin 72V</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               <div className="flex gap-4">
                 <div className="flex-1">
                   <Label className="text-[#38A3A5] mb-2 block">Ngày</Label>
@@ -221,7 +267,6 @@ export default function Booking() {
                     onChange={handleChange}
                   />
                 </div>
-
                 <div className="flex-1">
                   <Label className="text-[#38A3A5] mb-2 block">Giờ</Label>
                   <Input
@@ -236,16 +281,13 @@ export default function Booking() {
               </div>
 
               <div>
-                <Label
-                  htmlFor="description"
-                  className="text-[#38A3A5] mb-2 block"
-                >
+                <Label htmlFor="note" className="text-[#38A3A5] mb-2 block">
                   Ghi chú (không bắt buộc)
                 </Label>
                 <textarea
-                  id="description"
-                  name="description"
-                  value={form.description}
+                  id="note"
+                  name="note"
+                  value={form.note}
                   onChange={handleChange}
                   className="w-full p-2 border rounded"
                   rows={4}
@@ -258,11 +300,7 @@ export default function Booking() {
               <Button
                 type="submit"
                 disabled={
-                  !form.station ||
-                  !form.vehicleType ||
-                  !form.batteryType ||
-                  !form.date ||
-                  !form.time
+                  !form.stationId || !form.vehicleId || !form.date || !form.time
                 }
                 className="bg-[#38A3A5] hover:bg-[#2C9A95] text-white px-8 py-3 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >

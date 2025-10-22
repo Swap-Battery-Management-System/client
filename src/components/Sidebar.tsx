@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, replace, useNavigate } from "react-router-dom";
 import {
   Menu,
   User,
@@ -15,6 +15,7 @@ import {
   HelpCircle,
   Bike,
 } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -22,6 +23,14 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const {logout}=useAuth();
+  const navigate=useNavigate();
+
+  const handleLogout=async()=>{
+    logout(()=>{
+      navigate("/",{replace:true});
+    })
+  }
   return (
     <>
       {/* Sidebar chính */}
@@ -66,13 +75,24 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 label="Cài đặt bảo mật"
                 onClick={onClose}
               />
+
               <NavItem
+                to="#"
+                icon={<LogOut />}
+                label="Đăng xuất"
+                onClick={() => {
+                  handleLogout();
+                  onClose(); // nếu muốn đóng sidebar
+                }}
+                className="text-red-500 hover:text-red-600"
+              />
+              {/* <NavItem
                 to="/logout"
                 icon={<LogOut />}
                 label="Đăng xuất"
                 onClick={onClose}
                 className="text-red-500 hover:text-red-600"
-              />
+              /> */}
             </div>
           </div>
 
@@ -150,7 +170,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   );
 }
 
-/* 🔹 Component con: item menu riêng */
+/*Component con: item menu riêng */
 interface NavItemProps {
   to: string;
   icon: React.ReactNode;

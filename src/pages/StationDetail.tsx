@@ -64,7 +64,7 @@ export default function StationDetail() {
       : `https://www.google.com/maps?q=${station.latitude},${station.longitude}&hl=vi&output=embed`;
 
   const handleBooking=()=>{
-    navigate(`/home/booking`);
+    navigate(`/home/booking`,{state:{id:station.id}});
   }
 
   return (
