@@ -38,6 +38,8 @@ export default function OtpVerify() {
         try {
             await api.post("/auth/send-otp", { email });
             toast.success("OTP mới đã được gửi!");
+            setOtp(["", "", "", "", "", ""]);
+            inputRefs.current[0]?.focus();
         } catch {
             toast.error("Không thể gửi lại OTP!");
         } finally {

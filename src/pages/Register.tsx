@@ -12,15 +12,52 @@ export default function Register() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
+  const [emailError, setEmailError] = useState(""); // 👈 Thêm state để hiển thị lỗi nhỏ dưới input
+
+  const checkEmail = async (email: string) => {
+    try {
+      const res = await api.post("/auth/check", { email });
+
+      if (res.status === 204) {
+        console.log("✅ Email chưa tồn tại.");
+        return false;
+      }
+      return true;
+    } catch (err: any) {
+      if (err.response && err.response.status === 404) {
+        console.log("✅ Email chưa tồn tại.");
+        return false;
+      }
+      console.log("❌ Đã xảy ra lỗi khi kiểm tra email:", err);
+      return true;
+    }
+  };
 
   const validateEmail = (email: string) =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
   const handleSendOtp = async () => {
-    if (!email) return toast.error("Vui lòng nhập email!");
-    if (!validateEmail(email)) return toast.error("Email không hợp lệ!");
+    setEmailError(""); // reset lỗi cũ
+
+    if (!email) {
+      setEmailError("Vui lòng nhập email!");
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      setEmailError("Email không hợp lệ!");
+      return;
+    }
+
     setLoading(true);
     try {
+      const exist = await checkEmail(email);
+      if (exist) {
+        setEmailError("Email đã được sử dụng. Vui lòng thử email khác.");
+        setLoading(false);
+        return;
+      }
+
       await api.post("/auth/send-otp", { email });
       toast.success("OTP đã được gửi tới email của bạn!");
       navigate("/register/verify", { state: { email } });
@@ -51,16 +88,32 @@ export default function Register() {
         </h2>
 
         <label className="text-sm font-medium">Email</label>
-        <div className="relative mb-4">
+        <div className="relative mb-6">
           <Mail className="absolute left-3 top-3 text-[#38A3A5]" size={18} />
+
           <Input
             type="email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={(e) => {
+              setEmail(e.target.value);
+              setEmailError("");
+            }}
             placeholder="Nhập email của bạn"
-            className="pl-10 border-2 border-emerald-500 rounded-md"
+            className={`pl-10 border-2 rounded-md pr-3 ${emailError
+                ? "border-red-500 focus-visible:ring-red-500"
+                : "border-emerald-500 focus-visible:ring-emerald-500"
+              }`}
           />
+
+          {/* 👇 Dòng lỗi nằm sát ngay dưới input, căn phải */}
+          {emailError && (
+            <p className="absolute right-1 bottom-[-18px] text-red-500 text-xs">
+              {emailError}
+            </p>
+          )}
         </div>
+
+
 
         <Button
           className="w-full bg-[#57CC99] hover:bg-[#38A3A5] text-white"
