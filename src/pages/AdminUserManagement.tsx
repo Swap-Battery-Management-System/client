@@ -17,11 +17,16 @@ export default function AdminUserManagement() {
     const fetchUsers = async () => {
         try {
             setLoading(true);
-            const res = await api.get("/users"); // GET /users
-            const list = Array.isArray(res.data.data) ? res.data.data : [];
-            setUsers(list);
+            const res = await api.get("/users");
 
+            // ✅ Lấy mảng user đúng vị trí: data.data.users
+            const list = Array.isArray(res.data.data?.users)
+                ? res.data.data.users
+                : [];
+
+            setUsers(list);
         } catch (err: any) {
+            console.error("Fetch users error:", err);
             toast.error("Không thể tải danh sách người dùng ❌");
         } finally {
             setLoading(false);
@@ -38,9 +43,9 @@ export default function AdminUserManagement() {
     const handleDelete = async (id: string) => {
         if (!confirm("Bạn có chắc muốn xoá người dùng này?")) return;
         try {
-            await api.delete(`/users/${id}`); // DELETE /users/:id
+            await api.delete(`/users/${id}`);
             toast.success("Đã xoá người dùng thành công ✅");
-            setUsers(users.filter((u) => u.id !== id));
+            setUsers((prev) => prev.filter((u) => u.id !== id));
         } catch (err) {
             toast.error("Xoá người dùng thất bại ❌");
         }
@@ -53,8 +58,8 @@ export default function AdminUserManagement() {
         const newName = prompt("Nhập tên mới:");
         if (!newName) return;
         try {
-            const res = await api.patch("/users/complete", {
-                fullname: newName,
+            await api.patch("/users/complete", {
+                fullName: newName,
             });
             toast.success("Cập nhật thành công!");
             fetchUsers();
@@ -64,16 +69,15 @@ export default function AdminUserManagement() {
     };
 
     // ==========================
-    // ➕ 4. Thêm user mới (POST /users)
+    // ➕ 4. Thêm user mới
     // ==========================
     const handleCreateUser = async () => {
-        const username = prompt("Tên đăng nhập:");
         const email = prompt("Email:");
         const password = prompt("Mật khẩu:");
-        if (!username || !email || !password) return;
+        if (!email || !password) return;
+
         try {
             const res = await api.post("/users", {
-                username,
                 email,
                 password,
                 role: "driver",
@@ -92,16 +96,34 @@ export default function AdminUserManagement() {
     const filteredUsers = users.filter(
         (u) =>
             u.id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            u.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            u.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
             u.email?.toLowerCase().includes(searchTerm.toLowerCase())
     );
+
+    // ==========================
+    // 📄 Hiển thị tên vai trò (từ roleId)
+    // ==========================
+    const getRoleName = (roleId: string) => {
+        switch (roleId) {
+            case "29cfa2e4-4264-4da5-9c39-ab0fa7f40599":
+                return "Admin";
+            case "df04443d-75f1-4ef4-a475-54627ddf2d8a":
+                return "Staff";
+            case "a0a2ba5c-e53a-4690-8521-bf9c2728a013":
+                return "Driver";
+            default:
+                return "Unknown";
+        }
+    };
 
     // ==========================
     // 📄 UI Render
     // ==========================
     return (
         <div className="p-6 space-y-6 min-h-screen">
-            <h2 className="text-center text-2xl font-bold text-[#38A3A5]">Quản lý Người dùng</h2>
+            <h2 className="text-center text-2xl font-bold text-[#38A3A5]">
+                Quản lý Người dùng
+            </h2>
 
             <div className="p-4 space-y-4">
                 {/* Search */}
@@ -117,7 +139,10 @@ export default function AdminUserManagement() {
                         <FaSearch className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
                     </div>
 
-                    <Button onClick={() => handleCreateUser()} className="bg-[#38A3A5] text-white text-sm">
+                    <Button
+                        onClick={() => handleCreateUser()}
+                        className="bg-[#38A3A5] text-white text-sm"
+                    >
                         + Thêm người dùng
                     </Button>
 
@@ -131,19 +156,25 @@ export default function AdminUserManagement() {
                     <table className="min-w-full table-auto text-center border-collapse">
                         <thead className="bg-[#E6F7F7] text-[#38A3A5]">
                             <tr>
-                                {["STT", "ID", "Họ & Tên", "Email", "Vai trò", "Trạng thái", "Hành động"].map(
-                                    (header) => (
-                                        <th key={header} className="border px-2 py-1">
-                                            {header}
-                                        </th>
-                                    )
-                                )}
+                                {[
+                                    "STT",
+                                    "ID",
+                                    "Họ & Tên",
+                                    "Email",
+                                    "Vai trò",
+                                    "Trạng thái",
+                                    "Hành động",
+                                ].map((header) => (
+                                    <th key={header} className="border px-2 py-1">
+                                        {header}
+                                    </th>
+                                ))}
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan={7} className="text-center py-4 text-gray-500">
+                                    <td colSpan={7} className="py-4 text-gray-500">
                                         Đang tải dữ liệu...
                                     </td>
                                 </tr>
@@ -151,12 +182,11 @@ export default function AdminUserManagement() {
                                 filteredUsers.map((u, idx) => (
                                     <tr key={u.id} className="border-b hover:bg-gray-100">
                                         <td className="px-2 py-1">{idx + 1}</td>
-                                        <td className="px-2 py-1">{u.id}</td>
-                                        <td className="px-2 py-1">{u.fullname || "—"}</td>
+                                        <td className="px-2 py-1">{u.id?.slice(0, 8)}</td>
+                                        <td className="px-2 py-1">{u.fullName || "—"}</td>
                                         <td className="px-2 py-1">{u.email}</td>
-                                        <td className="px-2 py-1">{u.role}</td>
+                                        <td className="px-2 py-1">{getRoleName(u.roleId)}</td>
                                         <td className="px-2 py-1">{u.status}</td>
-
                                         <td className="px-2 py-1 flex flex-row gap-2 justify-center">
                                             <button
                                                 className="text-indigo-600 hover:underline"
@@ -181,7 +211,7 @@ export default function AdminUserManagement() {
                                 ))
                             ) : (
                                 <tr>
-                                    <td colSpan={7} className="text-center py-4 text-gray-500">
+                                    <td colSpan={7} className="py-4 text-gray-500">
                                         Không tìm thấy người dùng phù hợp
                                     </td>
                                 </tr>
@@ -201,11 +231,11 @@ export default function AdminUserManagement() {
                     {selectedUser && (
                         <div className="mt-4 space-y-3 text-sm text-gray-700">
                             <p><strong>ID:</strong> {selectedUser.id}</p>
-                            <p><strong>Họ & Tên:</strong> {selectedUser.fullname}</p>
+                            <p><strong>Họ & Tên:</strong> {selectedUser.fullName || "—"}</p>
                             <p><strong>Email:</strong> {selectedUser.email}</p>
-                            <p><strong>Vai trò:</strong> {selectedUser.role}</p>
+                            <p><strong>Vai trò:</strong> {getRoleName(selectedUser.roleId)}</p>
                             <p><strong>Trạng thái:</strong> {selectedUser.status}</p>
-                            <p><strong>Ngày sinh:</strong> {selectedUser.dateOfBirth}</p>
+                            <p><strong>Ngày sinh:</strong> {selectedUser.dateOfBirth || "—"}</p>
                         </div>
                     )}
                 </DialogContent>
