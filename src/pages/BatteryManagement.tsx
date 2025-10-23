@@ -4,6 +4,7 @@ import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
 import type { Battery } from "@/types/battery";
 import type { BatteryType } from "@/types/batteryType";
+import { useStation } from "@/context/StationContext";
 
 export default function BatteryManagement() {
   const { user } = useAuth();
@@ -11,6 +12,7 @@ export default function BatteryManagement() {
 
   const [batteries, setBatteries] = useState<Battery[]>([]);
   const [batteryTypes, setBatteryTypes] = useState<BatteryType[]>([]);
+  const {fetchAllStation,stations}=useStation();
 
   const [searchId, setSearchId] = useState("");
   const [filterType, setFilterType] = useState("");
@@ -41,7 +43,11 @@ export default function BatteryManagement() {
   useEffect(() => {
     fetchBatteries();
     fetchBatteryTypes();
+    fetchAllStation();
+    
   }, []);
+
+
 
   // Map nhanh id => name
   const typeMap: Record<string, string> = Object.fromEntries(
@@ -50,14 +56,18 @@ export default function BatteryManagement() {
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case "Available":
-        return "text-green-600 font-semibold";
-      case "In Use":
-        return "text-orange-500 font-semibold";
-      case "Fault":
-        return "text-red-500 font-semibold";
+      case "available":
+        return "text-green-600 font-semibold"; // Sẵn sàng
+      case "in_use":
+        return "text-orange-500 font-semibold"; // Đang sử dụng
+      case "in_charged":
+        return "text-blue-500 font-semibold"; // Đang sạc
+      case "faulty":
+        return "text-red-500 font-semibold"; // Lỗi
+      case "in_transit":
+        return "text-purple-500 font-semibold"; // Đang vận chuyển
       default:
-        return "";
+        return "text-gray-500 font-semibold"; // Không xác định
     }
   };
 
@@ -70,6 +80,12 @@ export default function BatteryManagement() {
       (filterStatus ? pin.status === filterStatus : true)
     );
   });
+
+  //lấy tên trạm theo id pin
+  const getStationName=(id:string)=>{
+    const st=stations.find((s)=>s.id===id);
+    return st?st.name:"không xác định";
+  };
 
   // Các hàm action demo
   const handleAdd = () => alert("Thêm pin mới");
@@ -115,10 +131,12 @@ export default function BatteryManagement() {
             onChange={(e) => setFilterStatus(e.target.value)}
             className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-200"
           >
-            <option value="">Trạng thái</option>
-            <option value="Available">Available</option>
-            <option value="In Use">In Use</option>
-            <option value="Fault">Fault</option>
+            <option value="">Tất cả trạng thái</option>
+            <option value="available"> Sẵn sàng</option>
+            <option value="in_use"> Đang sử dụng</option>
+            <option value="charging"> Đang sạc</option>
+            <option value="in_transit"> Đang vận chuyển</option>
+            <option value="faulty"> Lỗi</option>
           </select>
 
           <button
@@ -182,7 +200,7 @@ export default function BatteryManagement() {
                   <td className={`px-2 py-1 ${getStatusColor(pin.status)}`}>
                     {pin.status}
                   </td>
-                  <td className="px-2 py-1">{pin.stationId}</td>
+                  <td className="px-2 py-1">{getStationName(pin.stationId)}</td>
                   <td className="px-2 py-1">{pin.manufacturedAt}</td>
                   <td className="px-2 py-1">
                     <div className="flex items-center justify-center gap-2">
