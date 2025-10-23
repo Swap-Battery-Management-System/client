@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
+import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
@@ -16,19 +17,20 @@ import {
 interface Vehicle {
     id: string;
     licensePlates: string;
+    name: string;
     VIN: string;
-    status: string; // “pending”, “approved”, “rejected”...
+    status: string;
+    userId: string;
     model?: {
         id: string;
         name: string;
         manufacturer?: string;
     };
-    createdAt: string;
-    modelId?: string;
 }
 
 export default function MyVehicles() {
     const { user } = useAuth();
+    const navigate = useNavigate();
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
     const [open, setOpen] = useState(false);
@@ -40,11 +42,9 @@ export default function MyVehicles() {
             setLoading(true);
             const res = await api.get("/vehicles", { withCredentials: true });
 
-            console.log("API trả về:", res.data);
-
             const data =
-                res?.data?.data?.vehicle ||
-                res?.data?.vehicle ||
+                res?.data?.data?.vehicles ||
+                res?.data?.vehicles ||
                 res?.data?.data ||
                 [];
 
@@ -67,14 +67,42 @@ export default function MyVehicles() {
     };
 
     useEffect(() => {
-        fetchVehicles();
-    }, []);
+        if (user?.id) {
+            fetchVehicles();
+        }
+    }, [user]);
 
     //  Mở modal xem chi tiết
-    const handleViewDetails = (vehicle: Vehicle) => {
-        setSelectedVehicle(vehicle);
+    const handleViewDetails = (vehicles: Vehicle) => {
+        setSelectedVehicle(vehicles);
         setOpen(true);
     };
+
+    // 🗑️ Hủy liên kết (Xóa xe)
+    const handleUnlinkVehicle = async (vehicleId: string) => {
+        if (!vehicleId) return;
+        if (!window.confirm("Bạn có chắc chắn muốn hủy liên kết (xóa) xe này không?")) return;
+
+        try {
+            const res = await api.delete(`/vehicles/${vehicleId}`, { withCredentials: true });
+
+            if (res.data?.success) {
+                toast.success(" Xe đã được xóa thành công!");
+                setOpen(false);
+                fetchVehicles();
+            } else {
+                toast.error("Không thể xóa xe! Vui lòng thử lại.");
+            }
+        } catch (err: any) {
+            console.error(" Lỗi khi xóa xe:", err);
+            if (err.response?.status === 404) {
+                toast.error("Xe không tồn tại!");
+            } else {
+                toast.error("Đã xảy ra lỗi máy chủ khi xóa xe.");
+            }
+        }
+    };
+
 
     return (
         <div className="flex h-screen bg-[#E9F8F8]">
@@ -92,8 +120,15 @@ export default function MyVehicles() {
 
                 {/* Nếu chưa có xe */}
                 {!loading && vehicles.length === 0 && (
-                    <div className="text-center text-gray-500 mt-10">
-                        Bạn chưa đăng ký xe nào.
+                    <div className="flex flex-col items-center justify-center mt-16 text-center space-y-4">
+                        <p className="text-gray-600 text-lg">Bạn chưa đăng ký xe nào.</p>
+
+                        <Button
+                            onClick={() => navigate("/home/register-vehicle")}
+                            className="bg-[#38A3A5] hover:bg-[#2C8C8E] text-white px-6 py-3 text-lg rounded-xl shadow-md transition-all"
+                        >
+                            + Đăng ký xe ngay
+                        </Button>
                     </div>
                 )}
 
@@ -107,8 +142,11 @@ export default function MyVehicles() {
                             >
                                 <div className="space-y-2">
                                     <h2 className="text-xl font-semibold text-[#38A3A5]">
-                                        {v.licensePlates}
+                                        {v.name}
                                     </h2>
+                                    <p className="text-sm text-gray-600">
+                                        Biển số: {v.licensePlates}
+                                    </p>
                                     <p className="text-sm text-gray-600">
                                         Model: {v.model?.name || "Không rõ"}
                                     </p>
@@ -138,7 +176,7 @@ export default function MyVehicles() {
                                         className="text-[#38A3A5] border-[#38A3A5] hover:bg-[#38A3A5] hover:text-white transition-all"
                                         onClick={() => handleViewDetails(v)}
                                     >
-                                        Xem chi tiết
+                                        Quản Lý
                                     </Button>
                                 </div>
                             </Card>
@@ -161,6 +199,10 @@ export default function MyVehicles() {
                         {selectedVehicle && (
                             <div className="space-y-3 mt-3">
                                 <div>
+                                    <Label className="text-[#38A3A5]">Tên:</Label>
+                                    <p>{selectedVehicle.name}</p>
+                                </div>
+                                <div>
                                     <Label className="text-[#38A3A5]">Biển số:</Label>
                                     <p>{selectedVehicle.licensePlates}</p>
                                 </div>
@@ -182,25 +224,35 @@ export default function MyVehicles() {
                                                 : "Từ chối"}
                                     </p>
                                 </div>
-                                <div>
-                                    <Label className="text-[#38A3A5]">Ngày đăng ký:</Label>
-                                    <p>
-                                        {new Date(
-                                            selectedVehicle.createdAt
-                                        ).toLocaleString("vi-VN")}
-                                    </p>
-                                </div>
                             </div>
                         )}
 
-                        <div className="flex justify-end mt-6">
+                        <div className="flex justify-between mt-6">
                             <Button
-                                onClick={() => setOpen(false)}
+                                onClick={() => {
+                                    console.log(
+                                        "🟦 Cập nhật xe được chọn:",
+                                        selectedVehicle?.id
+                                    );
+                                    if (selectedVehicle?.id) {
+                                        navigate(`/home/update-vehicle/${selectedVehicle.id}`);
+                                    } else {
+                                        toast.error("Không tìm thấy thông tin xe để cập nhật.");
+                                    }
+                                }}
                                 className="bg-[#38A3A5] hover:bg-[#2C8C8E] text-white"
                             >
-                                Đóng
+                                Cập nhật
+                            </Button>
+
+                            <Button
+                                onClick={() => handleUnlinkVehicle(selectedVehicle?.id!)}
+                                className="bg-red-500 hover:bg-red-600 text-white"
+                            >
+                                Hủy liên kết
                             </Button>
                         </div>
+
                     </DialogContent>
                 </Dialog>
             </main>
