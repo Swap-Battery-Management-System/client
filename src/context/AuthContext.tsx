@@ -38,7 +38,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const user: User = {
           id: userData.id,
           username: userData.username,
-          role: userData.role.name,
+          role: userData.role,
           status: userData.status,
         };
         console.log("user", user);
