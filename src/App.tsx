@@ -31,6 +31,7 @@ import BatteryManagement from "./pages/BatteryManagement";
 import AdminLayout from "./layout/AdminLayout";
 import ResetPassword from "./pages/ResetPassword";
 
+
 function App() {
   return (
     <>
@@ -50,9 +51,9 @@ function App() {
         <Route
           path="/home"
           element={
-            // <ProtectedRoute roles={["driver"]}>
-            <Layout />
-            // </ProtectedRoute>
+            <ProtectedRoute roles={["driver"]}>
+              <Layout />
+            </ProtectedRoute>
           }
         >
           <Route index element={<Home />} />
@@ -101,7 +102,7 @@ function App() {
           <Route path="manage-vehicles" element={<AdminVehicleManagement />} />
         </Route>
       </Routes>
-      <Toaster position="top-center" richColors />
+      <Toaster richColors position="top-center" />
     </>
   );
 }

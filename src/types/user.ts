@@ -1,16 +1,19 @@
-import type { Role } from "./roles";
 
 export interface User {
   id: string;
-  fullname?: string;
-  username: string;
-  gender?: boolean;
-  email?: string;
-  phone?: string;
-  address?: string;
-  role: {
-    id: string,
-    name: string,
-  };
-  avatar?: string;
+  username: string | null;
+  fullName: string | null;
+  email: string;
+  phoneNumber: string | null;
+  dateOfBirth: string | null;
+  gender: boolean | null;
+  address: string | null;
+  avatarUrl: string | null;
+  role:{
+    id:string,
+    name:string,
+  };            // "driver", "admin", ...
+  status: string;
+  googleId?: string | null;
+  createdAt?: string;
 }

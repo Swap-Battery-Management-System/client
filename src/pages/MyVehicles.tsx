@@ -1,246 +1,335 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useNavigate } from "react-router-dom";
-import { toast } from "sonner";
 import api from "@/lib/api";
+import { toast } from "sonner";
+
 import { useAuth } from "@/context/AuthContext";
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
 
 interface Vehicle {
+  id: string;
+  licensePlates: string;
+  VIN: string;
+  status: string;
+  model?: {
     id: string;
-    licensePlates: string;
     name: string;
-    VIN: string;
-    status: string;
-    userId: string;
-    model?: {
-        id: string;
-        name: string;
-        manufacturer?: string;
+    brand?: string;
+    batteryType?: {
+      id: string;
+      name: string;
     };
+  };
+  name?: string;
 }
 
 export default function MyVehicles() {
-    const { user } = useAuth();
-    const navigate = useNavigate();
-    const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-    const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
-    const [open, setOpen] = useState(false);
-    const [loading, setLoading] = useState(true);
+  const { user } = useAuth();
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [loading, setLoading] = useState(true);
 
-    //  Lấy danh sách xe người dùng hiện tại
-    const fetchVehicles = async () => {
-        try {
-            setLoading(true);
-            const res = await api.get("/vehicles", { withCredentials: true });
+  // Modal cập nhật thông tin
+  const [editOpen, setEditOpen] = useState(false);
+  const [editVehicle, setEditVehicle] = useState<Vehicle | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editPlate, setEditPlate] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
 
-            const data =
-                res?.data?.data?.vehicles ||
-                res?.data?.vehicles ||
-                res?.data?.data ||
-                [];
+  // Modal xác nhận thay đổi status
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmVehicle, setConfirmVehicle] = useState<Vehicle | null>(null);
+  const [confirmAction, setConfirmAction] = useState<
+    "cancel" | "relink" | null
+  >(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
 
-            if (!Array.isArray(data)) {
-                throw new Error("Phản hồi không hợp lệ từ máy chủ.");
-            }
+  // Lấy danh sách xe người dùng hiện tại
+  const fetchVehicles = async () => {
+    try {
+      setLoading(true);
+      const res = await api.get("/vehicles", { withCredentials: true });
+      const data = res.data.data?.vehicles || [];
+      setVehicles(data);
+    } catch (err) {
+      console.error("Lỗi khi lấy danh sách xe:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-            const myVehicles = data.filter(
-                (v: any) => v.userId === user?.id
-            );
+  useEffect(() => {
+    fetchVehicles();
+  }, []);
 
-            console.log("Xe của tôi:", myVehicles);
-            setVehicles(myVehicles);
-        } catch (err) {
-            console.error(" Lỗi khi lấy danh sách xe:", err);
-            // toast.error("Không thể tải danh sách xe!");
-        } finally {
-            setLoading(false);
-        }
-    };
+  // Hiển thị trạng thái (label + màu)
+  const renderStatus = (status: string) => {
+    switch (status?.toLowerCase()) {
+      case "pending":
+        return { label: "Đang chờ duyệt", color: "text-yellow-600" };
+      case "active":
+        return { label: "Đã duyệt", color: "text-green-600" };
+      case "invalid":
+        return { label: "Từ chối", color: "text-red-600" };
+      case "inactive":
+        return { label: "Đã hủy liên kết", color: "text-gray-500" };
+      default:
+        return { label: "Không rõ", color: "text-gray-700" };
+    }
+  };
 
-    useEffect(() => {
-        if (user?.id) {
-            fetchVehicles();
-        }
-    }, [user]);
+  // Mở modal cập nhật thông tin (name & licensePlates)
+  const openEditModal = (v: Vehicle) => {
+    setEditVehicle(v);
+    setEditName(v.name || "");
+    setEditPlate(v.licensePlates || "");
+    setEditOpen(true);
+  };
 
-    //  Mở modal xem chi tiết
-    const handleViewDetails = (vehicles: Vehicle) => {
-        setSelectedVehicle(vehicles);
-        setOpen(true);
-    };
+  // cập nhập thông tin xe
+  const handleSaveEdit = async () => {
+    if (!editVehicle) return;
+    setEditLoading(true);
+    try {
+      await api.patch(
+        `/vehicles/${editVehicle.id}`,
+        {
+          name: editName?.trim(),
+          licensePlates: editPlate?.trim(),
+        },
+        { withCredentials: true }
+      );
+      toast.success("Cập nhật thông tin xe thành công");
+      setEditOpen(false);
+      fetchVehicles();
+    } catch (err) {
+      console.error("Lỗi cập nhật thông tin xe:", err);
+      toast.error("Cập nhật thất bại");
+    } finally {
+      setEditLoading(false);
+    }
+  };
 
-    //  Hủy liên kết (Xóa xe)
-    const handleUnlinkVehicle = async (vehicleId: string) => {
-        if (!vehicleId) return;
-        if (!window.confirm("Bạn có chắc chắn muốn hủy liên kết xe này không?")) return;
+  // Mở modal xác nhận cho actions liên quan status
+  const openConfirmModal = (v: Vehicle, action: "cancel" | "relink") => {
+    setConfirmVehicle(v);
+    setConfirmAction(action);
+    setConfirmOpen(true);
+  };
 
-        try {
-            const res = await api.delete(`/vehicles/${vehicleId}`, { withCredentials: true });
+  // Xử lý xác nhận: cancel => inactive, relink => pending
+  const handleConfirmAction = async () => {
+    // if (!confirmVehicle || !confirmAction) return;
+    // setConfirmLoading(true);
+    // try {
+    //   const newStatus = confirmAction === "cancel" ? "inactive" : "pending";
+    //   await api.put(
+    //     `/vehicles/${confirmVehicle.id}/status`,
+    //     { status: newStatus },
+    //     { withCredentials: true }
+    //   );
+    //   toast.success("Cập nhật trạng thái thành công");
+    //   setConfirmOpen(false);
+    //   fetchVehicles();
+    // } catch (err) {
+    //   console.error("Lỗi khi cập nhật trạng thái:", err);
+    //   toast.error("Cập nhật trạng thái thất bại");
+    // } finally {
+    //   setConfirmLoading(false);
+    // }
+  };
 
-            if (res.data?.success) {
-                toast.success(" Xe đã được xóa thành công!");
-                setOpen(false);
-                fetchVehicles();
-            } else {
-                toast.error("Không thể xóa xe! Vui lòng thử lại.");
-            }
-        } catch (err: any) {
-            console.error(" Lỗi khi xóa xe:", err);
-            if (err.response?.status === 404) {
-                toast.error("Xe không tồn tại!");
-            } else {
-                toast.error("Đã xảy ra lỗi máy chủ khi xóa xe.");
-            }
-        }
-    };
+  // Render nút hành động theo status 
+  const renderActionButton = (v: Vehicle) => {
+    const s = (v.status || "").toLowerCase();
+    if (s === "active" || s==="pending") {
+      // active: show Huỷ liên kết
+      return (
+        <Button
+          variant="destructive"
+          onClick={() => openConfirmModal(v, "cancel")}
+          className="bg-red-500 hover:bg-red-600 text-white"
+        >
+          Hủy liên kết
+        </Button>
+      );
+    }
+    if (s === "inactive") {
+      // inactive: show Liên kết lại
+      return (
+        <Button
+          variant="outline"
+          onClick={() => openConfirmModal(v, "relink")}
+          className="text-[#38A3A5] border-[#38A3A5] hover:bg-[#38A3A5] hover:text-white transition-all"
+        >
+          Liên kết lại
+        </Button>
+      );
+    }
+    if (s === "invalid") {
+      // invalid: show Đăng ký lại (same as relink)
+      return (
+        <Button
+          variant="outline"
+          onClick={() => openConfirmModal(v, "relink")}
+          className="text-[#38A3A5] border-[#38A3A5] hover:bg-[#38A3A5] hover:text-white transition-all"
+        >
+          Đăng ký lại
+        </Button>
+      );
+    }
+    return null;
+  };
 
+  return (
+    <div className="flex h-screen bg-[#E9F8F8]">
+      <main className="flex-1 p-8">
+        <h1 className="text-3xl text-center font-semibold mb-6 text-[#38A3A5]">
+          Danh sách xe của tôi
+        </h1>
 
-    return (
-        <div className="flex h-screen bg-[#E9F8F8]">
-            <main className="flex-1 p-8">
-                <h1 className="text-4xl text-center font-bold mb-10 text-[#2C8C8E] tracking-wide">
-                    Xe Của Tôi
-                </h1>
+        {/* Loading */}
+        {loading && (
+          <div className="text-center text-gray-500 mt-10 animate-pulse">
+            Đang tải danh sách xe...
+          </div>
+        )}
 
-                {loading && (
-                    <div className="text-center text-gray-500 mt-10 animate-pulse">
-                        Đang tải danh sách xe...
-                    </div>
-                )}
+        {/* Không có xe */}
+        {!loading && vehicles.length === 0 && (
+          <div className="text-center text-gray-500 mt-10">
+            Bạn chưa đăng ký xe nào.
+          </div>
+        )}
 
-                {!loading && vehicles.length === 0 && (
-                    <div className="flex flex-col items-center justify-center mt-16 space-y-4">
-                        <p className="text-gray-600 text-lg">
-                            Hiện bạn chưa có thông tin xe nào.
-                        </p>
-                        <Button
-                            onClick={() => navigate("/home/register-vehicle")}
-                            className="bg-[#38A3A5] hover:bg-[#2C8C8E] text-white px-8 py-3 text-lg rounded-xl shadow-lg"
-                        >
-                            + Thêm xe mới
-                        </Button>
-                    </div>
-                )}
+        {/* Danh sách xe */}
+        {!loading && vehicles.length > 0 && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {vehicles.map((v) => {
+              const s = renderStatus(v.status);
+              return (
+                <Card
+                  key={v.id}
+                  className="p-5 bg-white/80 border border-[#BCE7E8] shadow-md hover:shadow-lg transition-all duration-300"
+                >
+                  <div className="space-y-2">
+                    <h2 className="text-xl font-semibold text-[#38A3A5]">
+                      {v.name || "Không có tên"}
+                    </h2>
+                    <p className="text-sm text-gray-600">
+                      Biển số: {v.licensePlates || "Không rõ"}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Loại xe: {v.model?.name || "Không rõ"}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      Loại pin: {v.model?.batteryType?.name || "Không rõ"}
+                    </p>
+                    <p className="text-sm text-gray-600 truncate">
+                      Số khung (VIN): {v.VIN}
+                    </p>
+                    <p className={`text-sm font-medium ${s.color}`}>
+                      Trạng thái: {s.label}
+                    </p>
+                  </div>
 
-                {!loading && vehicles.length > 0 && (
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                        {vehicles.map((v) => (
-                            <Card
-                                key={v.id}
-                                className="group p-6 rounded-2xl border border-white/40 bg-white backdrop-blur-lg shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-[1.04] text-center"
-                            >
-                                <div className="space-y-2">
-                                    <h2 className="text-2xl font-semibold text-[#2C8C8E] mb-4">
-                                        {v.name}
-                                    </h2>
-                                    <p className="text-sm text-gray-700">
-                                        Biển số: <strong>{v.licensePlates}</strong>
-                                    </p>
-                                    <p className="text-sm text-gray-700">
-                                        Model: {v.model?.name || "Không rõ"}
-                                    </p>
-                                    <p className="text-sm text-gray-700 truncate">
-                                        VIN: {v.VIN}
-                                    </p>
+                  <div className="flex justify-end mt-4 gap-2">
+                    {/* Cập nhật thông tin (name + plate) */}
+                    <Button
+                      variant="outline"
+                      onClick={() => openEditModal(v)}
+                      className="text-[#38A3A5] border-[#38A3A5] hover:bg-[#38A3A5] hover:text-white transition-all"
+                    >
+                      Cập nhật
+                    </Button>
 
-                                    <span
-                                        className={`mt-4 px-3 py-1 text-xs rounded-full font-medium inline-block ${v.status === "active"
-                                            ? "bg-green-100 text-green-700"
-                                            : v.status === "pending"
-                                                ? "bg-yellow-100 text-yellow-700"
-                                                : "bg-red-100 text-red-700"
-                                            }`}
-                                    >
-                                        {v.status === "pending"
-                                            ? "Đang chờ duyệt"
-                                            : v.status === "active"
-                                                ? "Đã duyệt"
-                                                : "Từ chối"}
-                                    </span>
-                                </div>
+                    {renderActionButton(v)}
+                  </div>
+                </Card>
+              );
+            })}
+          </div>
+        )}
 
-                                <div className="flex justify-center mt-5">
-                                    <Button
-                                        variant="outline"
-                                        className="text-[#2C8C8E] border-[#2C8C8E] hover:bg-[#2C8C8E] hover:text-white transition-all rounded-lg"
-                                        onClick={() => handleViewDetails(v)}
-                                    >
-                                        Quản lý
-                                    </Button>
-                                </div>
-                            </Card>
-                        ))}
-                    </div>
-                )}
+        {/* Modal: cập nhật thông tin xe (name + licensePlates) */}
+        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+          <DialogContent className="max-w-md bg-white rounded-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-[#38A3A5] text-lg">
+                Cập nhật thông tin xe
+              </DialogTitle>
+              <DialogDescription>
+                Sửa tên xe và biển số 
+              </DialogDescription>
+            </DialogHeader>
 
-                <Dialog open={open} onOpenChange={setOpen}>
-                    <DialogContent className="max-w-lg bg-white rounded-2xl p-6 shadow-2xl">
-                        <DialogHeader>
-                            <DialogTitle className="text-[#2C8C8E] text-xl font-bold">
-                                Chi tiết xe
-                            </DialogTitle>
-                            <DialogDescription className="text-gray-500">
-                                Kiểm tra và quản lý thông tin xe của bạn
-                            </DialogDescription>
-                        </DialogHeader>
+            <div className="space-y-3 mt-3">
+              <div>
+                <Label className="text-[#38A3A5]">Tên xe</Label>
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="Tên xe (ví dụ: Xe đi làm)"
+                />
+              </div>
 
-                        {selectedVehicle && (
-                            <div className="mt-4">
-                                <div className="space-y-3 bg-gray-50 p-4 rounded-xl border">
-                                    <p>
-                                        <Label className="text-[#2C8C8E]">Tên xe:</Label> {selectedVehicle.name}
-                                    </p>
-                                    <p>
-                                        <Label className="text-[#2C8C8E]">Biển số:</Label> {selectedVehicle.licensePlates}
-                                    </p>
-                                    <p>
-                                        <Label className="text-[#2C8C8E]">Model:</Label> {selectedVehicle.model?.name || "Không rõ"}
-                                    </p>
-                                    <p>
-                                        <Label className="text-[#2C8C8E]">VIN:</Label> {selectedVehicle.VIN}
-                                    </p>
-                                    <p>
-                                        <Label className="text-[#2C8C8E]">Trạng thái:</Label>{" "}
-                                        {selectedVehicle.status === "pending"
-                                            ? "Đang chờ duyệt"
-                                            : selectedVehicle.status === "active"
-                                                ? "Đã duyệt"
-                                                : "Từ chối"}
-                                    </p>
-                                </div>
+              <div>
+                <Label className="text-[#38A3A5]">Biển số</Label>
+                <Input
+                  value={editPlate}
+                  onChange={(e) => setEditPlate(e.target.value.toUpperCase())}
+                  placeholder="Biển số (VD: 51A-12345)"
+                />
+              </div>
+            </div>
 
-                                <div className="flex justify-between mt-6 gap-4">
-                                    <Button
-                                        onClick={() =>
-                                            selectedVehicle?.id &&
-                                            navigate(`/home/update-vehicle/${selectedVehicle.id}`)
-                                        }
-                                        className="bg-[#38A3A5] hover:bg-[#2C8C8E] text-white flex-1"
-                                    >
-                                        Cập nhật xe
-                                    </Button>
+            <DialogFooter className="mt-4 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setEditOpen(false)}>
+                Hủy
+              </Button>
+              <Button onClick={handleSaveEdit} disabled={editLoading}>
+                {editLoading ? "Đang lưu..." : "Lưu thay đổi"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
-                                    <Button
-                                        onClick={() => handleUnlinkVehicle(selectedVehicle.id)}
-                                        className="bg-red-500 hover:bg-red-600 text-white flex-1"
-                                    >
-                                        Hủy liên kết
-                                    </Button>
-                                </div>
-                            </div>
-                        )}
-                    </DialogContent>
-                </Dialog>
-            </main>
-        </div>
-    );
+        {/* Modal: xác nhận thay đổi status */}
+        <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+          <DialogContent className="max-w-md bg-white rounded-2xl">
+            <DialogHeader>
+              <DialogTitle className="text-lg font-semibold">
+                {confirmAction === "cancel"
+                  ? "Xác nhận hủy liên kết"
+                  : "Xác nhận gửi lại yêu cầu liên kết"}
+              </DialogTitle>
+              <DialogDescription>
+                {confirmAction === "cancel"
+                  ? "Bạn có chắc muốn hủy liên kết phương tiện này?"
+                  : "Bạn có muốn gửi lại yêu cầu liên kết để admin duyệt?"}
+              </DialogDescription>
+            </DialogHeader>
+
+            <DialogFooter className="mt-4 flex justify-end gap-3">
+              <Button variant="outline" onClick={() => setConfirmOpen(false)}>
+                Hủy
+              </Button>
+              <Button onClick={handleConfirmAction} disabled={confirmLoading}>
+                {confirmLoading ? "Đang xử lý..." : "Xác nhận"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      </main>
+    </div>
+  );
 }
