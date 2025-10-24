@@ -6,7 +6,6 @@ import RegisterInfo from "./pages/RegisterInfo";
 import { Route, Routes } from "react-router";
 import { Toaster } from "sonner";
 
-import { ProtectedRoute } from "./components/ProtectedRoute";
 
 
 import StaffLayout from "./layout/StaffLayout";
@@ -19,13 +18,14 @@ import Booking from "./pages/Booking";
 import BookingHistory from "./pages/BookingHistory";
 import Subscription from "./pages/Subcription";
 import MySubcription from "./pages/MySubcription";
-import RegisterPassword from "./pages/RegisterPassword";
+import RegisterPassword from "./pages/SetPassword";
 import RegisterVehicle from "./pages/RegisterVehicle";
 import MyVehicles from "./pages/MyVehicles";
+import UpdateVehicle from "./pages/UpdateVehicle";
 
 import AdminVehicleManagement from "./pages/AdminVehicleManagement";
 import AdminUserManagement from "./pages/AdminUserManagement";
-import AdminStationManagement from "./pages/AdminVehicleManagement";
+import AdminStationManagement from "./pages/AdminStationManagement";
 
 import BatteryManagement from "./pages/BatteryManagement";
 import AdminLayout from "./layout/AdminLayout";
@@ -44,6 +44,9 @@ function App() {
         <Route path="/register/verify" element={<OtpVerify />} />
         <Route path="/register/info" element={<RegisterInfo />} />
         <Route path="/register/password" element={<RegisterPassword />} />
+
+
+
         {/* Layout người dùng */}
         <Route
           path="/home"
@@ -64,6 +67,7 @@ function App() {
           <Route path="subscription-packages" element={<Subscription />} />
           <Route path="register-vehicle" element={<RegisterVehicle />} />
           <Route path="my-vehicles" element={<MyVehicles />} />
+          <Route path="/home/update-vehicle/:id" element={<UpdateVehicle />} />
 
           {/* <Route path="thong-tin-ca-nhan" element={<ThongTinCaNhan />} />
           <Route path="phuong-tien-cua-toi" element={<PhuongTienCuaToi />} />

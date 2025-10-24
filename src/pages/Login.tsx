@@ -134,7 +134,8 @@ export default function Login() {
   };
 
   const handleResetPassword = (e: React.MouseEvent) => {
-    e.preventDefault();
+
+    e.preventDefault;
     navigate("/login/reset-password");
   };
 
