@@ -24,28 +24,28 @@ export default function ResetPassword() {
   };
 
   // STEP 1: Gửi OTP
- const handleSendOtp = async () => {
-   if (!email) return toast.error("Vui lòng nhập email!");
+  const handleSendOtp = async () => {
+    if (!email) return toast.error("Vui lòng nhập email!");
 
-   setLoading(true);
-   try {
-     // Kiểm tra email có tồn tại không
-     const checkRes = await api.post("/auth/check", { email });
-     if (checkRes.status===404) {
-       toast.error("Email này chưa được đăng ký!");
-       return;
-     }
+    setLoading(true);
+    try {
+      // Kiểm tra email có tồn tại không
+      const checkRes = await api.post("/auth/check", { email });
+      if (checkRes.status === 404) {
+        toast.error("Email này chưa được đăng ký!");
+        return;
+      }
 
-     // Nếu tồn tại thì gửi OTP
-     await api.post("/auth/send-otp", { email });
-     toast.success("OTP đã được gửi tới email của bạn!");
-     setStep(2);
-   } catch (err: any) {
-     toast.error(err.response?.data?.message || "Không thể gửi OTP. Thử lại.");
-   } finally {
-     setLoading(false);
-   }
- };
+      // Nếu tồn tại thì gửi OTP
+      await api.post("/auth/send-otp", { email });
+      toast.success("OTP đã được gửi tới email của bạn!");
+      setStep(2);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || "Không thể gửi OTP. Thử lại.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   // STEP 2: Xác thực OTP
   const handleVerifyOtp = async () => {
@@ -62,7 +62,7 @@ export default function ResetPassword() {
 
       console.log("Reset token từ API:", token);
       setResetToken(token);
-     
+
       toast.success(" OTP xác thực thành công!");
       setStep(3);
     } catch (err: any) {
@@ -79,7 +79,7 @@ export default function ResetPassword() {
     if (!resetToken) return toast.error("Không có reset token. Thử lại OTP.");
     setLoading(true);
     try {
-      await api.post("/auth/reset-pass", {resetToken, newPass });
+      await api.post("/auth/reset-pass", { resetToken, newPass });
       toast.success(" Đặt lại mật khẩu thành công! Hãy đăng nhập.");
       navigate("/login");
     } catch (err: any) {
