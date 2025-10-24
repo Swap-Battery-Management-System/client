@@ -1,9 +1,14 @@
 import { useState, useEffect } from "react";
 import { FaSearch } from "react-icons/fa";
+import { IoIosInformationCircleOutline } from "react-icons/io";
+import { GrDocumentUpdate } from "react-icons/gr";
+import { GrUpdate } from "react-icons/gr";
+import { LuDelete } from "react-icons/lu";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
 import { toast } from "sonner";
+
 
 export default function AdminUserManagement() {
     const [searchTerm, setSearchTerm] = useState("");
@@ -19,7 +24,6 @@ export default function AdminUserManagement() {
             setLoading(true);
             const res = await api.get("/users");
 
-            // ✅ Lấy mảng user đúng vị trí: data.data.users
             const list = Array.isArray(res.data.data?.users)
                 ? res.data.data.users
                 : [];
@@ -52,7 +56,7 @@ export default function AdminUserManagement() {
     };
 
     // ==========================
-    // ✏️ 3. Cập nhật thông tin user (PATCH /users/complete)
+    // ✏️ 3. Cập nhật thông tin user
     // ==========================
     const handleUpdateProfile = async (id: string) => {
         const newName = prompt("Nhập tên mới:");
@@ -91,7 +95,7 @@ export default function AdminUserManagement() {
     };
 
     // ==========================
-    // 🔍 Lọc user theo từ khóa
+    // 🔍 Lọc user
     // ==========================
     const filteredUsers = users.filter(
         (u) =>
@@ -101,7 +105,7 @@ export default function AdminUserManagement() {
     );
 
     // ==========================
-    // 📄 Hiển thị tên vai trò (từ roleId)
+    // 📄 Hiển thị vai trò
     // ==========================
     const getRoleName = (roleId: string) => {
         switch (roleId) {
@@ -117,7 +121,7 @@ export default function AdminUserManagement() {
     };
 
     // ==========================
-    // 📄 UI Render
+    // 🧩 UI Render
     // ==========================
     return (
         <div className="p-6 space-y-6 min-h-screen">
@@ -156,15 +160,7 @@ export default function AdminUserManagement() {
                     <table className="min-w-full table-auto text-center border-collapse">
                         <thead className="bg-[#E6F7F7] text-[#38A3A5]">
                             <tr>
-                                {[
-                                    "STT",
-                                    "ID",
-                                    "Họ & Tên",
-                                    "Email",
-                                    "Vai trò",
-                                    "Trạng thái",
-                                    "Hành động",
-                                ].map((header) => (
+                                {["STT", "ID", "Họ & Tên", "Email", "Vai trò", "Trạng thái", "Hành động"].map((header) => (
                                     <th key={header} className="border px-2 py-1">
                                         {header}
                                     </th>
@@ -184,28 +180,27 @@ export default function AdminUserManagement() {
                                         <td className="px-2 py-1">{idx + 1}</td>
                                         <td className="px-2 py-1">{u.id?.slice(0, 8)}</td>
                                         <td className="px-2 py-1">{u.fullName || "—"}</td>
-                                        <td className="px-2 py-1">{u.email}</td>
+                                        <td className="px-2 py-1 text-left">{u.email}</td> {/* ✅ Căn trái email */}
                                         <td className="px-2 py-1">{getRoleName(u.roleId)}</td>
                                         <td className="px-2 py-1">{u.status}</td>
-                                        <td className="px-2 py-1 flex flex-row gap-2 justify-center">
-                                            <button
-                                                className="text-indigo-600 hover:underline"
-                                                onClick={() => setSelectedUser(u)}
-                                            >
-                                                Xem chi tiết
-                                            </button>
-                                            <button
-                                                className="text-green-600 hover:underline"
+                                        <td className="px-2 py-1 flex flex-row gap-4 justify-center text-xl">
+
+                                            <GrDocumentUpdate
+                                                className="cursor-pointer text-green-600 hover:text-green-800"
                                                 onClick={() => handleUpdateProfile(u.id)}
-                                            >
-                                                Cập nhật
-                                            </button>
-                                            <button
-                                                className="text-red-600 hover:underline"
+                                                title="Cập nhật"
+                                            />
+                                            <LuDelete
+                                                className="cursor-pointer text-red-600 hover:text-red-800"
                                                 onClick={() => handleDelete(u.id)}
-                                            >
-                                                Xóa
-                                            </button>
+                                                title="Xóa vĩnh viễn người dùng"
+                                            />
+
+                                            <IoIosInformationCircleOutline
+                                                className="cursor-pointer text-blue-500 hover:text-blue-700"
+                                                onClick={() => setSelectedUser(u)}
+                                                title="Xem chi tiết"
+                                            />
                                         </td>
                                     </tr>
                                 ))
