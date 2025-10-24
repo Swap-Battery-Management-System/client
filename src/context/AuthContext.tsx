@@ -1,7 +1,5 @@
-import type { Role } from "@/types/roles";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import api from "@/lib/api";
-import { useNavigate } from "react-router-dom";
 import type { User } from "@/types/user";
 
 interface AuthContextType {
@@ -28,15 +26,23 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       try {
         const res = await api.get("auth/me", { withCredentials: true });
         console.log("useAuth:", res.data);
-        const userData = res.data.data.user;
+        const userData = res.data.data;
         const user: User = {
           id: userData.id,
           username: userData.username,
-          role: userData.role,
+          fullName: userData.fullName,
+          email: userData.email,
+          phoneNumber: userData.phoneNumber,
+          dateOfBirth: userData.dateOfBirth,
+          gender: userData.gender,
+          address: userData.address,
+          avatarUrl: userData.avatarUrl,
+          role:userData.role,
           status: userData.status,
+          googleId: userData.googleId,
+          createdAt: userData.createdAt,
         };
-        console.log("user", user);
-        console.log("role", user.role);
+        console.log("user: ",user);
         setUser(user);
       } catch {
         setUser(null);

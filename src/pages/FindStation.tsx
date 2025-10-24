@@ -1,133 +1,106 @@
 import StationCard from "@/components/StationCard";
 import SearchStation from "@/components/SearchStation";
-import { use, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import LocationPermissionModal from "@/components/LocationPermissionModal";
 import { MdMyLocation } from "react-icons/md";
 import { useLocation, useNavigate } from "react-router-dom";
-import api from "@/lib/api";
 import type { Station } from "@/types/station";
-
-type locationState = {
-  id?: string;
-};
+import { useStation } from "@/context/StationContext";
 
 export default function FindStation() {
   const navigate = useNavigate();
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false); // state loading
-  const [showModal, setShowModal] = useState(false);
+  const location = useLocation();
+  const keyword = (location.state as { keyword?: string })?.keyword || "";
+
+  const [filteredStation, setFilteredStation] = useState<Station[]>([]);
   const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
     () => {
       const saved = localStorage.getItem("userCoords");
       return saved ? JSON.parse(saved) : null;
     }
   );
-  const location = useLocation();
-  const keyword = (location.state as { keyword?: string })?.keyword || "";
-  const [stations, setStations] = useState<Station[]>([]);
-  const [filteredStation, setFilteredStation] = useState<Station[]>([]);
+  const [showModal, setShowModal] = useState(false);
+  const [loadingCoords, setLoadingCoords] = useState(false);
+  const {
+    fetchAllStation,
+    stations,
+    loading: loadingStations,
+    getStationWithDistance,
+  } = useStation();
 
-  //lấy danh sách trạm
-  const featchAllStation = async () => {
-    try {
-      setLoading(true);
-      const res = await api.get("/stations", { withCredentials: true });
-      const data: Station[] = res.data.data.station;
-      setStations(data);
-      console.log("ds tram: ", res.data);
-    } catch (err) {
-      console.log("Lỗi khi lấy danh sách trạm:", err);
-    } finally {
-      setLoading(false);
+  // Lấy danh sách trạm
+  useEffect(() => {
+    fetchAllStation();
+    const checkPermiss = localStorage.getItem("permissionUserLocation");
+    if(checkPermiss==="granted"){
+      startWatchingLocation();
     }
-  };
+  }, []);
 
-  //Lọc theo từ khóa
-  const filterByKeyword = (kw: string) => {
-    if (!kw.trim()) {
+  // Lọc theo từ khóa hoặc coords
+  useEffect(() => {
+    const filterStations = async () => {
+      if (keyword.trim()) {
+        const filtered = stations.filter(
+          (s) =>
+            s.name.toLowerCase().includes(keyword.toLowerCase()) ||
+            s.address.toLowerCase().includes(keyword.toLowerCase())
+        );
+        if (coords) {
+          const stationWithDistance = await getStationWithDistance(
+            coords,
+            filtered
+          );
+          setFilteredStation(stationWithDistance);
+        } else {
+          setFilteredStation(filtered);
+        }
+        return;
+      } else if (coords) {
+        const stationWithDistance = await getStationWithDistance(
+          coords,
+          stations
+        );
+        setFilteredStation(stationWithDistance);
+        return;
+      }
       setFilteredStation(stations);
-      return;
-    }
-    const result = stations.filter(
-      (s) =>
-        s.name.toLowerCase().includes(kw.toLowerCase()) ||
-        s.address.toLowerCase().includes(kw.toLowerCase())
-    );
-    setFilteredStation(result);
-  };
+    };
+    filterStations();
+  }, [keyword, coords, stations]);
 
-  //Lọc theo vị trí (tính khoảng cách)
-  const filterByLocation = () => {
-    setFilteredStation(stations);
-  };
-
-  //lưu vị trí vô localStorage
+  // Lưu vị trí vào localStorage
   useEffect(() => {
     if (coords) {
       localStorage.setItem("userCoords", JSON.stringify(coords));
     }
   }, [coords]);
 
-  //theo dõi theo thời gian thực
-  useEffect(() => {
-    const permission = localStorage.getItem("permissionUserLocation");
-    if (permission === "granted") {
-      startWatchingLocation();
-    } else if (permission === "denied") {
-      setShowModal(false);
-    } else {
-      setShowModal(true);
-    }
-  }, []);
-
-  //lấy danh sách trạm
-  useEffect(() => {
-    featchAllStation();
-  }, []);
-
-  //khi có keyword hoặc coords
-  useEffect(() => {
-    if (keyword) {
-      filterByKeyword(keyword);
-    } else if (coords) {
-      filterByLocation();
-    } else {
-      setFilteredStation(stations);
-    }
-  }, [keyword, coords, stations]);
-
   const startWatchingLocation = () => {
     if (!navigator.geolocation) {
-      setMessage("Trình duyệt không hỗ trợ định vị!");
       setShowModal(false);
       return;
     }
 
-    setLoading(true);
+    setLoadingCoords(true);
 
     const watchId = navigator.geolocation.watchPosition(
       (position) => {
         const { latitude, longitude } = position.coords;
         const newCoords = { lat: latitude, lng: longitude };
         setCoords(newCoords);
-        localStorage.setItem("userCoords", JSON.stringify(newCoords));
-        console.log("Vị trí hiện tại:", latitude, longitude);
-        setLoading(false);
+        setLoadingCoords(false);
       },
       (error) => {
-        console.error("Không thể lấy vị trí. Vui lòng thử lại.", error);
-        setLoading(false);
+        console.error("Không thể lấy vị trí", error);
+        setLoadingCoords(false);
       },
-      {
-        enableHighAccuracy: true,
-        maximumAge: 10000,
-        timeout: 5000,
-      }
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
     );
+
     return () => navigator.geolocation.clearWatch(watchId);
   };
 
-  //xử lý đống ý truy cập vị trí
   const handleAllow = () => {
     localStorage.setItem("permissionUserLocation", "granted");
     setShowModal(false);
@@ -136,6 +109,8 @@ export default function FindStation() {
 
   const handleDeny = () => {
     localStorage.setItem("permissionUserLocation", "denied");
+    localStorage.setItem("userCoords","");
+    setCoords(null);
     setShowModal(false);
   };
 
@@ -143,6 +118,7 @@ export default function FindStation() {
     navigate(`/home/find-station/station-detail/${station.id}`);
   };
 
+  const loading = loadingStations || loadingCoords;
 
   return (
     <>
@@ -150,7 +126,7 @@ export default function FindStation() {
         <LocationPermissionModal
           onAllow={handleAllow}
           onDeny={handleDeny}
-          loading={loading}
+          loading={loadingCoords}
         />
       )}
 
@@ -158,7 +134,6 @@ export default function FindStation() {
         {/* Thanh search */}
         <div className="mb-10 flex justify-center">
           <div className="flex gap-2 max-w-lg w-full">
-            {/* input search chiếm hết chỗ còn lại */}
             <div className="flex-1">
               <SearchStation />
             </div>
@@ -179,7 +154,10 @@ export default function FindStation() {
             filteredStation.map((station) => (
               <StationCard
                 key={station.id}
-                pinAvailable={20}
+                pinAvailable={
+                  station.batteries.filter((b) => b.status === "available")
+                    .length
+                }
                 station={station}
                 onclick={() => handleViewDetail(station)}
               />
@@ -187,7 +165,8 @@ export default function FindStation() {
           )}
         </div>
       </div>
-      {/* Button định vị cố định góc phải dưới màn hình */}
+
+      {/* Button định vị */}
       <button
         onClick={() => setShowModal(true)}
         className="fixed bottom-5 right-5 p-3 bg-[#38A3A5] text-white rounded-full hover:bg-[#2e827f] hover:scale-105 transition-all duration-200 shadow-lg flex items-center justify-center z-50"

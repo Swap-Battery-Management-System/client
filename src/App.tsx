@@ -8,6 +8,7 @@ import { Toaster } from "sonner";
 
 
 
+
 import StaffLayout from "./layout/StaffLayout";
 import Landing from "./pages/Landing";
 import Layout from "./layout/layout";
@@ -30,6 +31,7 @@ import AdminStationManagement from "./pages/AdminStationManagement";
 import BatteryManagement from "./pages/BatteryManagement";
 import AdminLayout from "./layout/AdminLayout";
 import ResetPassword from "./pages/ResetPassword";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -50,9 +52,9 @@ function App() {
         <Route
           path="/home"
           element={
-            // <ProtectedRoute roles={["driver"]}>
-            <Layout />
-            // </ProtectedRoute>
+            <ProtectedRoute roles={["driver"]}>
+              <Layout />
+            </ProtectedRoute>
           }
         >
           <Route index element={<Home />} />
@@ -101,7 +103,7 @@ function App() {
           <Route path="manage-vehicles" element={<AdminVehicleManagement />} />
         </Route>
       </Routes>
-      <Toaster position="top-center" richColors />
+      <Toaster richColors position="top-center" />
     </>
   );
 }

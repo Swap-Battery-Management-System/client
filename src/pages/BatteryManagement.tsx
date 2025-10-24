@@ -1,63 +1,97 @@
-import { useState } from "react";
-import { FaSearch } from "react-icons/fa";
+import { useEffect, useState } from "react";
+import { FaSearch, FaPlus, FaEdit, FaTrash } from "react-icons/fa";
+import { useAuth } from "@/context/AuthContext";
+import api from "@/lib/api";
+import type { Battery } from "@/types/battery";
+import type { BatteryType } from "@/types/batteryType";
+import { useStation } from "@/context/StationContext";
 
 export default function BatteryManagement() {
+  const { user } = useAuth();
+  const role = user?.role.name;
+
+  const [batteries, setBatteries] = useState<Battery[]>([]);
+  const [batteryTypes, setBatteryTypes] = useState<BatteryType[]>([]);
+  const {fetchAllStation,stations}=useStation();
+
   const [searchId, setSearchId] = useState("");
   const [filterType, setFilterType] = useState("");
   const [filterStatus, setFilterStatus] = useState("");
 
-  const fakePinList = [
-    {
-      id: "B001",
-      type: "Li-ion",
-      capacity: "5.2 kWh",
-      soc: 0.95,
-      cycles: 10,
-      status: "Available",
-      station: "S001",
-      manufactureDate: "01/01/2025",
-    },
-    {
-      id: "B002",
-      type: "Li-ion",
-      capacity: "4.8 kWh",
-      soc: 0.9,
-      cycles: 12,
-      status: "In Use",
-      station: "S002",
-      manufactureDate: "05/01/2025",
-    },
-    {
-      id: "B003",
-      type: "Li-ion",
-      capacity: "6 kWh",
-      soc: 0.8,
-      cycles: 15,
-      status: "Fault",
-      station: "S003",
-      manufactureDate: "10/01/2025",
-    },
-  ];
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Available":
-        return "text-green-600 font-semibold";
-      case "In Use":
-        return "text-orange-500 font-semibold";
-      case "Fault":
-        return "text-red-500 font-semibold";
-      default:
-        return "";
+  // Lấy danh sách pin
+  const fetchBatteries = async () => {
+    try {
+      const res = await api.get("/batteries", { withCredentials: true });
+      setBatteries(res.data.data.batteries);
+      console.log(res.data);
+    } catch (err) {
+      console.error("Lỗi lấy danh sách pin:", err);
     }
   };
 
-  const filteredList = fakePinList.filter(
-    (pin) =>
-      pin.id.toLowerCase().includes(searchId.toLowerCase()) &&
-      (filterType ? pin.type === filterType : true) &&
-      (filterStatus ? pin.status === filterStatus : true)
+  // Lấy danh sách loại pin
+  const fetchBatteryTypes = async () => {
+    try {
+      const res = await api.get("/battery-types", { withCredentials: true });
+      setBatteryTypes(res.data.data.batteryTypes);
+      console.log(res.data);
+    } catch (err) {
+      console.error("Lỗi lấy danh sách loại pin:", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchBatteries();
+    fetchBatteryTypes();
+    fetchAllStation();
+    
+  }, []);
+
+
+
+  // Map nhanh id => name
+  const typeMap: Record<string, string> = Object.fromEntries(
+    batteryTypes.map((bt) => [bt.id, bt.name])
   );
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "available":
+        return "text-green-600 font-semibold"; // Sẵn sàng
+      case "in_use":
+        return "text-orange-500 font-semibold"; // Đang sử dụng
+      case "in_charged":
+        return "text-blue-500 font-semibold"; // Đang sạc
+      case "faulty":
+        return "text-red-500 font-semibold"; // Lỗi
+      case "in_transit":
+        return "text-purple-500 font-semibold"; // Đang vận chuyển
+      default:
+        return "text-gray-500 font-semibold"; // Không xác định
+    }
+  };
+
+  // Filter danh sách pin
+  const filteredList = batteries.filter((pin) => {
+    const typeName = typeMap[pin.batteryTypeId] || "";
+    return (
+      pin.code.toLowerCase().includes(searchId.toLowerCase()) &&
+      (filterType ? typeName === filterType : true) &&
+      (filterStatus ? pin.status === filterStatus : true)
+    );
+  });
+
+  //lấy tên trạm theo id pin
+  const getStationName=(id:string)=>{
+    const st=stations.find((s)=>s.id===id);
+    return st?st.name:"không xác định";
+  };
+
+  // Các hàm action demo
+  const handleAdd = () => alert("Thêm pin mới");
+  const handleEdit = (id: string) => alert(`Sửa pin ${id}`);
+  const handleDelete = (id: string) => alert(`Xóa pin ${id}`);
+  const handleMarkFault = (id: string) => alert(`Đánh dấu lỗi pin ${id}`);
 
   return (
     <div className="p-6 space-y-6 min-h-screen">
@@ -67,8 +101,7 @@ export default function BatteryManagement() {
 
       <div className="p-4 space-y-4">
         {/* Search + Filter */}
-        <div className="flex items-center gap-2">
-          {/* Search input ngắn */}
+        <div className="flex items-center gap-2 flex-wrap">
           <div className="relative flex-1 max-w-xs">
             <input
               type="text"
@@ -80,30 +113,32 @@ export default function BatteryManagement() {
             <FaSearch className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
           </div>
 
-          {/* Filter loại pin */}
           <select
             value={filterType}
             onChange={(e) => setFilterType(e.target.value)}
             className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
           >
             <option value="">Loại pin</option>
-            <option value="Li-ion">Li-ion</option>
-            <option value="NiMH">NiMH</option>
+            {batteryTypes.map((bt) => (
+              <option key={bt.id} value={bt.name}>
+                {bt.name}
+              </option>
+            ))}
           </select>
 
-          {/* Filter trạng thái */}
           <select
             value={filterStatus}
             onChange={(e) => setFilterStatus(e.target.value)}
             className="border rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-green-200"
           >
-            <option value="">Trạng thái</option>
-            <option value="Available">Available</option>
-            <option value="In Use">In Use</option>
-            <option value="Fault">Fault</option>
+            <option value="">Tất cả trạng thái</option>
+            <option value="available"> Sẵn sàng</option>
+            <option value="in_use"> Đang sử dụng</option>
+            <option value="charging"> Đang sạc</option>
+            <option value="in_transit"> Đang vận chuyển</option>
+            <option value="faulty"> Lỗi</option>
           </select>
 
-          {/* Button reset */}
           <button
             onClick={() => {
               setSearchId("");
@@ -115,13 +150,21 @@ export default function BatteryManagement() {
             Lọc
           </button>
 
-          {/* Số lượng pin */}
           <span className="ml-auto font-semibold text-sm">
             Số lượng: {filteredList.length}
           </span>
+
+          {role === "admin" && (
+            <button
+              onClick={handleAdd}
+              className="ml-2 bg-green-500 text-white px-3 py-1 rounded hover:bg-green-600 flex items-center gap-1 text-sm"
+            >
+              <FaPlus /> Thêm
+            </button>
+          )}
         </div>
 
-        {/* Table hiển thị */}
+        {/* Table */}
         <table className="min-w-full table-auto text-center border-collapse">
           <thead className="bg-[#E6F7F7] text-[#38A3A5]">
             <tr>
@@ -144,26 +187,52 @@ export default function BatteryManagement() {
             </tr>
           </thead>
           <tbody>
-            {filteredList.map((pin, idx) => (
-              <tr key={pin.id} className="border-b hover:bg-gray-100">
-                <td className="px-2 py-1">{idx + 1}</td>
-                <td className="px-2 py-1">{pin.id}</td>
-                <td className="px-2 py-1">{pin.type}</td>
-                <td className="px-2 py-1">{pin.capacity}</td>
-                <td className="px-2 py-1">{(pin.soc * 100).toFixed(0)}%</td>
-                <td className="px-2 py-1">{pin.cycles}</td>
-                <td className={`px-2 py-1 ${getStatusColor(pin.status)}`}>
-                  {pin.status}
-                </td>
-                <td className="px-2 py-1">{pin.station}</td>
-                <td className="px-2 py-1">{pin.manufactureDate}</td>
-                <td className="px-2 py-1">
-                  <button className="text-red-500 hover:underline">
-                    Đánh dấu lỗi
-                  </button>
-                </td>
-              </tr>
-            ))}
+            {filteredList.map((pin, idx) => {
+              const typeName = typeMap[pin.batteryTypeId] || "";
+              return (
+                <tr key={pin.id} className="border-b hover:bg-gray-100">
+                  <td className="px-2 py-1">{idx + 1}</td>
+                  <td className="px-2 py-1">{pin.code}</td>
+                  <td className="px-2 py-1">{typeName}</td>
+                  <td className="px-2 py-1">{pin.currentCapacity}</td>
+                  <td className="px-2 py-1">{pin.soc}%</td>
+                  <td className="px-2 py-1">{pin.cycleCount}</td>
+                  <td className={`px-2 py-1 ${getStatusColor(pin.status)}`}>
+                    {pin.status}
+                  </td>
+                  <td className="px-2 py-1">{getStationName(pin.stationId)}</td>
+                  <td className="px-2 py-1">{pin.manufacturedAt}</td>
+                  <td className="px-2 py-1">
+                    <div className="flex items-center justify-center gap-2">
+                      {role === "staff" && (
+                        <button
+                          onClick={() => handleMarkFault(pin.id)}
+                          className="text-red-500 hover:underline"
+                        >
+                          Đánh dấu lỗi
+                        </button>
+                      )}
+                      {role === "admin" && (
+                        <>
+                          <button
+                            onClick={() => handleEdit(pin.id)}
+                            className="text-blue-500 hover:underline flex items-center gap-1"
+                          >
+                            <FaEdit /> Sửa
+                          </button>
+                          <button
+                            onClick={() => handleDelete(pin.id)}
+                            className="text-red-500 hover:underline flex items-center gap-1"
+                          >
+                            <FaTrash /> Xóa
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

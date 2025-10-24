@@ -1,4 +1,4 @@
-import { NavLink, replace, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { Bell, User, Menu } from "lucide-react";
 import {
   DropdownMenu,
@@ -9,22 +9,15 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
-import { useEffect, useState } from "react";
-import LocationPermissionModal from "./LocationPermissionModal";
-import { useNotification } from "@/hooks/useNotification";
 
 export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
-  const { logout, message } = useAuth();
+  const { logout} = useAuth();
   const navigate = useNavigate();
-  const [type, setType] = useState<"success" | "error">("success");
-  const [showModal, setShowModal] = useState(false);
 
 
   const handleLogout = async () => {
     logout(() =>
-      setTimeout(() => {
-        navigate("/", { replace: true });
-      }, 3000)
+      navigate("/",{replace:true})
     ); // truyền callback redirect
   };
 

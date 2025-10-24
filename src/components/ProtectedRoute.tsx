@@ -7,27 +7,29 @@ interface ProtectedRouteProps {
   children: ReactNode;
 }
 
-export const ProtectedRoute = ({ roles, children }: ProtectedRouteProps) => {
-  const { user, initialized } = useAuth();
-  if (!initialized) return null;
-  if (!user) {
-    return <Navigate to={"/"} replace />
-  }
-  console.log("test role:", user.role.name);
+export const ProtectedRoute=({roles,children}:ProtectedRouteProps)=>{
+    const { user, initialized } = useAuth();
+     if (!initialized) return null;
+     
+    if(!user){
+      console.log("user",user);
+        return <Navigate to={"/"} replace/>
+    }
+    console.log("test role:",user.role.name);
 
-  switch (user.status) {
+    switch (user.status) {
+      
+      case "pending":
+        return <Navigate to={`/register/info?id:${user.id}`} replace />;
+      case "inactive":
+        return <Navigate to="/" replace />;
+      case "banned":
+        return <Navigate to="/" replace />;
+    }
 
-    case "pending":
-      return <Navigate to={`/register/info?id:${user.id}`} replace />;
-    case "inactive":
-      return <Navigate to="/" replace />;
-    case "blocked":
-      return <Navigate to="/" replace />;
-  }
 
-
-  if (!roles.includes(user.role.name)) {
-    return <Navigate to={"/"} replace />;
-  }
-  return <>{children}</>;
+    if(!roles.includes(user.role.name)){
+      return <Navigate to={"/"} replace />;
+    }
+    return<>{children}</>;
 }
