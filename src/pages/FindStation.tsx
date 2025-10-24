@@ -31,6 +31,10 @@ export default function FindStation() {
   // Lấy danh sách trạm
   useEffect(() => {
     fetchAllStation();
+    const checkPermiss = localStorage.getItem("permissionUserLocation");
+    if(checkPermiss==="granted"){
+      startWatchingLocation();
+    }
   }, []);
 
   // Lọc theo từ khóa hoặc coords
@@ -105,6 +109,7 @@ export default function FindStation() {
 
   const handleDeny = () => {
     localStorage.setItem("permissionUserLocation", "denied");
+    localStorage.setItem("userCoords","");
     setCoords(null);
     setShowModal(false);
   };

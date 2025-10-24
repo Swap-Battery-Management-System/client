@@ -23,7 +23,7 @@ export const ProtectedRoute=({roles,children}:ProtectedRouteProps)=>{
         return <Navigate to={`/register/info?id:${user.id}`} replace />;
       case "inactive":
         return <Navigate to="/" replace />;
-      case "blocked":
+      case "banned":
         return <Navigate to="/" replace />;
     }
 

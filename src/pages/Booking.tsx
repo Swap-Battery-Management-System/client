@@ -42,6 +42,7 @@ interface BookingPayload {
 
 interface Vehicle {
   id: string;
+  name: string;
   status: "pending" | "active" | "inactive";
   batteryTypeId: string;
 }
@@ -92,11 +93,12 @@ export default function Booking() {
       setHasPendingBooking(pending);
     } catch (err) {
       console.log("không thể kiểm tra booking: ", err);
-    }finally{
+    } finally {
       setLoading(false);
     }
   };
 
+  //lấy xe của driver
   const fetchAllAvailableVehicle = async () => {
     try {
       const res = await api.get("/vehicles", { withCredentials: true });
@@ -107,6 +109,7 @@ export default function Booking() {
         .filter((v: any) => v.status === "active" && v.userId === user?.id)
         .map((v: any) => ({
           id: v.id,
+          name:v.name,
           status: v.status,
           batteryTypeId: v.model.batteryType.id,
         }));
@@ -349,7 +352,7 @@ export default function Booking() {
                       <SelectContent>
                         {vehicles.map((vh) => (
                           <SelectItem key={vh.id} value={vh.id}>
-                            {vh.id}
+                            {vh.name}
                           </SelectItem>
                         ))}
                       </SelectContent>
