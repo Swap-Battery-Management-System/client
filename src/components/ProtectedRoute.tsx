@@ -15,7 +15,7 @@ export const ProtectedRoute=({roles,children}:ProtectedRouteProps)=>{
       console.log("user",user);
         return <Navigate to={"/"} replace/>
     }
-    console.log("test role:",user.role);
+    console.log("test role:",user.role.name);
 
     switch (user.status) {
       
@@ -28,7 +28,7 @@ export const ProtectedRoute=({roles,children}:ProtectedRouteProps)=>{
     }
 
 
-    if(!roles.includes(user.role)){
+    if(!roles.includes(user.role.name)){
       return <Navigate to={"/"} replace />;
     }
     return<>{children}</>;

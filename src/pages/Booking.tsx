@@ -186,7 +186,7 @@ export default function Booking() {
     console.log(payload);
 
     try {
-      const res = await api.post("/bookings", payload, {
+      await api.post("/bookings", payload, {
         withCredentials: true,
       });
       setModalIcon(

@@ -34,7 +34,6 @@ export const StationProvider: React.FC<{ children: React.ReactNode }> = ({
       const res = await api.get("/stations", { withCredentials: true });
       const data: Station[] = res.data.data.station;
       setStations(data);
-      console.log("Danh sách trạm:", data);
     } catch (err) {
       console.error("Lỗi khi lấy danh sách trạm:", err);
     } finally {
@@ -67,8 +66,6 @@ export const StationProvider: React.FC<{ children: React.ReactNode }> = ({
         });
 
         const summary = res.data.features[0].properties.summary;
-        console.log("data distance",res.data);
-        console.log("summary:",summary);
         return {
           ...station,
           distance: summary.distance,

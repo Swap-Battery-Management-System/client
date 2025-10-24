@@ -9,8 +9,10 @@ export interface User {
   gender: boolean | null;
   address: string | null;
   avatarUrl: string | null;
-  role: string;            // "driver", "admin", ...
-  roleId: string;
+  role:{
+    id:string,
+    name:string,
+  },            // "driver", "admin", ...
   status: string;
   googleId?: string | null;
   createdAt?: string;

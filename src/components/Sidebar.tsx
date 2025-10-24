@@ -77,7 +77,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
               />
 
               <NavItem
-                to="#"
+                to="logout"
                 icon={<LogOut />}
                 label="Đăng xuất"
                 onClick={() => {

@@ -37,16 +37,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           gender: userData.gender,
           address: userData.address,
           avatarUrl: userData.avatarUrl,
-          role:
-            typeof userData.role === "object"
-              ? userData.role.name
-              : userData.role, // nếu API trả object thì lấy name
-          roleId: userData.roleId,
+          role:userData.role,
           status: userData.status,
           googleId: userData.googleId,
           createdAt: userData.createdAt,
         };
-        console.log("user",user);
+        console.log("user: ",user);
         setUser(user);
       } catch {
         setUser(null);

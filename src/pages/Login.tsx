@@ -81,8 +81,8 @@ export default function Login() {
 
       setType("success");
       setMessage("Đăng nhập thành công!");
-      console.log(user.role);
-      setTimeout(() => redirectByRole(user.role), 2000);
+      console.log(user.role.name);
+      setTimeout(() => redirectByRole(user.role.name), 2000);
     } catch (err: any) {
       setType("error");
       if (err.response) {
@@ -115,7 +115,7 @@ export default function Login() {
 
       setType("success");
       setMessage(successMessage[res.status]);
-      setTimeout(() => redirectByRole(user.role), 2000);
+      setTimeout(() => redirectByRole(user.role.name), 2000);
     } catch (err: any) {
       setType("error");
       if (err.response) {
