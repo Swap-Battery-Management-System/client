@@ -1,4 +1,3 @@
-import type { Role } from "./roles";
 
 export interface User {
   id: string;
@@ -8,9 +7,8 @@ export interface User {
   email?: string;
   phone?: string;
   address?: string;
-  role: {
-    id: string,
-    name: string,
-  };
+  role: { id: string, name: string };
+  //ddax fix
   avatar?: string;
+  status: string;
 }

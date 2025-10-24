@@ -2,13 +2,7 @@ import type { Role } from "@/types/roles";
 import React, { createContext, useContext, useEffect, useState } from "react";
 import api from "@/lib/api";
 import { useNavigate } from "react-router-dom";
-
-interface User {
-  id: string;
-  username?: string;
-  role: Role;
-  status: String;
-}
+import type { User } from "@/types/user";
 
 interface AuthContextType {
   user: User | null;

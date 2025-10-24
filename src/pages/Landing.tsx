@@ -14,32 +14,33 @@ import { useNavigate } from "react-router-dom";
 import { useEffect } from "react";
 import { useAuth } from "@/context/AuthContext";
 
+
 function App() {
   const navigate = useNavigate();
   const handleLogin = () => navigate("/login");
   const { user, initialized } = useAuth();
 
-  useEffect(() => {
-    if (initialized && user) {
-      const timer = setTimeout(() => {
-        switch (user.role) {
-          case "admin":
-            navigate("/admin", { replace: true });
-            break;
-          case "staff":
-            navigate("/moderator", { replace: true });
-            break;
-          case "driver":
-            navigate("/home", { replace: true });
-            break;
-          default:
-            navigate("/", { replace: true });
-        }
-      }, 300); // delay 200ms để DOM kịp render
+  // useEffect(() => {
+  //   if (initialized && user) {
+  //     const timer = setTimeout(() => {
+  //       switch (user.role) {
+  //         case "admin":
+  //           navigate("/admin", { replace: true });
+  //           break;
+  //         case "staff":
+  //           navigate("/moderator", { replace: true });
+  //           break;
+  //         case "driver":
+  //           navigate("/home", { replace: true });
+  //           break;
+  //         default:
+  //           navigate("/", { replace: true });
+  //       }
+  //     }, 300); // delay 200ms để DOM kịp render
 
-      return () => clearTimeout(timer); // cleanup
-    }
-  }, [user, initialized, navigate]);
+  //     return () => clearTimeout(timer); // cleanup
+  //   }
+  // }, [user, initialized, navigate]);
 
   const handleSignUp = () => navigate("/register");
   return (
