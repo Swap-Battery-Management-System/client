@@ -87,7 +87,7 @@ export default function Login() {
 
       setType("success");
       setMessage("Đăng nhập thành công!");
-      setTimeout(() => redirectByRole(user.role), 3000);
+      setTimeout(() => redirectByRole(user.role.name), 3000);
     } catch (err: any) {
       setType("error");
       if (err.response) {
@@ -120,7 +120,7 @@ export default function Login() {
 
       setType("success");
       setMessage(successMessage[res.status]);
-      setTimeout(() => redirectByRole(user.role), 3000);
+      setTimeout(() => redirectByRole(user.role.name), 3000);
     } catch (err: any) {
       setType("error");
       if (err.response) {
@@ -140,7 +140,9 @@ export default function Login() {
 
 
   const handleResetPassword = (e: React.MouseEvent) => {
-    e.preventDefault();
+
+    e.preventDefault;
+    feature/admin-user-manager-handler
     navigate("/login/reset-password");
   };
 

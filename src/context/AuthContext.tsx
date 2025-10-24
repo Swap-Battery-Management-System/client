@@ -26,7 +26,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const [message, setMessage] = useState<string>("");
   const [initialized, setInitialized] = useState(false);
-  
+
 
   //kiem tra token con khong
   useEffect(() => {
@@ -38,10 +38,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         const user: User = {
           id: userData.id,
           username: userData.username,
-          role: userData.role.name,
+          role: userData.role,
           status: userData.status,
         };
-        console.log("user",user);
+        console.log("user", user);
+        console.log("role", user.role);
         setUser(user);
       } catch {
         setUser(null);
@@ -54,17 +55,17 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   //log out
-  const logout = async (onSuccess?:()=>void) => {
+  const logout = async (onSuccess?: () => void) => {
     try {
       await api.get("/auth/logout", { withCredentials: true });
       console.log("log out");
       setUser(null);
       setMessage("Đăng xuất thành công!");
-      if(onSuccess) onSuccess();      
-    } catch(err) {
-      console.log("thất bại",err);
+      if (onSuccess) onSuccess();
+    } catch (err) {
+      console.log("thất bại", err);
       setMessage("Đăng xuất thất bại!");
-    }finally{
+    } finally {
       setLoading(false);
     }
   };
