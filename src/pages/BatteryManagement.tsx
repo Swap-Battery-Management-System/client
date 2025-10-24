@@ -8,7 +8,7 @@ import { useStation } from "@/context/StationContext";
 
 export default function BatteryManagement() {
   const { user } = useAuth();
-  const role = user?.role;
+  const role = user?.role.name;
 
   const [batteries, setBatteries] = useState<Battery[]>([]);
   const [batteryTypes, setBatteryTypes] = useState<BatteryType[]>([]);

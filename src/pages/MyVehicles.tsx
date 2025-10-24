@@ -4,6 +4,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
+import { toast } from "sonner";
+
 import { useAuth } from "@/context/AuthContext";
 import {
   Dialog,
@@ -95,26 +97,26 @@ export default function MyVehicles() {
 
   // cập nhập thông tin xe
   const handleSaveEdit = async () => {
-    // if (!editVehicle) return;
-    // setEditLoading(true);
-    // try {
-    //   await api.patch(
-    //     `/vehicles/${editVehicle.id}`,
-    //     {
-    //       name: editName?.trim(),
-    //       licensePlates: editPlate?.trim(),
-    //     },
-    //     { withCredentials: true }
-    //   );
-    //   toast.success("Cập nhật thông tin xe thành công");
-    //   setEditOpen(false);
-    //   fetchVehicles();
-    // } catch (err) {
-    //   console.error("Lỗi cập nhật thông tin xe:", err);
-    //   toast.error("Cập nhật thất bại");
-    // } finally {
-    //   setEditLoading(false);
-    // }
+    if (!editVehicle) return;
+    setEditLoading(true);
+    try {
+      await api.patch(
+        `/vehicles/${editVehicle.id}`,
+        {
+          name: editName?.trim(),
+          licensePlates: editPlate?.trim(),
+        },
+        { withCredentials: true }
+      );
+      toast.success("Cập nhật thông tin xe thành công");
+      setEditOpen(false);
+      fetchVehicles();
+    } catch (err) {
+      console.error("Lỗi cập nhật thông tin xe:", err);
+      toast.error("Cập nhật thất bại");
+    } finally {
+      setEditLoading(false);
+    }
   };
 
   // Mở modal xác nhận cho actions liên quan status

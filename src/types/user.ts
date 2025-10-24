@@ -12,7 +12,7 @@ export interface User {
   role:{
     id:string,
     name:string,
-  },            // "driver", "admin", ...
+  };            // "driver", "admin", ...
   status: string;
   googleId?: string | null;
   createdAt?: string;
