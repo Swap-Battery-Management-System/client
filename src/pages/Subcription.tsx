@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 
 export default function Subscription() {
     const [planType, setPlanType] = useState<"Dung lượng" | "Số lần">("Dung lượng");
@@ -102,17 +102,17 @@ export default function Subscription() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-blue-100 via-white to-purple-100 animate-gradientSlow text-white flex flex-col items-center py-16">
-            <h1 className="text-5xl font-extrabold mb-4 bg-gradient-to-r from-purple-400 via-pink-500 to-blue-500 bg-clip-text text-transparent drop-shadow-[0_0_10px_rgba(168,85,247,0.5)]">
+        <div className="min-h-screen bg-gradient-to-b from-[#E8F6EF] via-white to-[#EAFDF6] flex flex-col items-center py-16 text-gray-800">
+            <h1 className="text-4xl font-extrabold mb-3 text-[#38A3A5] drop-shadow-sm">
                 Gói dịch vụ trạm đổi pin
             </h1>
 
-            <p className="text-gray-400 mb-8">
+            <p className="text-gray-600 mb-8">
                 Chọn gói phù hợp để tối ưu chi phí và trải nghiệm sạc pin xe điện của bạn
             </p>
 
             {/* Toggle giữa Dung lượng và Số lần */}
-            <div className="relative flex bg-gray-800 rounded-full p-2 mb-10 w-[320px]">
+            <div className="relative flex bg-[#C7F9CC] rounded-full p-2 mb-10 w-[320px] shadow-md">
                 {["Dung lượng", "Số lần"].map((type) => (
                     <button
                         key={type}
@@ -121,14 +121,14 @@ export default function Subscription() {
                             "relative z-10 flex-1 text-center py-2 text-sm font-medium transition-colors duration-200 rounded-full",
                             planType === type
                                 ? "text-white"
-                                : "text-gray-300 hover:text-white"
+                                : "text-[#2D6A4F] hover:text-[#1B4332]"
                         )}
                     >
                         {type}
                         {planType === type && (
                             <motion.div
                                 layoutId="activeToggle"
-                                className="absolute inset-0 bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400 rounded-full z-[-1]"
+                                className="absolute inset-0 bg-gradient-to-r from-[#57CC99] to-[#38A3A5] rounded-full z-[-1]"
                                 transition={{ type: "spring", stiffness: 400, damping: 30 }}
                             />
                         )}
@@ -136,76 +136,67 @@ export default function Subscription() {
                 ))}
             </div>
 
-
             {/* Các thẻ gói */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-[90%] max-w-6xl">
                 {plans[planType].map((plan, i) => (
                     <Card
                         key={i}
                         className={cn(
-                            "bg-gray-900 text-white rounded-2xl p-8 flex flex-col justify-between transition-all duration-300 hover:scale-105 hover:shadow-[0_0_25px_rgba(168,85,247,0.4)] relative overflow-hidden",
+                            "bg-white/80 rounded-2xl p-8 flex flex-col justify-between transition-all duration-300 hover:scale-105 shadow-md hover:shadow-xl border-2",
                             plan.name === "Theo ngày"
-                                ? "border-2 border-gray-400 hover:border-gray-300"
+                                ? "border-[#A3E4D7]"
                                 : plan.name === "Theo tháng"
-                                    ? "border-2 border-yellow-400 hover:border-yellow-300"
-                                    : "border-2 border-purple-400 hover:border-purple-300"
+                                    ? "border-[#57CC99]"
+                                    : "border-[#38A3A5]"
                         )}
                     >
-                        {/* Header */}
                         <div>
                             <div className="flex justify-between items-center mb-2">
-                                <h2 className="text-xl font-bold">{plan.name}</h2>
-                                <span className="text-sm text-purple-400 font-semibold">{plan.discount}</span>
+                                <h2 className="text-xl font-bold text-[#38A3A5]">{plan.name}</h2>
+                                <span className="text-sm text-[#57CC99] font-semibold">
+                                    {plan.discount}
+                                </span>
                             </div>
 
                             <div className="flex items-end gap-2 mb-1">
-                                <span className="text-gray-500 line-through text-sm">{plan.oldPrice}</span>
+                                <span className="text-gray-400 line-through text-sm">{plan.oldPrice}</span>
                             </div>
                             <div className="flex items-baseline gap-1 mb-4">
-                                <div className="text-3xl font-bold">{plan.price}</div>
-                                <div className="text-gray-400 text-sm">/ gói</div>
+                                <div className="text-3xl font-bold text-[#2D6A4F]">{plan.price}</div>
+                                <div className="text-gray-500 text-sm">/ gói</div>
                             </div>
                         </div>
 
-                        {/* Features */}
-                        <div className="flex-1">
-                            <ul className="space-y-2 text-gray-300 text-sm mb-6">
-                                {plan.capacity && (
-                                    <li>
-                                        Dung lượng:{" "}
-                                        <span className="text-purple-400 font-semibold">
-                                            {plan.capacity}
-                                        </span>
-                                    </li>
-                                )}
-                                {plan.swaps && (
-                                    <li>
-                                        Số lượt đổi:{" "}
-                                        <span className="text-purple-400 font-semibold">
-                                            {plan.swaps}
-                                        </span>
-                                    </li>
-                                )}
-                                {plan.features.map((f, idx) => (
-                                    <li key={idx} className="flex items-center gap-2">
-                                        ⚡ <span>{f}</span>
-                                    </li>
-                                ))}
-                            </ul>
-                        </div>
+                        <ul className="space-y-2 text-gray-600 text-sm mb-6">
+                            {plan.capacity && (
+                                <li>
+                                    Dung lượng:{" "}
+                                    <span className="text-[#38A3A5] font-semibold">
+                                        {plan.capacity}
+                                    </span>
+                                </li>
+                            )}
+                            {plan.swaps && (
+                                <li>
+                                    Số lượt đổi:{" "}
+                                    <span className="text-[#38A3A5] font-semibold">
+                                        {plan.swaps}
+                                    </span>
+                                </li>
+                            )}
+                            {plan.features.map((f, idx) => (
+                                <li key={idx} className="flex items-center gap-2">
+                                    ✅ <span>{f}</span>
+                                </li>
+                            ))}
+                        </ul>
 
-                        {/* Button */}
                         <Button
                             variant="default"
-                            className="w-full py-3 rounded-xl font-semibold text-white 
-                                bg-gradient-to-r from-purple-500 via-pink-500 to-orange-400
-                                hover:from-pink-500 hover:to-yellow-400 
-                                hover:scale-[1.03] hover:shadow-lg hover:shadow-pink-500/40
-                                transition-all duration-300 shadow-md shadow-purple-500/30"
+                            className="w-full py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-[#57CC99] to-[#38A3A5] hover:opacity-90 hover:shadow-lg transition-all duration-300"
                         >
                             {plan.buttonText}
                         </Button>
-
                     </Card>
                 ))}
             </div>

@@ -46,7 +46,7 @@ export default function Login() {
         navigate("/admin");
         break;
       case "staff":
-        navigate("/moderator");
+        navigate("/staff");
         break;
       case "driver":
         navigate("/home");
@@ -140,6 +140,7 @@ export default function Login() {
 
 
   const handleResetPassword = (e: React.MouseEvent) => {
+
     e.preventDefault;
     navigate("/login/reset-password");
   };

@@ -34,7 +34,7 @@ export default function FindStation() {
       const res = await api.get("/stations", { withCredentials: true });
       const data: Station[] = res.data.data.station;
       setStations(data);
-      console.log("ds tram: ",res.data);
+      console.log("ds tram: ", res.data);
     } catch (err) {
       console.log("Lỗi khi lấy danh sách trạm:", err);
     } finally {
@@ -81,9 +81,9 @@ export default function FindStation() {
   }, []);
 
   //lấy danh sách trạm
-  useEffect(()=>{
+  useEffect(() => {
     featchAllStation();
-  },[]);
+  }, []);
 
   //khi có keyword hoặc coords
   useEffect(() => {
@@ -178,7 +178,7 @@ export default function FindStation() {
           ) : (
             filteredStation.map((station) => (
               <StationCard
-                key={station.id} 
+                key={station.id}
                 pinAvailable={20}
                 station={station}
                 onclick={() => handleViewDetail(station)}
