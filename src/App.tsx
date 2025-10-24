@@ -8,6 +8,7 @@ import { Toaster } from "sonner";
 
 
 
+
 import StaffLayout from "./layout/StaffLayout";
 import Landing from "./pages/Landing";
 import Layout from "./layout/layout";
@@ -30,7 +31,7 @@ import AdminStationManagement from "./pages/AdminStationManagement";
 import BatteryManagement from "./pages/BatteryManagement";
 import AdminLayout from "./layout/AdminLayout";
 import ResetPassword from "./pages/ResetPassword";
-
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function App() {
   return (
