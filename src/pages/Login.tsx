@@ -142,7 +142,6 @@ export default function Login() {
   const handleResetPassword = (e: React.MouseEvent) => {
 
     e.preventDefault;
-    feature/admin-user-manager-handler
     navigate("/login/reset-password");
   };
 
