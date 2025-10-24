@@ -67,10 +67,8 @@ export default function AdminStationManagement() {
             const res = await api.get("/stations", { withCredentials: true });
             const data = res.data?.data?.station || [];
             setStations(data);
-            console.log("Danh sách trạm:", data);
-        } catch (err) {
-            console.error("Lỗi khi lấy danh sách trạm:", err);
-            toast.error("Không thể lấy dữ liệu trạm!");
+        } catch {
+            toast.error("Không thể lấy dữ liệu trạm");
         } finally {
             setLoading(false);
         }
@@ -80,35 +78,38 @@ export default function AdminStationManagement() {
         fetchStations();
     }, []);
 
-    // Cập nhật trạng thái trạm
-    const handleChangeStatus = async (id: string, newStatus: string) => {
+    // Cập nhật thông tin trạm từ modal
+    const handleUpdateStation = async () => {
+        if (!selectedStation) return;
+
         try {
+            const { id, name, address, slotCapacity, status } = selectedStation;
             await api.patch(
                 `/stations/${id}`,
-                { status: newStatus },
+                { name, address, slotCapacity, status },
                 { withCredentials: true }
             );
 
             setStations((prev) =>
-                prev.map((s) => (s.id === id ? { ...s, status: newStatus } : s))
+                prev.map((s) =>
+                    s.id === id ? { ...s, name, address, slotCapacity, status } : s
+                )
             );
 
-            toast.success(`Đã cập nhật trạng thái trạm thành "${newStatus}"`);
-        } catch (err) {
-            console.error("Lỗi khi cập nhật trạng thái:", err);
-            toast.error("Không thể cập nhật trạng thái!");
+            toast.success("Cập nhật thông tin trạm thành công");
+            setSelectedStation(null);
+        } catch {
+            toast.error("Cập nhật thông tin trạm thất bại");
         }
     };
 
-    // Filter và search
+    // Lọc trạm theo tìm kiếm và trạng thái
     const filteredStations = stations.filter((s) => {
-        const matchSearch =
+        const matchText =
             s.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
             s.address.toLowerCase().includes(searchTerm.toLowerCase());
-
         const matchStatus = filterStatus === "all" || s.status === filterStatus;
-
-        return matchSearch && matchStatus;
+        return matchText && matchStatus;
     });
 
     return (
@@ -118,9 +119,9 @@ export default function AdminStationManagement() {
                     Quản lý trạm (Admin)
                 </h1>
 
-                {/* Search + Filter */}
+                {/* Search & Filter */}
                 <div className="flex flex-wrap items-center gap-3 mb-4">
-                    <div className="relative flex-1 min-w-[220px] max-w-sm">
+                    <div className="relative flex-1 min-w-[240px] max-w-sm">
                         <input
                             type="text"
                             value={searchTerm}
@@ -132,71 +133,89 @@ export default function AdminStationManagement() {
                     </div>
 
                     <Select value={filterStatus} onValueChange={setFilterStatus}>
-                        <SelectTrigger className="w-[200px]">
+                        <SelectTrigger className="w-[180px]">
                             <SelectValue placeholder="Tất cả trạng thái" />
                         </SelectTrigger>
-
                         <SelectContent>
-                            <SelectItem value="all">Tất cả trạng thái</SelectItem>
-                            <SelectItem value="active">Active</SelectItem>
-                            <SelectItem value="inactive">Inactive</SelectItem>
+                            <SelectItem value="all">Tất cả</SelectItem>
+                            <SelectItem value="active" className="text-green-600">
+                                Active
+                            </SelectItem>
+                            <SelectItem value="inactive" className="text-red-600">
+                                Inactive
+                            </SelectItem>
                         </SelectContent>
                     </Select>
                 </div>
 
-                {/* Table trạm */}
+                {/* Loading */}
                 {loading && (
-                    <div className="text-center text-gray-500 mt-10 animate-pulse">
-                        Đang tải danh sách trạm...
-                    </div>
+                    <p className="text-center text-gray-500 mt-10 animate-pulse">
+                        Đang tải dữ liệu...
+                    </p>
                 )}
 
+                {/* Empty */}
                 {!loading && stations.length === 0 && (
-                    <div className="text-center text-gray-500 mt-10">
-                        Chưa có trạm nào trong hệ thống.
-                    </div>
+                    <p className="text-center text-gray-500 mt-10">Không có trạm nào.</p>
                 )}
 
+                {/* Table */}
                 {!loading && stations.length > 0 && (
                     <div className="overflow-x-auto mt-6">
-                        <table className="min-w-full table-auto border-collapse border border-[#CDE8E5] bg-white shadow-md rounded-lg">
+                        <table className="min-w-full table-auto border-collapse border border-[#CDE8E5] bg-white shadow-md">
                             <thead className="bg-[#E6F7F7] text-[#2F8F9D]">
                                 <tr>
-                                    <th className="border border-[#CDE8E5] px-3 py-2 text-sm font-semibold">STT</th>
-                                    <th className="border border-[#CDE8E5] px-3 py-2 text-sm font-semibold">Tên trạm</th>
-                                    <th className="border border-[#CDE8E5] px-3 py-2 text-sm font-semibold">Địa chỉ</th>
-                                    <th className="border border-[#CDE8E5] px-3 py-2 text-sm font-semibold">Số slot</th>
-                                    <th className="border border-[#CDE8E5] px-3 py-2 text-sm font-semibold">Trạng thái</th>
-                                    <th className="border border-[#CDE8E5] px-3 py-2 text-sm font-semibold">Hành động</th>
+                                    <th className="border border-[#CDE8E5] px-3 py-2 text-sm font-semibold">
+                                        STT
+                                    </th>
+                                    <th className="border border-[#CDE8E5] px-3 py-2 text-sm font-semibold">
+                                        Tên trạm
+                                    </th>
+                                    <th className="border border-[#CDE8E5] px-3 py-2 text-sm font-semibold">
+                                        Địa chỉ
+                                    </th>
+                                    <th className="border border-[#CDE8E5] px-3 py-2 text-sm font-semibold">
+                                        Số slot
+                                    </th>
+                                    <th className="border border-[#CDE8E5] px-3 py-2 text-sm font-semibold">
+                                        Trạng thái
+                                    </th>
+                                    <th className="border border-[#CDE8E5] px-3 py-2 text-sm font-semibold">
+                                        Hành động
+                                    </th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {filteredStations.map((s, index) => (
-                                    <tr key={s.id} className="hover:bg-gray-50 transition-all duration-150">
-                                        <td className="border border-[#CDE8E5] px-3 py-2 text-left">{index + 1}</td>
-                                        <td className="border border-[#CDE8E5] px-3 py-2 text-left">{s.name}</td>
-                                        <td className="border border-[#CDE8E5] px-3 py-2 text-left">{s.address}</td>
-                                        <td className="border border-[#CDE8E5] px-3 py-2 text-center">{s.slotCapacity}</td>
-                                        <td className="border border-[#CDE8E5] px-3 py-2 text-left">
-                                            <Select value={s.status} onValueChange={(val) => handleChangeStatus(s.id, val)}>
-                                                <SelectTrigger className="w-[120px]">
-                                                    <SelectValue placeholder={s.status} />
-                                                </SelectTrigger>
-                                                <SelectContent>
-                                                    <SelectItem value="active" className="text-green-600">Active</SelectItem>
-                                                    <SelectItem value="inactive" className="text-red-600">Inactive</SelectItem>
-                                                </SelectContent>
-                                            </Select>
+                                    <tr key={s.id} className="hover:bg-gray-50 transition">
+                                        <td className="border px-3 py-2">{index + 1}</td>
+                                        <td className="border px-3 py-2">{s.name}</td>
+                                        <td className="border px-3 py-2">{s.address}</td>
+                                        <td className="border px-3 py-2 text-center">{s.slotCapacity}</td>
+                                        <td className="border px-3 py-2 text-center">
+                                            <span
+                                                className={`font-medium ${s.status === "active"
+                                                    ? "text-green-600"
+                                                    : s.status === "inactive"
+                                                        ? "text-red-600"
+                                                        : "text-gray-600"
+                                                    }`}
+                                            >
+                                                {s.status === "active"
+                                                    ? "Active"
+                                                    : s.status === "inactive"
+                                                        ? "Inactive"
+                                                        : s.status}
+                                            </span>
                                         </td>
-                                        <td className="border border-[#CDE8E5] px-3 py-2">
-                                            <div className="flex justify-center gap-2">
-                                                <Button
-                                                    className="bg-blue-500 hover:bg-blue-600 text-white"
-                                                    onClick={() => setSelectedStation(s)}
-                                                >
-                                                    Xem chi tiết
-                                                </Button>
-                                            </div>
+                                        <td className="border px-3 py-2 text-center">
+                                            <Button
+                                                className="bg-blue-500 hover:bg-blue-600 text-white"
+                                                onClick={() => setSelectedStation(s)}
+                                            >
+                                                Quản lý
+                                            </Button>
                                         </td>
                                     </tr>
                                 ))}
@@ -205,50 +224,98 @@ export default function AdminStationManagement() {
                     </div>
                 )}
 
-                {/* Modal xem chi tiết */}
+                {/* Modal quản lý */}
                 <Dialog open={!!selectedStation} onOpenChange={() => setSelectedStation(null)}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl">
+                    <DialogContent className="max-w-lg bg-white rounded-2xl">
                         <DialogHeader>
-                            <DialogTitle className="text-[#2F8F9D] text-lg">
-                                Chi tiết trạm
-                            </DialogTitle>
-                            <DialogDescription>
-                                Thông tin chi tiết trạm được quản lý bởi admin
-                            </DialogDescription>
+                            <DialogTitle className="text-[#2F8F9D]">Quản lý trạm</DialogTitle>
+                            <DialogDescription>Chỉnh sửa thông tin trạm bởi Admin</DialogDescription>
                         </DialogHeader>
 
                         {selectedStation && (
                             <div className="space-y-3 mt-3">
                                 <div>
-                                    <Label className="text-[#2F8F9D]">Tên trạm:</Label>
-                                    <p>{selectedStation.name}</p>
+                                    <Label className="text-[#2F8F9D] font-medium">Tên trạm</Label>
+                                    <input
+                                        type="text"
+                                        value={selectedStation.name}
+                                        onChange={(e) =>
+                                            setSelectedStation({ ...selectedStation, name: e.target.value })
+                                        }
+                                        className="border rounded w-full px-2 py-1 text-sm"
+                                    />
                                 </div>
+
                                 <div>
-                                    <Label className="text-[#2F8F9D]">Địa chỉ:</Label>
-                                    <p>{selectedStation.address}</p>
+                                    <Label className="text-[#2F8F9D] font-medium">Địa chỉ</Label>
+                                    <input
+                                        type="text"
+                                        value={selectedStation.address}
+                                        onChange={(e) =>
+                                            setSelectedStation({ ...selectedStation, address: e.target.value })
+                                        }
+                                        className="border rounded w-full px-2 py-1 text-sm"
+                                    />
                                 </div>
+
                                 <div>
-                                    <Label className="text-[#2F8F9D]">Số slot:</Label>
-                                    <p>{selectedStation.slotCapacity}</p>
+                                    <Label className="text-[#2F8F9D] font-medium">Số slot</Label>
+                                    <input
+                                        type="number"
+                                        value={selectedStation.slotCapacity}
+                                        onChange={(e) =>
+                                            setSelectedStation({
+                                                ...selectedStation,
+                                                slotCapacity: Number(e.target.value),
+                                            })
+                                        }
+                                        className="border rounded w-full px-2 py-1 text-sm"
+                                    />
                                 </div>
+
                                 <div>
-                                    <Label className="text-[#2F8F9D]">Trạng thái:</Label>
-                                    <p>{selectedStation.status}</p>
+                                    <Label className="text-[#2F8F9D] font-medium">Trạng thái</Label>
+                                    <Select
+                                        value={selectedStation.status}
+                                        onValueChange={(val) =>
+                                            setSelectedStation({ ...selectedStation, status: val })
+                                        }
+                                    >
+                                        <SelectTrigger className="w-[150px]">
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="active">Active</SelectItem>
+                                            <SelectItem value="inactive">Inactive</SelectItem>
+                                        </SelectContent>
+                                    </Select>
                                 </div>
+
                                 <div>
-                                    <Label className="text-[#2F8F9D]">Danh sách pin:</Label>
-                                    <ul className="max-h-60 overflow-y-auto border p-2">
-                                        {selectedStation.batteries.map((b) => (
-                                            <li key={b.id} className="border-b py-1">
-                                                {b.code} - SOC: {b.soc}% - Trạng Thái: {statusBattery[b.status] || b.status}
-                                            </li>
-                                        ))}
+                                    <Label className="text-[#2F8F9D] font-medium">Pin tại trạm:</Label>
+                                    <ul className="max-h-56 overflow-y-auto border rounded p-2 mt-1">
+                                        {selectedStation.batteries.length > 0 ? (
+                                            selectedStation.batteries.map((b) => (
+                                                <li key={b.id} className="border-b py-1 text-sm">
+                                                    {b.code} | SOC: {b.soc}% | {statusBattery[b.status] || b.status}
+                                                </li>
+                                            ))
+                                        ) : (
+                                            <p className="text-gray-500 text-sm">Không có dữ liệu pin.</p>
+                                        )}
                                     </ul>
                                 </div>
                             </div>
                         )}
 
-                        <div className="flex justify-end mt-6">
+                        {/* Nút Lưu / Đóng */}
+                        <div className="flex justify-end pt-4 gap-2">
+                            <Button
+                                onClick={handleUpdateStation}
+                                className="bg-green-500 hover:bg-green-600 text-white"
+                            >
+                                Lưu
+                            </Button>
                             <Button
                                 onClick={() => setSelectedStation(null)}
                                 className="bg-[#2F8F9D] hover:bg-[#267D89] text-white"
