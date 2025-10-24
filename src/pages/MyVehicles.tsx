@@ -78,10 +78,10 @@ export default function MyVehicles() {
         setOpen(true);
     };
 
-    // 🗑️ Hủy liên kết (Xóa xe)
+    //  Hủy liên kết (Xóa xe)
     const handleUnlinkVehicle = async (vehicleId: string) => {
         if (!vehicleId) return;
-        if (!window.confirm("Bạn có chắc chắn muốn hủy liên kết (xóa) xe này không?")) return;
+        if (!window.confirm("Bạn có chắc chắn muốn hủy liên kết xe này không?")) return;
 
         try {
             const res = await api.delete(`/vehicles/${vehicleId}`, { withCredentials: true });
@@ -107,76 +107,74 @@ export default function MyVehicles() {
     return (
         <div className="flex h-screen bg-[#E9F8F8]">
             <main className="flex-1 p-8">
-                <h1 className="text-3xl text-center font-semibold mb-6 text-[#38A3A5]">
-                    Danh sách xe của tôi
+                <h1 className="text-4xl text-center font-bold mb-10 text-[#2C8C8E] tracking-wide">
+                    Xe Của Tôi
                 </h1>
 
-                {/* Loading */}
                 {loading && (
                     <div className="text-center text-gray-500 mt-10 animate-pulse">
                         Đang tải danh sách xe...
                     </div>
                 )}
 
-                {/* Nếu chưa có xe */}
                 {!loading && vehicles.length === 0 && (
-                    <div className="flex flex-col items-center justify-center mt-16 text-center space-y-4">
-                        <p className="text-gray-600 text-lg">Bạn chưa đăng ký xe nào.</p>
-
+                    <div className="flex flex-col items-center justify-center mt-16 space-y-4">
+                        <p className="text-gray-600 text-lg">
+                            Hiện bạn chưa có thông tin xe nào.
+                        </p>
                         <Button
                             onClick={() => navigate("/home/register-vehicle")}
-                            className="bg-[#38A3A5] hover:bg-[#2C8C8E] text-white px-6 py-3 text-lg rounded-xl shadow-md transition-all"
+                            className="bg-[#38A3A5] hover:bg-[#2C8C8E] text-white px-8 py-3 text-lg rounded-xl shadow-lg"
                         >
-                            + Đăng ký xe ngay
+                            + Thêm xe mới
                         </Button>
                     </div>
                 )}
 
-                {/* Danh sách xe */}
                 {!loading && vehicles.length > 0 && (
-                    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-8">
                         {vehicles.map((v) => (
                             <Card
                                 key={v.id}
-                                className="p-5 bg-white/80 border border-[#BCE7E8] shadow-md hover:shadow-lg transition-all duration-300"
+                                className="group p-6 rounded-2xl border border-white/40 bg-white backdrop-blur-lg shadow-xl transition-all duration-300 hover:shadow-2xl hover:scale-[1.04] text-center"
                             >
                                 <div className="space-y-2">
-                                    <h2 className="text-xl font-semibold text-[#38A3A5]">
+                                    <h2 className="text-2xl font-semibold text-[#2C8C8E] mb-4">
                                         {v.name}
                                     </h2>
-                                    <p className="text-sm text-gray-600">
-                                        Biển số: {v.licensePlates}
+                                    <p className="text-sm text-gray-700">
+                                        Biển số: <strong>{v.licensePlates}</strong>
                                     </p>
-                                    <p className="text-sm text-gray-600">
+                                    <p className="text-sm text-gray-700">
                                         Model: {v.model?.name || "Không rõ"}
                                     </p>
-                                    <p className="text-sm text-gray-600 truncate">
-                                        Số khung (VIN): {v.VIN}
+                                    <p className="text-sm text-gray-700 truncate">
+                                        VIN: {v.VIN}
                                     </p>
-                                    <p
-                                        className={`text-sm font-medium ${v.status === "active"
-                                            ? "text-green-600"
+
+                                    <span
+                                        className={`mt-4 px-3 py-1 text-xs rounded-full font-medium inline-block ${v.status === "active"
+                                            ? "bg-green-100 text-green-700"
                                             : v.status === "pending"
-                                                ? "text-yellow-600"
-                                                : "text-red-600"
+                                                ? "bg-yellow-100 text-yellow-700"
+                                                : "bg-red-100 text-red-700"
                                             }`}
                                     >
-                                        Trạng thái:{" "}
                                         {v.status === "pending"
                                             ? "Đang chờ duyệt"
                                             : v.status === "active"
                                                 ? "Đã duyệt"
                                                 : "Từ chối"}
-                                    </p>
+                                    </span>
                                 </div>
 
-                                <div className="flex justify-end mt-4">
+                                <div className="flex justify-center mt-5">
                                     <Button
                                         variant="outline"
-                                        className="text-[#38A3A5] border-[#38A3A5] hover:bg-[#38A3A5] hover:text-white transition-all"
+                                        className="text-[#2C8C8E] border-[#2C8C8E] hover:bg-[#2C8C8E] hover:text-white transition-all rounded-lg"
                                         onClick={() => handleViewDetails(v)}
                                     >
-                                        Quản Lý
+                                        Quản lý
                                     </Button>
                                 </div>
                             </Card>
@@ -184,39 +182,34 @@ export default function MyVehicles() {
                     </div>
                 )}
 
-                {/* Modal xem chi tiết */}
                 <Dialog open={open} onOpenChange={setOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl">
+                    <DialogContent className="max-w-lg bg-white rounded-2xl p-6 shadow-2xl">
                         <DialogHeader>
-                            <DialogTitle className="text-[#38A3A5] text-lg">
+                            <DialogTitle className="text-[#2C8C8E] text-xl font-bold">
                                 Chi tiết xe
                             </DialogTitle>
-                            <DialogDescription>
-                                Thông tin chi tiết về xe bạn đã đăng ký
+                            <DialogDescription className="text-gray-500">
+                                Kiểm tra và quản lý thông tin xe của bạn
                             </DialogDescription>
                         </DialogHeader>
 
                         {selectedVehicle && (
-                            <div className="space-y-3 mt-3">
-                                <div>
-                                    <Label className="text-[#38A3A5]">Tên:</Label>
-                                    <p>{selectedVehicle.name}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-[#38A3A5]">Biển số:</Label>
-                                    <p>{selectedVehicle.licensePlates}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-[#38A3A5]">Model:</Label>
-                                    <p>{selectedVehicle.model?.name || "Không rõ"}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-[#38A3A5]">Số khung (VIN):</Label>
-                                    <p>{selectedVehicle.VIN}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-[#38A3A5]">Trạng thái:</Label>
+                            <div className="mt-4">
+                                <div className="space-y-3 bg-gray-50 p-4 rounded-xl border">
                                     <p>
+                                        <Label className="text-[#2C8C8E]">Tên xe:</Label> {selectedVehicle.name}
+                                    </p>
+                                    <p>
+                                        <Label className="text-[#2C8C8E]">Biển số:</Label> {selectedVehicle.licensePlates}
+                                    </p>
+                                    <p>
+                                        <Label className="text-[#2C8C8E]">Model:</Label> {selectedVehicle.model?.name || "Không rõ"}
+                                    </p>
+                                    <p>
+                                        <Label className="text-[#2C8C8E]">VIN:</Label> {selectedVehicle.VIN}
+                                    </p>
+                                    <p>
+                                        <Label className="text-[#2C8C8E]">Trạng thái:</Label>{" "}
                                         {selectedVehicle.status === "pending"
                                             ? "Đang chờ duyệt"
                                             : selectedVehicle.status === "active"
@@ -224,35 +217,27 @@ export default function MyVehicles() {
                                                 : "Từ chối"}
                                     </p>
                                 </div>
+
+                                <div className="flex justify-between mt-6 gap-4">
+                                    <Button
+                                        onClick={() =>
+                                            selectedVehicle?.id &&
+                                            navigate(`/home/update-vehicle/${selectedVehicle.id}`)
+                                        }
+                                        className="bg-[#38A3A5] hover:bg-[#2C8C8E] text-white flex-1"
+                                    >
+                                        Cập nhật xe
+                                    </Button>
+
+                                    <Button
+                                        onClick={() => handleUnlinkVehicle(selectedVehicle.id)}
+                                        className="bg-red-500 hover:bg-red-600 text-white flex-1"
+                                    >
+                                        Hủy liên kết
+                                    </Button>
+                                </div>
                             </div>
                         )}
-
-                        <div className="flex justify-between mt-6">
-                            <Button
-                                onClick={() => {
-                                    console.log(
-                                        "🟦 Cập nhật xe được chọn:",
-                                        selectedVehicle?.id
-                                    );
-                                    if (selectedVehicle?.id) {
-                                        navigate(`/home/update-vehicle/${selectedVehicle.id}`);
-                                    } else {
-                                        toast.error("Không tìm thấy thông tin xe để cập nhật.");
-                                    }
-                                }}
-                                className="bg-[#38A3A5] hover:bg-[#2C8C8E] text-white"
-                            >
-                                Cập nhật
-                            </Button>
-
-                            <Button
-                                onClick={() => handleUnlinkVehicle(selectedVehicle?.id!)}
-                                className="bg-red-500 hover:bg-red-600 text-white"
-                            >
-                                Hủy liên kết
-                            </Button>
-                        </div>
-
                     </DialogContent>
                 </Dialog>
             </main>
