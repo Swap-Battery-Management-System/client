@@ -3,6 +3,8 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { motion } from "framer-motion";
+import api from "@/lib/api";
+import { toast } from "sonner";
 import {
     Dialog,
     DialogContent,
@@ -16,58 +18,46 @@ interface BookingHistoryItem {
     customerName: string;
     station: string;
     vehicleName: string;
+    licensePlates: string;
     batteryType: string;
-    dateTime: string;
+    scheduleTime: string;
     note?: string;
     status: "Đang tiến hành" | "Đã hoàn thành" | "Hủy đặt lịch" | "Quá hạn";
 }
 
+interface Vehicle {
+    id: string;
+    name: string;
+    licensePlates: string;
+    VIN?: string;
+    status?: string;
+    modelId?: string;
+    userId?: string;
+    batteryId?: string | null;
+    batteryType?: string;
+    model?: {
+        id: string;
+        name: string;
+        brand: string;
+        batteryTypeId: string;
+        batteryType?: {
+            id: string;
+            name: string;
+            designCapacity?: string;
+            price?: string;
+        }
+    }
+}
+
+interface Station { id: string; name: string; adrress: string; }
+
 export default function BookingHistory() {
-    useEffect(() => {
-        window.scrollTo(0, 0);
-    }, []);
+    const [history, setHistory] = useState<BookingHistoryItem[]>([]);
+    const [selectedBooking, setSelectedBooking] = useState<BookingHistoryItem | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [loading, setLoading] = useState(false);
 
-    const [history, setHistory] = useState<BookingHistoryItem[]>([
-        {
-            id: "B010",
-            station: "Trạm 1",
-            dateTime: "2025-10-12 14:00",
-            status: "Đang tiến hành",
-            customerName: "Nguyễn Như Đại",
-            vehicleName: "VinFast Evo 200",
-            batteryType: "Loại A",
-            note: "Đến sớm 10 phút.",
-        },
-        {
-            id: "B007",
-            station: "Trạm 2",
-            dateTime: "2025-10-11 09:30",
-            status: "Đã hoàn thành",
-            customerName: "Nguyễn Như Đại",
-            vehicleName: "VinFast Feliz S",
-            batteryType: "Loại B",
-        },
-        {
-            id: "B006",
-            station: "Trạm 3",
-            dateTime: "2025-10-10 15:00",
-            status: "Hủy đặt lịch",
-            customerName: "Nguyễn Như Đại",
-            vehicleName: "VinFast Klara",
-            batteryType: "Loại A",
-            note: "Không kịp đến trạm.",
-        },
-        {
-            id: "B004",
-            station: "Trạm 4",
-            dateTime: "2025-10-09 10:00",
-            status: "Quá hạn",
-            customerName: "Nguyễn Như Đại",
-            vehicleName: "VinFast Vento",
-            batteryType: "Loại C",
-        },
-    ]);
-
+    // Filter & pagination
     const [filterFrom, setFilterFrom] = useState("");
     const [filterTo, setFilterTo] = useState("");
     const [filterStatus, setFilterStatus] = useState<"Đang tiến hành" | "Đã kết thúc">("Đang tiến hành");
@@ -75,9 +65,104 @@ export default function BookingHistory() {
     const [currentPage, setCurrentPage] = useState(1);
     const itemsPerPage = 5;
 
-    const [selectedBooking, setSelectedBooking] = useState<BookingHistoryItem | null>(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [usersMap, setUsersMap] = useState<Map<string, string>>(new Map());
+    const [stationsMap, setStationsMap] = useState<Map<string, string>>(new Map());
+    const [vehiclesMap, setVehiclesMap] = useState<Map<string, Vehicle>>(new Map());
 
+    useEffect(() => {
+        const fetchResources = async () => {
+            try {
+                const [userRes, vehicleRes, stationRes] = await Promise.all([
+                    api.get("/auth/me"),
+                    api.get("/vehicles"),
+                    api.get("/stations")
+                ]);
+
+                // Users
+                const user = userRes.data.data.user;
+                const userMap = new Map<string, string>([[user.id, user.name || user.email]]);
+                console.log("User Map:", userMap);
+                setUsersMap(userMap);
+
+                // Vehicles
+                const vehicles: Vehicle[] = vehicleRes.data.data.vehicles;
+                const vehicleMap = new Map<string, Vehicle>(
+                    vehicles.map(v => [v.id, {
+                        id: v.id,
+                        name: v.name,
+                        licensePlates: v.licensePlates,
+                        VIN: v.VIN,
+                        status: v.status,
+                        modelId: v.modelId,
+                        userId: v.userId,
+                        batteryId: v.batteryId,
+                        model: v.model,
+                        batteryType: v.model?.batteryType?.name || "Chưa có"
+                    }])
+                );
+                console.log("Vehicle Map:", vehicleMap);
+                setVehiclesMap(vehicleMap);
+
+                // Stations
+                const stations: Station[] = stationRes.data.data.stations;
+                const stationMap = new Map<string, string>(stations.map(s => [s.id, s.name]));
+                console.log("Station Map:", stationMap);
+                setStationsMap(stationMap);
+
+            } catch (err) {
+                console.error("Fetch resources error:", err);
+                toast.error("Không thể tải dữ liệu người dùng, xe hoặc trạm");
+            }
+        };
+
+        fetchResources();
+    }, []);
+
+    const fetchBookings = async () => {
+        try {
+            setLoading(true);
+
+            const res = await api.get("/bookings");
+            const bookings = res.data.data.bookings || [];
+            console.log("Booking:", bookings);
+
+            const mappedData: BookingHistoryItem[] = bookings.map((b: any) => {
+                const vehicle = vehiclesMap.get(b.vehicleId);
+                return {
+                    id: b.id,
+                    customerName: usersMap.get(b.userId) || b.userId,
+                    station: stationsMap.get(b.stationId) || b.stationId,
+                    vehicleName: vehicle?.name || b.vehicleId,
+                    licensePlates: vehicle?.licensePlates || "N/A",
+                    batteryType: vehicle?.batteryType || "-",
+                    scheduleTime: b.scheduleTime || "",
+                    note: b.note,
+                    status:
+                        b.status === "scheduled"
+                            ? "Đang tiến hành"
+                            : b.status === "completed"
+                                ? "Đã hoàn thành"
+                                : b.status === "canceled"
+                                    ? "Hủy đặt lịch"
+                                    : "Quá hạn",
+                };
+            });
+
+            setHistory(mappedData);
+        } catch (err) {
+            toast.error("Không thể tải lịch sử đặt lịch ");
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (usersMap.size > 0 && vehiclesMap.size > 0 && stationsMap.size > 0) {
+            fetchBookings();
+        }
+    }, [usersMap, vehiclesMap, stationsMap]);
+
+    // Lọc & sắp xếp
     const filteredHistory = history
         .filter((item) => {
             let statusMatch = true;
@@ -93,14 +178,18 @@ export default function BookingHistory() {
 
             let fromMatch = true;
             let toMatch = true;
-            const itemDate = new Date(item.dateTime.split(" ")[0]);
-
-            if (filterFrom) fromMatch = itemDate >= new Date(filterFrom);
-            if (filterTo) toMatch = itemDate <= new Date(filterTo);
+            if (item.scheduleTime) {
+                const itemDate = new Date(item.scheduleTime);
+                if (!isNaN(itemDate.getTime())) { // kiểm tra hợp lệ
+                    const itemDay = itemDate.toISOString().split("T")[0]; // "YYYY-MM-DD"
+                    if (filterFrom) fromMatch = itemDay >= filterFrom;
+                    if (filterTo) toMatch = itemDay <= filterTo;
+                }
+            }
 
             return statusMatch && fromMatch && toMatch;
         })
-        .sort((a, b) => new Date(b.dateTime).getTime() - new Date(a.dateTime).getTime());
+        .sort((a, b) => new Date(b.scheduleTime).getTime() - new Date(a.scheduleTime).getTime());
 
     const totalPages = Math.ceil(filteredHistory.length / itemsPerPage);
     const displayedHistory = filteredHistory.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
@@ -122,7 +211,7 @@ export default function BookingHistory() {
                 Lịch sử đặt lịch
             </h1>
 
-            {/* Bộ lọc trạng thái */}
+            {/* Filter & date */}
             <div className="flex justify-center mb-4">
                 <div className="relative flex justify-center gap-4 mb-4 flex-wrap bg-[#C7F9CC] rounded-full p-2 w-[320px] shadow-md">
                     {["Đang tiến hành", "Đã kết thúc"].map((status) => (
@@ -151,31 +240,13 @@ export default function BookingHistory() {
                 </div>
             </div>
 
-            {/* Lọc theo ngày */}
             <div className="flex justify-center gap-2 mb-6 items-center text-[#2D6A4F]">
                 <span className="font-semibold">Từ</span>
-                <Input
-                    type="date"
-                    value={filterFrom}
-                    onChange={(e) => {
-                        setFilterFrom(e.target.value);
-                        setCurrentPage(1);
-                    }}
-                    className="max-w-[150px]"
-                />
+                <Input type="date" value={filterFrom} onChange={(e) => { setFilterFrom(e.target.value); setCurrentPage(1); }} className="max-w-[150px]" />
                 <span>đến</span>
-                <Input
-                    type="date"
-                    value={filterTo}
-                    onChange={(e) => {
-                        setFilterTo(e.target.value);
-                        setCurrentPage(1);
-                    }}
-                    className="max-w-[150px]"
-                />
+                <Input type="date" value={filterTo} onChange={(e) => { setFilterTo(e.target.value); setCurrentPage(1); }} className="max-w-[150px]" />
             </div>
 
-            {/* Nút lọc trạng thái chi tiết */}
             {filterStatus === "Đã kết thúc" && (
                 <div className="flex justify-center gap-2 mb-6">
                     {["Tất cả", "Đã hoàn thành", "Hủy đặt lịch", "Quá hạn"].map((status) => (
@@ -187,10 +258,7 @@ export default function BookingHistory() {
                                 ? "bg-gradient-to-r from-[#57CC99] to-[#38A3A5] text-white border-0"
                                 : "border-[#57CC99] text-[#38A3A5] hover:bg-[#E8F6EF]"
                             }
-                            onClick={() => {
-                                setSortStatus(status as any);
-                                setCurrentPage(1);
-                            }}
+                            onClick={() => { setSortStatus(status as any); setCurrentPage(1); }}
                         >
                             {status}
                         </Button>
@@ -198,7 +266,7 @@ export default function BookingHistory() {
                 </div>
             )}
 
-            {/* Danh sách lịch sử */}
+            {/* Booking cards */}
             <div className="flex flex-col gap-3 items-center">
                 {displayedHistory.map((item) => (
                     <Card
@@ -219,19 +287,17 @@ export default function BookingHistory() {
                         </div>
 
                         <div className="text-[#2D6A4F]">
-                            <div className="font-semibold">Mã đặt lịch: {item.id}</div>
+                            <div className="font-semibold">Tên Xe: {item.vehicleName}</div>
+                            <div>Biển số: {item.licensePlates}</div>
                             <div>Tên trạm: {item.station}</div>
-                            <div>Thời gian đặt lịch: {item.dateTime}</div>
+                            <div>Thời gian đặt lịch: {item.scheduleTime ? new Date(item.scheduleTime).toLocaleString("vi-VN") : "Chưa có"}</div>
                         </div>
 
                         <div className="mt-4 flex justify-center">
                             <Button
                                 size="sm"
                                 className="bg-gradient-to-r from-[#57CC99] to-[#38A3A5] text-white rounded-xl hover:opacity-90"
-                                onClick={() => {
-                                    setSelectedBooking(item);
-                                    setIsModalOpen(true);
-                                }}
+                                onClick={() => { setSelectedBooking(item); setIsModalOpen(true); }}
                             >
                                 Xem chi tiết
                             </Button>
@@ -240,7 +306,7 @@ export default function BookingHistory() {
                 ))}
             </div>
 
-            {/* Phân trang */}
+            {/* Pagination */}
             <div className="flex justify-center mt-6 gap-2">
                 {Array.from({ length: totalPages }, (_, i) => (
                     <Button
@@ -258,7 +324,7 @@ export default function BookingHistory() {
                 ))}
             </div>
 
-            {/* Modal chi tiết */}
+            {/* Modal */}
             <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>
@@ -275,9 +341,10 @@ export default function BookingHistory() {
                             <p><strong>Mã đặt lịch:</strong> {selectedBooking.id}</p>
                             <p><strong>Tên người đặt:</strong> {selectedBooking.customerName}</p>
                             <p><strong>Tên xe:</strong> {selectedBooking.vehicleName}</p>
+                            <p><strong>Biển số:</strong> {selectedBooking.licensePlates}</p>
                             <p><strong>Loại pin:</strong> {selectedBooking.batteryType}</p>
                             <p><strong>Tên trạm:</strong> {selectedBooking.station}</p>
-                            <p><strong>Thời gian:</strong> {selectedBooking.dateTime}</p>
+                            <p><strong>Thời gian:</strong> {selectedBooking.scheduleTime ? new Date(selectedBooking.scheduleTime).toLocaleString("vi-VN") : "Chưa có"}</p>
                             <p>
                                 <strong>Trạng thái:</strong>{" "}
                                 <span

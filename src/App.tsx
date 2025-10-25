@@ -5,6 +5,7 @@ import RegisterInfo from "./pages/RegisterInfo";
 // import RegisterLayout from "./layout/RegisterLayout";
 import { Route, Routes } from "react-router";
 import { Toaster } from "sonner";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 
 
@@ -34,7 +35,6 @@ import StaffBookingManagement from "./pages/StaffBookingManagement";
 
 import AdminLayout from "./layout/AdminLayout";
 import ResetPassword from "./pages/ResetPassword";
-import { ProtectedRoute } from "./components/ProtectedRoute";
 
 function App() {
   return (

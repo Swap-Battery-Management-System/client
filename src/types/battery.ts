@@ -5,7 +5,11 @@ export type Battery = {
   manufacturedAt: string;
   cycleCount: number;
   soc: number;
-  status: "available" | "in_use" | "charging" | "faulty"|"in_transit";
+  status: string;
   stationId: string;
-  batteryTypeId: string;
+  batteryTypeId:string;
+  batteryType?:{
+    id:string;
+    name:string;
+  };
 };

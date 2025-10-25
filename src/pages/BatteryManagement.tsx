@@ -6,7 +6,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { FaSearch } from "react-icons/fa";
 
 // Kiểu dữ liệu Pin
 interface Battery {
@@ -49,22 +48,17 @@ export default function BatteryManagement() {
   const [station, setStation] = useState<Station | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Search & Filter state
-  const [searchCode, setSearchCode] = useState("");
-  const [filterStatus, setFilterStatus] = useState<Battery["status"] | "all">("all");
+  const [searchCode, setSearchCode] = useState(""); // tìm kiếm theo mã pin
+  const [filterStatus, setFilterStatus] = useState<Battery["status"] | "all">("all"); // lọc trạng thái
 
   const getStatusText = (status: Battery["status"]) => statusMap[status]?.label || "Không xác định";
   const getStatusClass = (status: Battery["status"]) => statusMap[status]?.textColor || "text-gray-600";
-
-  const handleStatusClick = (status: Battery["status"]) => {
-    setFilterStatus(prev => prev === status ? "all" : status);
-  };
 
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
-        // Lấy trạm
+        //  Lấy trạm
         const stationRes = await api.get("/stations", { withCredentials: true });
         const stationData: Station = stationRes.data.data.stations;
 
@@ -74,11 +68,11 @@ export default function BatteryManagement() {
           return;
         }
 
-        // Lấy danh sách pin đầy đủ (có batteryType)
+        //  Lấy danh sách pin đầy đủ (có batteryType)
         const batteriesRes = await api.get("/batteries", { withCredentials: true });
         const batteries: Battery[] = batteriesRes.data.data ?? [];
 
-        // Lọc pin thuộc trạm hiện tại
+        //  Lọc pin thuộc trạm hiện tại
         const stationBatteries = batteries.filter(b => b.stationId === stationData.id);
 
         setStation({ ...stationData, batteries: stationBatteries });
@@ -94,20 +88,6 @@ export default function BatteryManagement() {
     fetchData();
   }, []);
 
-  // Lọc pin theo search + status, bỏ qua khoảng trắng
-  const filteredBatteries = (station?.batteries || []).filter(b => {
-    const search = searchCode.replace(/\s+/g, "").toLowerCase();
-
-    // Chuẩn hóa dữ liệu pin (bỏ khoảng trắng và lowercase)
-    const codeNormalized = b.code.replace(/\s+/g, "").toLowerCase();
-    const typeNameNormalized = b.batteryType?.name.replace(/\s+/g, "").toLowerCase() || "";
-
-    const matchesSearch = codeNormalized.includes(search) || typeNameNormalized.includes(search);
-    const matchesStatus = filterStatus === "all" || b.status === filterStatus;
-
-    return matchesSearch && matchesStatus;
-  });
-
 
   return (
     <div className="p-8 bg-[#E9F8F8] min-h-screen">
@@ -121,7 +101,7 @@ export default function BatteryManagement() {
 
       {!loading && station && (
         <>
-          <Card className="p-6 mb-6 shadow-lg bg-white text-center border border-gray-200">
+          <Card className="p-6 mb-10 shadow-lg bg-white text-center border border-gray-200">
             <h2 className="text-2xl font-bold text-[#007577]">{station.name}</h2>
             {station.address && <p className="text-gray-600 mt-1 font-medium">📍 {station.address}</p>}
             {station.status && (
@@ -138,11 +118,7 @@ export default function BatteryManagement() {
               {Object.keys(statusMap).map(key => {
                 const k = key as Battery["status"];
                 return (
-                  <div
-                    key={k}
-                    className={`${statusMap[k].bgColor} p-3 rounded-lg cursor-pointer hover:opacity-80`}
-                    onClick={() => handleStatusClick(k)}
-                  >
+                  <div key={k} className={`${statusMap[k].bgColor} p-3 rounded-lg`}>
                     <p className={statusMap[k].textColor}>{statusMap[k].label}</p>
                     <p className={`font-bold text-lg ${statusMap[k].boldColor}`}>
                       {(station.batteries || []).filter(b => b.status === k).length}
@@ -155,36 +131,8 @@ export default function BatteryManagement() {
             <p className="mt-4 text-gray-900 font-bold">📦 Tổng số pin: {station.batteries?.length || 0}</p>
           </Card>
 
-          {/* Search + Filter */}
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
-            {/* Ô tìm kiếm với icon */}
-            <div className="relative flex-1 min-w-[220px] max-w-sm">
-              <input
-                type="text"
-                value={searchCode}
-                onChange={(e) => setSearchCode(e.target.value)}
-                placeholder="Tìm theo mã pin..."
-                className="border rounded pl-8 pr-2 py-1 w-full text-sm focus:outline-none focus:ring-2 focus:ring-[#38A3A5]"
-              />
-              <FaSearch className="absolute left-2 top-1/2 -translate-y-1/2 text-gray-400" />
-            </div>
-
-            {/* Dropdown filter trạng thái */}
-            <select
-              value={filterStatus}
-              onChange={e => setFilterStatus(e.target.value as Battery["status"] | "all")}
-              className="border border-gray-300 rounded p-2 text-sm"
-            >
-              <option value="all">Tất cả trạng thái</option>
-              {Object.keys(statusMap).map(key => (
-                <option key={key} value={key}>
-                  {statusMap[key as Battery["status"]].label}
-                </option>
-              ))}
-            </select>
-          </div>
-
           {/* Danh sách pin */}
+          <h2 className="text-xl font-bold text-[#2C8C8E] mb-5">Danh Sách Pin</h2>
           <div className="overflow-x-auto rounded-lg shadow">
             <table className="min-w-full bg-white">
               <thead className="bg-[#2C8C8E] text-white">
@@ -199,7 +147,7 @@ export default function BatteryManagement() {
                 </tr>
               </thead>
               <tbody>
-                {filteredBatteries.map(batt => (
+                {(station.batteries || []).map(batt => (
                   <tr key={batt.id} className="border-b hover:bg-gray-50">
                     <td className="py-3 px-4 font-semibold">{batt.code}</td>
                     <td className="py-3 px-4">{batt.batteryType?.name || "-"}</td>
@@ -210,7 +158,9 @@ export default function BatteryManagement() {
                       {getStatusText(batt.status)}
                     </td>
                     <td className="py-3 px-4 text-center">
-                      <Button variant="outline" size="sm">Xem chi tiết</Button>
+                      <Button variant="outline" size="sm">
+                        Xem chi tiết
+                      </Button>
                     </td>
                   </tr>
                 ))}
