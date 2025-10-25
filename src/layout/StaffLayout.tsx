@@ -12,13 +12,13 @@ import {
 import { useAuth } from "@/context/AuthContext";
 
 export default function StaffLayout() {
-    const {logout, user}=useAuth();
-    const navigate=useNavigate();
-    const handleLogout= ()=>{
-        logout(()=>{
-            navigate("/");
-        })
-    };
+  const { logout, user } = useAuth();
+  const navigate = useNavigate();
+  const handleLogout = () => {
+    logout(() => {
+      navigate("/");
+    })
+  };
   const links = [
     {
       name: "Dashboard",
@@ -32,7 +32,7 @@ export default function StaffLayout() {
     },
     {
       name: "Đặt lịch khách hàng",
-      path: "bookings",
+      path: "manage-booking",
       icon: <CalendarCheck size={18} />,
     },
     { name: "Báo cáo trạm", path: "reports", icon: <FileBarChart size={18} /> },
@@ -62,10 +62,9 @@ export default function StaffLayout() {
               to={link.path}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-2 rounded-md font-medium transition-all duration-200
-                ${
-                  isActive
-                    ? "bg-[#E6F7F7] text-[#38A3A5] border-l-4 border-[#38A3A5]"
-                    : "text-gray-700 hover:bg-[#E6F7F7] hover:text-[#38A3A5]"
+                ${isActive
+                  ? "bg-[#E6F7F7] text-[#38A3A5] border-l-4 border-[#38A3A5]"
+                  : "text-gray-700 hover:bg-[#E6F7F7] hover:text-[#38A3A5]"
                 }`
               }
             >
@@ -93,7 +92,7 @@ export default function StaffLayout() {
           </NavLink>
           <button
             className="flex items-center gap-2 text-[#38A3A5] hover:underline"
-            onClick={handleLogout} 
+            onClick={handleLogout}
           >
             <LogOut size={16} />
             Đăng xuất

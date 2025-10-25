@@ -27,8 +27,11 @@ import UpdateVehicle from "./pages/UpdateVehicle";
 import AdminVehicleManagement from "./pages/AdminVehicleManagement";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import AdminStationManagement from "./pages/AdminStationManagement";
+import AdminBatteryTypeManagement from "./pages/AdminBatteryTypeManagement";
 
 import BatteryManagement from "./pages/BatteryManagement";
+import StaffBookingManagement from "./pages/StaffBookingManagement";
+
 import AdminLayout from "./layout/AdminLayout";
 import ResetPassword from "./pages/ResetPassword";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -91,6 +94,7 @@ function App() {
           }
         >
           <Route path="manage-battery" element={<BatteryManagement />} />
+          <Route path="manage-booking" element={<StaffBookingManagement />} />
           {/* <Route index element={<StaffDashboard />} />
          
           <Route path="booking" element={<StaffBooking />} />
@@ -101,6 +105,7 @@ function App() {
           <Route path="manage-users" element={<AdminUserManagement />} />
           <Route path="manage-stations" element={<AdminStationManagement />} />
           <Route path="manage-vehicles" element={<AdminVehicleManagement />} />
+          <Route path="battery-types" element={<AdminBatteryTypeManagement />} />
         </Route>
       </Routes>
       <Toaster richColors position="top-center" />

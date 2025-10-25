@@ -65,8 +65,6 @@ export default function AdminVehicleManagement() {
                 withCredentials: true
             });
 
-            console.log(" Tất cả xe:", res.data);
-
             const data =
                 res?.data?.data?.vehicles ||
                 res?.data?.vehicles ||
@@ -229,6 +227,10 @@ export default function AdminVehicleManagement() {
                             </option>
                         ))}
                     </select>
+
+                    <span className="ml-auto font-semibold text-sm">
+                        Số lượng: {filteredVehicles.length}
+                    </span>
                 </div>
 
 
