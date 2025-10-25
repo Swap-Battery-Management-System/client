@@ -9,15 +9,16 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
+import logo from "/svg.svg"
 
 export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
-  const { logout} = useAuth();
+  const { logout } = useAuth();
   const navigate = useNavigate();
 
 
   const handleLogout = async () => {
     logout(() =>
-      navigate("/",{replace:true})
+      navigate("/", { replace: true })
     ); // truyền callback redirect
   };
 
@@ -43,8 +44,12 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
   ];
   return (
     <>
-      <header className="bg-white px-8 py-4 flex justify-center">
-        <div className="bg-white border border-[#38A3A5] w-full max-w-8xl rounded-full px-6 py-3 flex items-center justify-between">
+      <header className="bg-white px-8 py-4 
+      flex justify-center">
+        <div className="bg-white border 
+        border-[#38A3A5] w-full max-w-8xl 
+        rounded-full px-6 py-3 flex items-center 
+        justify-between">
           {/* Logo + Menu icon */}
           <div className="flex items-center gap-3">
             <button
@@ -53,8 +58,12 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
             >
               <Menu className="w-6 h-6" />
             </button>
-            <NavLink to="" className="text-2xl font-bold text-[#38A3A5]">
-              SwapNet
+            <NavLink to="/" className="flex items-center gap-2 ml-1">
+              <img
+                src={logo}
+                alt="EV Battery Swap Logo"
+                className="h-14 w-auto object-contain hover:opacity-90 transition"
+              />
             </NavLink>
           </div>
 
@@ -71,11 +80,10 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
               <NavLink
                 key={path}
                 to={`${path}`}
-                state={path==="find-station"?{openShowModal:true}:null}
+                state={path === "find-station" ? { openShowModal: true } : null}
                 end={path === ""}
                 className={({ isActive }) =>
-                  `hover:text-[#38A3A5] transition ${
-                    isActive ? "font-bold text-[#38A3A5]" : ""
+                  `hover:text-[#38A3A5] transition ${isActive ? "font-bold text-[#38A3A5]" : ""
                   }`
                 }
               >

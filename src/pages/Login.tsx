@@ -8,6 +8,8 @@ import { Input } from "../components/ui/input";
 import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
+import { NavLink } from "react-router-dom";
+import logo from "/svg.svg"
 
 interface FormData {
   identifier: string;
@@ -28,8 +30,8 @@ export default function Login() {
   useEffect(() => {
     if (!message) return;
 
-    if (type === "success") toast.success(message, {duration:1000});
-    else toast.error(message,{duration:1000});
+    if (type === "success") toast.success(message, { duration: 1000 });
+    else toast.error(message, { duration: 1000 });
 
   }, [message, type]);
 
@@ -150,7 +152,14 @@ export default function Login() {
       <div className="absolute w-52 h-52 bg-white/10 rounded-full bottom-20 right-20 blur-2xl"></div>
 
       <div className="relative z-10 w-[380px] md:w-[420px] bg-white/90 rounded-2xl shadow-lg p-8 text-center">
-        <h2 className="text-2xl font-semibold text-[#38A3A5]">SwapNet</h2>
+        <NavLink to="/" className="flex items-center gap-2 ml-1 justify-center">
+          <img
+            src={logo}
+            alt="EV Battery Swap Logo"
+            className="h-14 w-auto object-contain hover:opacity-90 transition"
+          />
+        </NavLink>
+
         <p className="mt-2 text-gray-600">Đăng nhập để tiếp tục với SwapNet</p>
 
         <form onSubmit={handleLogin} className="mt-6 space-y-5 text-left">
