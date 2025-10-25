@@ -27,6 +27,7 @@ export default function SetPassword() {
         try {
             await api.post("/auth/register", { email, password, status: "pending" });
             toast.success("Tạo tài khoản thành công! Vui lòng nhập thông tin cá nhân.");
+            localStorage.setItem("pendingEmail", email);
             navigate("/register/info", { state: { email } });
         } catch (err: any) {
             toast.error(err.response?.data?.message || "Không thể tạo tài khoản!");
