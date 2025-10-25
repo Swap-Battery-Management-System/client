@@ -47,6 +47,11 @@ interface Vehicle {
   batteryTypeId: string;
 }
 
+interface Battery{
+  id:string;
+
+}
+
 export default function Booking() {
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState("");

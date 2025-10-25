@@ -60,11 +60,6 @@ export default function AdminVehicleManagement() {
     const fetchAllVehicles = async () => {
         try {
             setLoading(true);
-            const token = localStorage.getItem("access_token");
-            if (!token) {
-                toast.error("Bạn cần đăng nhập với tư cách admin!");
-                return;
-            }
 
             const res = await api.get("/vehicles", {
                 withCredentials: true

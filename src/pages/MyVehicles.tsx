@@ -31,6 +31,7 @@ interface Vehicle {
     };
   };
   name?: string;
+  batteryId?:string;
 }
 
 export default function MyVehicles() {
@@ -128,30 +129,53 @@ export default function MyVehicles() {
 
   // Xử lý xác nhận: cancel => inactive, relink => pending
   const handleConfirmAction = async () => {
-    // if (!confirmVehicle || !confirmAction) return;
-    // setConfirmLoading(true);
-    // try {
-    //   const newStatus = confirmAction === "cancel" ? "inactive" : "pending";
-    //   await api.put(
-    //     `/vehicles/${confirmVehicle.id}/status`,
-    //     { status: newStatus },
-    //     { withCredentials: true }
-    //   );
-    //   toast.success("Cập nhật trạng thái thành công");
-    //   setConfirmOpen(false);
-    //   fetchVehicles();
-    // } catch (err) {
-    //   console.error("Lỗi khi cập nhật trạng thái:", err);
-    //   toast.error("Cập nhật trạng thái thất bại");
-    // } finally {
-    //   setConfirmLoading(false);
-    // }
-  };
+    if (!confirmVehicle || !confirmAction) return;
+    setConfirmLoading(true);
 
-  // Render nút hành động theo status 
+    try {
+      if (confirmAction === "cancel") {
+        const res = await api.get("/bookings", { withCredentials: true });
+        console.log(res.data);
+
+        // Kiểm tra xem xe có đang nằm trong booking đang hoạt động không
+        const hasActiveBooking = res.data.data.bookings.some(
+          (booking: any) =>
+            booking.vehicleId === confirmVehicle.id &&
+            booking.status === "scheduled"
+        );
+
+        if (hasActiveBooking) {
+          toast.error("Xe này đang trong booking, không thể hủy!");
+          setConfirmLoading(false);
+          setConfirmOpen(false);
+          return;
+        }
+      }
+
+      // không có booking đang hoạt động, cho phép cập nhật trạng thái
+      const newStatus = confirmAction === "cancel" ? "inactive" : "pending";
+      await api.patch(
+        `/vehicles/${confirmVehicle.id}`,
+        {
+          status: newStatus,
+        },
+        { withCredentials: true }
+      );
+
+      toast.success("Cập nhật trạng thái thành công");
+      setConfirmOpen(false);
+      fetchVehicles();
+    } catch (err) {
+      console.error("Lỗi khi cập nhật trạng thái:", err);
+      toast.error("Cập nhật trạng thái thất bại");
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+  // Render nút hành động theo status
   const renderActionButton = (v: Vehicle) => {
     const s = (v.status || "").toLowerCase();
-    if (s === "active" || s==="pending") {
+    if (s === "active" || s === "pending" || s==="invalid") {
       // active: show Huỷ liên kết
       return (
         <Button
@@ -267,9 +291,7 @@ export default function MyVehicles() {
               <DialogTitle className="text-[#38A3A5] text-lg">
                 Cập nhật thông tin xe
               </DialogTitle>
-              <DialogDescription>
-                Sửa tên xe và biển số 
-              </DialogDescription>
+              <DialogDescription>Sửa tên xe và biển số</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-3 mt-3">
