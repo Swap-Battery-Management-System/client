@@ -8,7 +8,7 @@ export type Battery = {
   status: string;
   stationId: string;
   batteryTypeId:string;
-  batteryType?:{
+  batteryType:{
     id:string;
     name:string;
   };

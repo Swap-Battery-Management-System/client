@@ -121,7 +121,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <NavLink
-                    to="/notifications"
+                    to="/home/notifications"
                     className="w-full text-center text-[#38A3A5] py-2 hover:underline"
                   >
                     Xem tất cả thông báo
@@ -141,16 +141,16 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
                 <DropdownMenuLabel>Tài khoản</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
-                  <NavLink to="/profile">Thông tin cá nhân</NavLink>
+                  <NavLink to="/home/profile">Thông tin cá nhân</NavLink>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <NavLink to="/my-vehicles">Phương tiện của tôi</NavLink>
+                  <NavLink to="/home/my-vehicles">Phương tiện của tôi</NavLink>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <NavLink to="/security-settings">Cài đặt bảo mật</NavLink>
+                  <NavLink to="/home/security-settings">Cài đặt bảo mật</NavLink>
                 </DropdownMenuItem>
                 <DropdownMenuItem asChild>
-                  <NavLink to="/my-subscription-packages">
+                  <NavLink to="/home/my-subscription-packages">
                     Gói thuê bao của tôi
                   </NavLink>
                 </DropdownMenuItem>

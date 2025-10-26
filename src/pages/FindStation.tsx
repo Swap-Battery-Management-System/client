@@ -95,7 +95,7 @@ export default function FindStation() {
         console.error("Không thể lấy vị trí", error);
         setLoadingCoords(false);
       },
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
     );
 
     return () => navigator.geolocation.clearWatch(watchId);

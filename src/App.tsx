@@ -45,9 +45,6 @@ function App() {
         <Route path="/register/verify" element={<OtpVerify />} />
         <Route path="/register/info" element={<RegisterInfo />} />
         <Route path="/register/password" element={<RegisterPassword />} />
-
-
-
         {/* Layout người dùng */}
         <Route
           path="/home"
@@ -68,7 +65,6 @@ function App() {
           <Route path="subscription-packages" element={<Subscription />} />
           <Route path="register-vehicle" element={<RegisterVehicle />} />
           <Route path="my-vehicles" element={<MyVehicles />} />
-          <Route path="/home/update-vehicle/:id" element={<UpdateVehicle />} />
 
           {/* <Route path="thong-tin-ca-nhan" element={<ThongTinCaNhan />} />
           <Route path="phuong-tien-cua-toi" element={<PhuongTienCuaToi />} />
@@ -85,12 +81,19 @@ function App() {
         <Route
           path="/staff"
           element={
-            // <ProtectedRoute roles={["staff"]}>
-            <StaffLayout />
-            // </ProtectedRoute>
+            <ProtectedRoute roles={["staff"]}>
+              <StaffLayout />
+            </ProtectedRoute>
           }
         >
-          <Route path="manage-battery" element={<BatteryManagement />} />
+          <Route
+            path="manage-battery"
+            element={
+              <ProtectedRoute roles={["staff", "admin"]}>
+                <BatteryManagement />
+              </ProtectedRoute>
+            }
+          />
           {/* <Route index element={<StaffDashboard />} />
          
           <Route path="booking" element={<StaffBooking />} />
@@ -101,6 +104,14 @@ function App() {
           <Route path="manage-users" element={<AdminUserManagement />} />
           <Route path="manage-stations" element={<AdminStationManagement />} />
           <Route path="manage-vehicles" element={<AdminVehicleManagement />} />
+          <Route
+            path="manage-battery"
+            element={
+              <ProtectedRoute roles={["staff", "admin"]}>
+                <BatteryManagement />
+              </ProtectedRoute>
+            }
+          />
         </Route>
       </Routes>
       <Toaster richColors position="top-center" />

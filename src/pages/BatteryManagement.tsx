@@ -14,6 +14,17 @@ import type { BatteryType } from "@/types/batteryType";
 import { useStation } from "@/context/StationContext";
 import { toast } from "sonner";
 
+interface NewBattery {
+  code: string;
+  batteryTypeId: string;
+  currentCapacity?: number;
+  soc?: number;
+  cycleCount?: number;
+  status: string;
+  stationId: string;
+  manufacturedAt: string;
+}
+
 export default function BatteryManagement() {
   const { user } = useAuth();
   const role = user?.role.name;
@@ -27,6 +38,19 @@ export default function BatteryManagement() {
   const [filterStatus, setFilterStatus] = useState("");
   const [filterStation, setFilterStation] = useState("all");
   const [editingBattery, setEditingBattery] = useState<Battery | null>(null);
+
+  //them pin
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newBattery, setNewBattery] = useState<NewBattery>({
+    code: "",
+    batteryTypeId: "",
+    currentCapacity: undefined,
+    soc: undefined,
+    cycleCount: undefined,
+    status: "",
+    stationId: "",
+    manufacturedAt: "",
+  });
 
   // Phân trang
   const [page, setPage] = useState(1);
@@ -86,25 +110,14 @@ export default function BatteryManagement() {
   // Lọc danh sách pin
   const filteredList = batteries.filter((pin) => {
     const typeName = pin.batteryType?.name || "";
-    const matchSearch = pin.code.toLowerCase().includes(searchId.toLowerCase());
+    const matchSearch = (pin.code || "")
+      .toLowerCase()
+      .includes(searchId.toLowerCase());
     const matchType = filterType ? typeName === filterType : true;
     const matchStatus = filterStatus ? pin.status === filterStatus : true;
     const matchStation =
       filterStation === "all" ? true : pin.stationId === filterStation;
     return matchSearch && matchType && matchStatus && matchStation;
-  });
-
-  //them pin
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newBattery, setNewBattery] = useState({
-    code: "",
-    batteryTypeId: "",
-    currentCapacity: 0,
-    soc: 100,
-    cycleCount: 0,
-    status: "available",
-    stationId: "",
-    manufacturedAt: "",
   });
 
   // Tính phân trang
@@ -135,33 +148,110 @@ export default function BatteryManagement() {
     }
   };
 
-  const handleAddBattery=()=>{
- 
-  }
-  const handleDelete=async (id:string)=>{
-     if (!confirm("Bạn có chắc muốn xóa pin này không?")) return;
-    try{
+  const handleAddBattery = async () => {
+    // Các trường bắt buộc (trừ status)
+    const requiredFields: (keyof NewBattery)[] = [
+      "code",
+      "currentCapacity",
+      "manufacturedAt",
+      "cycleCount",
+      "soc",
+      "batteryTypeId",
+      "stationId",
+    ];
+
+    // Kiểm tra trường nào bị thiếu
+    const missingFields = requiredFields.filter(
+      (field) => !newBattery[field] && newBattery[field] !== 0
+    );
+
+    if (missingFields.length > 0) {
+      alert("⚠️ Vui lòng nhập đầy đủ tất cả thông tin.");
+      return;
+    }
+
+    const batteryToAdd = {
+      ...newBattery,
+      status: newBattery.status?.trim() || "available", // Mặc định available
+    };
+    try {
+      // setLoading(true);
+      const res = await api.post("/batteries", batteryToAdd, {
+        withCredentials: true,
+      });
+      const added = res.data.data.battery;
+      console.log(res.data);
+      // Cập nhật danh sách pin
+      setBatteries((prev) => [...prev, added]);
+
+      // Reset form
+      setNewBattery({
+        code: "",
+        batteryTypeId: "",
+        currentCapacity: 0,
+        soc: 0,
+        cycleCount: 0,
+        status: "",
+        stationId: "",
+        manufacturedAt: "",
+      });
+
+      setShowAddForm(false);
+      toast.success(" Thêm pin mới thành công!");
+    } catch (error: any) {
+      console.error("Error adding battery:", error);
+      if (error.response) {
+        const status = error.response.status;
+        switch (status) {
+          case 400:
+            toast.error(" Dữ liệu không hợp lệ hoặc mã pin đã tồn tại.");
+            break;
+          case 401:
+            toast.error("Bạn chưa đăng nhập hoặc phiên đã hết hạn.");
+            break;
+          case 403:
+            toast.error(" Bạn không có quyền thực hiện thao tác này.");
+            break;
+          case 404:
+            toast.error(" Không tìm thấy endpoint hoặc dữ liệu liên quan.");
+            break;
+          case 500:
+            toast.error(" Lỗi máy chủ. Vui lòng thử lại sau.");
+            break;
+          default:
+            toast.error(`Lỗi không xác định (mã ${status}).`);
+        }
+      } else {
+        toast.error("Không thể kết nối đến máy chủ. Vui lòng kiểm tra mạng.");
+      }
+    } finally {
+      // setLoading(false);
+    }
+  };
+  const handleDelete = async (id: string) => {
+    if (!confirm("Bạn có chắc muốn xóa pin này không?")) return;
+    try {
       await api.delete(`batteries/${id}`);
       toast.success("Xóa pin thành công!");
       fetchBatteries();
-    }catch {
+    } catch {
       toast.error("Lỗi khi xóa pin!");
     }
   };
 
-  const markFaulty=async (id:string)=>{
-   try {
-     await api.patch(
-       `/batteries/${id}`,
-       { status: "faulty" },
-       { withCredentials: true }
-     );
-     toast.info("Đã đánh dấu pin lỗi!");
-     fetchBatteries();
-   } catch {
-     toast.error("Không thể đánh dấu lỗi!");
-   }
-  }
+  const markFaulty = async (id: string) => {
+    try {
+      await api.patch(
+        `/batteries/${id}`,
+        { status: "faulty" },
+        { withCredentials: true }
+      );
+      toast.info("Đã đánh dấu pin lỗi!");
+      fetchBatteries();
+    } catch {
+      toast.error("Không thể đánh dấu lỗi!");
+    }
+  };
 
   return (
     <div className="p-6 space-y-6 min-h-screen">
@@ -250,69 +340,190 @@ export default function BatteryManagement() {
       {/* Form thêm pin */}
       {showAddForm && (
         <div className="border p-4 rounded-md bg-[#F8FFFD]">
-          <h3 className="font-semibold mb-2 text-[#38A3A5]">Thêm pin mới</h3>
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-            <input
-              placeholder="Mã pin"
-              value={newBattery.code}
-              onChange={(e) =>
-                setNewBattery({ ...newBattery, code: e.target.value })
-              }
-              className="border rounded px-2 py-1 text-sm"
-            />
-            <select
-              value={newBattery.batteryTypeId}
-              onChange={(e) =>
-                setNewBattery({ ...newBattery, batteryTypeId: e.target.value })
-              }
-              className="border rounded px-2 py-1 text-sm"
-            >
-              <option value="">Chọn loại pin</option>
-              {batteryTypes.map((bt) => (
-                <option key={bt.id} value={bt.id}>
-                  {bt.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={newBattery.stationId}
-              onChange={(e) =>
-                setNewBattery({ ...newBattery, stationId: e.target.value })
-              }
-              className="border rounded px-2 py-1 text-sm"
-            >
-              <option value="">Chọn trạm</option>
-              {stations.map((st) => (
-                <option key={st.id} value={st.id}>
-                  {st.name}
-                </option>
-              ))}
-            </select>
-            <input
-              type="number"
-              placeholder="Dung lượng hiện tại"
-              value={newBattery.currentCapacity}
-              onChange={(e) =>
-                setNewBattery({
-                  ...newBattery,
-                  currentCapacity: Number(e.target.value),
-                })
-              }
-              className="border rounded px-2 py-1 text-sm"
-            />
-            <input
-              type="date"
-              value={newBattery.manufacturedAt}
-              onChange={(e) =>
-                setNewBattery({ ...newBattery, manufacturedAt: e.target.value })
-              }
-              className="border rounded px-2 py-1 text-sm"
-            />
+          <h3 className="font-semibold mb-3 text-[#38A3A5]">Thêm pin mới</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {/* Mã pin */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Mã pin
+              </label>
+              <input
+                placeholder="Nhập mã pin"
+                value={newBattery.code}
+                onChange={(e) =>
+                  setNewBattery({ ...newBattery, code: e.target.value })
+                }
+                className="border rounded px-2 py-1 w-full text-sm"
+              />
+            </div>
+
+            {/* Loại pin */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Loại pin
+              </label>
+              <select
+                value={newBattery.batteryTypeId}
+                onChange={(e) =>
+                  setNewBattery({
+                    ...newBattery,
+                    batteryTypeId: e.target.value,
+                  })
+                }
+                className="border rounded px-2 py-1 w-full text-sm"
+              >
+                <option value="">Chọn loại pin</option>
+                {batteryTypes.map((bt) => (
+                  <option key={bt.id} value={bt.id}>
+                    {bt.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Trạm */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Trạm
+              </label>
+              <select
+                value={newBattery.stationId}
+                onChange={(e) =>
+                  setNewBattery({ ...newBattery, stationId: e.target.value })
+                }
+                className="border rounded px-2 py-1 w-full text-sm"
+              >
+                <option value="">Chọn trạm</option>
+                {stations.map((st) => (
+                  <option key={st.id} value={st.id}>
+                    {st.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Dung lượng hiện tại */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Dung lượng hiện tại (mAh)
+              </label>
+              <input
+                type="number"
+                placeholder="Nhập số dung lượng"
+                value={newBattery.currentCapacity ?? ""}
+                onChange={(e) => {
+                  const value =
+                    e.target.value === "" ? undefined : Number(e.target.value);
+                  if (value !== undefined && value < 0) return;
+                  setNewBattery({ ...newBattery, currentCapacity: value });
+                }}
+                className="border rounded px-2 py-1 w-full text-sm"
+              />
+            </div>
+
+            {/* Số chu kỳ sạc */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Số chu kỳ sạc
+              </label>
+              <input
+                type="number"
+                placeholder="Nhập số chu kỳ"
+                value={newBattery.cycleCount ?? ""}
+                onChange={(e) => {
+                  const value =
+                    e.target.value === "" ? undefined : Number(e.target.value);
+                  if (value !== undefined && value < 0) return;
+                  setNewBattery({ ...newBattery, cycleCount: value });
+                }}
+                className="border rounded px-2 py-1 w-full text-sm"
+              />
+            </div>
+
+            {/* SOC */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                SOC (%)
+              </label>
+              <input
+                type="number"
+                placeholder="Nhập SOC (0–100)"
+                value={newBattery.soc ?? ""}
+                onChange={(e) => {
+                  const value =
+                    e.target.value === "" ? undefined : Number(e.target.value);
+                  if (value !== undefined && (value < 0 || value > 100)) return; // chỉ cho 0–100
+                  setNewBattery({ ...newBattery, soc: value });
+                }}
+                className="border rounded px-2 py-1 w-full text-sm"
+              />
+            </div>
+
+            {/* Ngày sản xuất */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Ngày sản xuất
+              </label>
+              <input
+                type="date"
+                max={new Date().toISOString().split("T")[0]} // chặn chọn ngày tương lai
+                value={newBattery.manufacturedAt}
+                onChange={(e) =>
+                  setNewBattery({
+                    ...newBattery,
+                    manufacturedAt: e.target.value,
+                  })
+                }
+                className="border rounded px-2 py-1 w-full text-sm"
+              />
+            </div>
+
+            {/* Trạng thái */}
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Trạng thái
+              </label>
+              <select
+                value={newBattery.status || "available"}
+                onChange={(e) =>
+                  setNewBattery({ ...newBattery, status: e.target.value })
+                }
+                className="border rounded px-2 py-1 w-full text-sm"
+              >
+                <option value="available">available</option>
+                <option value="in_use">in_use</option>
+                <option value="in_charged">in_charged</option>
+                <option value="in_transit">in_transit</option>
+                <option value="faulty">faulty</option>
+                <option value="reserved">reserved</option>
+              </select>
+            </div>
           </div>
-          <div className="mt-3 flex justify-end">
+
+          {/* Nút lưu */}
+          <div className="mt-4 flex justify-end">
             <button
-              onClick={handleAddBattery}
-              className="bg-[#38A3A5] text-white px-4 py-1 rounded hover:bg-[#2C7A7B] text-sm"
+              disabled={
+                !newBattery.code.trim() ||
+                !newBattery.batteryTypeId ||
+                !newBattery.stationId ||
+                newBattery.currentCapacity === undefined ||
+                newBattery.cycleCount === undefined ||
+                newBattery.soc === undefined ||
+                !newBattery.manufacturedAt
+              }
+              onClick={() => handleAddBattery()}
+              className={`px-4 py-1 rounded text-sm text-white transition ${
+                !newBattery.code ||
+                !newBattery.batteryTypeId ||
+                !newBattery.stationId ||
+                newBattery.currentCapacity === undefined ||
+                newBattery.cycleCount === undefined ||
+                newBattery.soc === undefined ||
+                !newBattery.manufacturedAt
+                  ? "bg-gray-400 cursor-not-allowed"
+                  : "bg-[#38A3A5] hover:bg-[#2C7A7B]"
+              }`}
             >
               Lưu pin mới
             </button>
@@ -457,22 +668,49 @@ export default function BatteryManagement() {
 
                 <td>
                   {isEditing ? (
-                    <select
-                      value={editingBattery.status}
-                      onChange={(e) =>
-                        setEditingBattery({
-                          ...editingBattery,
-                          status: e.target.value,
-                        })
-                      }
-                      className="border rounded px-2 py-1 text-sm"
-                    >
-                      <option value="available">Sẵn sàng</option>
-                      <option value="in_use">Đang sử dụng</option>
-                      <option value="charging">Đang sạc</option>
-                      <option value="in_transit">Đang vận chuyển</option>
-                      <option value="faulty">Lỗi</option>
-                    </select>
+                    (() => {
+                      const current = editingBattery.status;
+
+                      // Quy định chuyển trạng thái được phép
+                      const allowedTransitions: Record<string, string[]> = {
+                        available: [
+                          "in_use",
+                          "in_transit",
+                          "faulty",
+                          "reserved",
+                        ],
+                        in_use: ["in_charged", "faulty"],
+                        in_charged: ["available", "faulty"],
+                        in_transit: ["available", "faulty"],
+                        faulty: ["available"],
+                        reserved: ["available", "in_use", "faulty"], // Không có in_transit
+                      };
+
+                      // Lấy danh sách trạng thái cho phép, gồm cả current (để hiển thị)
+                      const allowedStatuses = [
+                        current,
+                        ...(allowedTransitions[current] || []),
+                      ].filter((v, i, a) => a.indexOf(v) === i); // unique
+
+                      return (
+                        <select
+                          value={editingBattery.status}
+                          onChange={(e) =>
+                            setEditingBattery({
+                              ...editingBattery,
+                              status: e.target.value,
+                            })
+                          }
+                          className="border rounded px-2 py-1 text-sm"
+                        >
+                          {allowedStatuses.map((status) => (
+                            <option key={status} value={status}>
+                              {status}
+                            </option>
+                          ))}
+                        </select>
+                      );
+                    })()
                   ) : (
                     <span className={getStatusColor(pin.status)}>
                       {pin.status}

@@ -199,7 +199,7 @@ export default function AdminVehicleManagement() {
                         <option value="">Tất cả trạng thái</option>
                         <option value="pending">Đang chờ duyệt</option>
                         <option value="active">Đã duyệt</option>
-                        <option value="inactive">Từ chối</option>
+                        <option value="invalid">Từ chối</option>
                     </select>
 
                     {/* Bộ lọc Model */}
