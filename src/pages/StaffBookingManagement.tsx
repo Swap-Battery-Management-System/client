@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { FaSearch } from "react-icons/fa";
+import { Card } from "@/components/ui/card";
 
 interface Booking {
     id: string;
@@ -18,6 +19,42 @@ interface Booking {
     stationId: string;
     createdAt: string;
     updatedAt?: string | null;
+}
+
+interface BookingHistoryItem {
+    id: string;
+    customerName: string;
+    station: string;
+    vehicleName: string;
+    licensePlates: string;
+    batteryType: string;
+    scheduleTime: string;
+    note?: string;
+    status: "Đang tiến hành" | "Đã hoàn thành" | "Hủy đặt lịch" | "Quá hạn";
+}
+
+interface Vehicle {
+    id: string;
+    name: string;
+    licensePlates: string;
+    VIN?: string;
+    status?: string;
+    modelId?: string;
+    userId?: string;
+    batteryId?: string | null;
+    batteryType?: string;
+    model?: {
+        id: string;
+        name: string;
+        brand: string;
+        batteryTypeId: string;
+        batteryType?: {
+            id: string;
+            name: string;
+            designCapacity?: string;
+            price?: string;
+        }
+    }
 }
 
 interface Station {
@@ -114,23 +151,31 @@ export default function StaffBookingManagement() {
 
             {!loading && station && (
                 <>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mb-6 text-sm font-medium">
-                        {Object.keys(bookingStatusMap).map(key => {
-                            const k = key as Booking["status"];
-                            return (
-                                <div
-                                    key={k}
-                                    className={`${bookingStatusMap[k].bgColor} p-3 rounded-lg cursor-pointer hover:opacity-80`}
-                                    onClick={() => handleStatusClick(k)}
-                                >
-                                    <p className={bookingStatusMap[k].textColor}>{bookingStatusMap[k].label}</p>
-                                    <p className={`font-bold text-lg ${bookingStatusMap[k].boldColor}`}>
-                                        {bookings.filter(b => b.status === k).length}
-                                    </p>
-                                </div>
-                            );
-                        })}
-                    </div>
+                    <Card className="p-6 mb-10 shadow-lg bg-white text-center border border-gray-200">
+                        <h2 className="text-2xl font-bold text-[#007577]">Tổng quan booking</h2>
+
+                        {/* Grid tổng quan booking theo trạng thái */}
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-5 mt-6 text-sm font-medium">
+                            {Object.keys(bookingStatusMap).map(key => {
+                                const k = key as Booking["status"];
+                                return (
+                                    <div
+                                        key={k}
+                                        className={`${bookingStatusMap[k].bgColor} p-3 rounded-lg cursor-pointer hover:opacity-80`}
+                                        onClick={() => handleStatusClick(k)}
+                                    >
+                                        <p className={bookingStatusMap[k].textColor}>{bookingStatusMap[k].label}</p>
+                                        <p className={`font-bold text-lg ${bookingStatusMap[k].boldColor}`}>
+                                            {bookings.filter(b => b.status === k).length}
+                                        </p>
+                                    </div>
+                                );
+                            })}
+                        </div>
+
+                        {/* Tổng số booking */}
+                        <p className="mt-4 text-gray-900 font-bold">📦 Tổng số booking: {bookings.length}</p>
+                    </Card>
 
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-2">
                         <div className="relative flex-1 min-w-[220px] max-w-sm">
@@ -156,6 +201,10 @@ export default function StaffBookingManagement() {
                                 </option>
                             ))}
                         </select>
+
+                        <span className="ml-auto font-semibold text-sm">
+                            Số lượng: {filteredBookings.length}
+                        </span>
                     </div>
 
                     <div className="overflow-x-auto rounded-lg shadow">

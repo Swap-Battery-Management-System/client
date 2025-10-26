@@ -47,8 +47,8 @@ interface Vehicle {
   batteryTypeId: string;
 }
 
-interface Battery{
-  id:string;
+interface Battery {
+  id: string;
 
 }
 
@@ -93,7 +93,9 @@ export default function Booking() {
       const res = await api.get("/bookings", { withCredentials: true });
       const bookings = res.data.data.bookings || [];
       const pending = bookings.some(
-        (b: any) => b.userId === user?.id && b.status === "scheduled"
+        (b: any) =>
+          b.userId === user?.id &&
+          (b.status === "scheduled" || b.status === "in_process" || b.status === "pending")
       );
       setHasPendingBooking(pending);
     } catch (err) {
@@ -114,7 +116,7 @@ export default function Booking() {
         .filter((v: any) => v.status === "active" && v.userId === user?.id)
         .map((v: any) => ({
           id: v.id,
-          name:v.name,
+          name: v.name,
           status: v.status,
           batteryTypeId: v.model.batteryType.id,
         }));

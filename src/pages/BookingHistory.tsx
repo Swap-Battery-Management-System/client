@@ -22,7 +22,7 @@ interface BookingHistoryItem {
     batteryType: string;
     scheduleTime: string;
     note?: string;
-    status: "Đang tiến hành" | "Đã hoàn thành" | "Hủy đặt lịch" | "Quá hạn";
+    status: "Đã đặt lịch" | "Đang tiến hành" | "Đã hoàn thành" | "Hủy đặt lịch" | "Quá hạn";
 }
 
 interface Vehicle {
@@ -139,12 +139,14 @@ export default function BookingHistory() {
                     note: b.note,
                     status:
                         b.status === "scheduled"
-                            ? "Đang tiến hành"
-                            : b.status === "completed"
-                                ? "Đã hoàn thành"
-                                : b.status === "canceled"
-                                    ? "Hủy đặt lịch"
-                                    : "Quá hạn",
+                            ? "Đã đặt lịch"
+                            : b.status === "in_process"
+                                ? "Đang đổi pin"
+                                : b.status === "completed"
+                                    ? "Đã hoàn thành"
+                                    : b.status === "canceled"
+                                        ? "Hủy đặt lịch"
+                                        : "Quá hạn",
                 };
             });
 
@@ -167,7 +169,7 @@ export default function BookingHistory() {
         .filter((item) => {
             let statusMatch = true;
             if (filterStatus === "Đang tiến hành") {
-                statusMatch = item.status === "Đang tiến hành";
+                statusMatch = ["Đã đặt lịch", "Đang đổi pin"].includes(item.status);
             } else if (filterStatus === "Đã kết thúc") {
                 if (sortStatus === "Tất cả") {
                     statusMatch = ["Đã hoàn thành", "Hủy đặt lịch", "Quá hạn"].includes(item.status);
