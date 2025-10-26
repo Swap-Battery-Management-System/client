@@ -23,13 +23,30 @@ export default function SetPassword() {
             return toast.error("Mật khẩu phải có ít nhất 8 ký tự gồm chữ hoa, chữ thường, số và ký tự đặc biệt!");
         if (password !== confirm)
             return toast.error("Mật khẩu và xác nhận không khớp!");
+
         setLoading(true);
         try {
-            await api.post("/auth/register", { email, password, status: "pending" });
-            toast.success("Tạo tài khoản thành công! Vui lòng nhập thông tin cá nhân.");
+            const res = await api.post("/auth/register", { email, password });
+            console.log("✅ Register response:", res.data);
+
+            const user = res.data?.data?.user;
+            if (!user || !user.id) {
+                toast.error("Không nhận được ID người dùng từ backend!");
+                return;
+            }
+
+            // Lưu email tạm để phòng reload mất state
             localStorage.setItem("pendingEmail", email);
-            navigate("/register/info", { state: { email } });
+            localStorage.setItem("pendingUserId", user.id);
+
+            toast.success("Tạo tài khoản thành công! Vui lòng nhập thông tin cá nhân.");
+
+            // 👉 Điều hướng sang trang nhập thông tin
+            navigate("/register/info", {
+                state: { email, userId: user.id },
+            });
         } catch (err: any) {
+            console.error("Register error:", err);
             toast.error(err.response?.data?.message || "Không thể tạo tài khoản!");
         } finally {
             setLoading(false);

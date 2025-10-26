@@ -3,7 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import axios from "axios";
@@ -13,9 +13,9 @@ export default function RegisterInfo() {
     const navigate = useNavigate();
     const location = useLocation();
     const email = location.state?.email || localStorage.getItem("pendingEmail");
-
+    const userId = location.state?.userId;
     const [form, setForm] = useState({
-        fullname: "",
+        fullName: "",
         username: "",
         phoneNumber: "",
         gender: "",
@@ -51,8 +51,10 @@ export default function RegisterInfo() {
     };
 
     const handleComplete = async () => {
-        if (!form.fullname || !form.username || !form.phoneNumber || !form.gender || !form.dateOfBirth)
+        if (!form.fullName || !form.username || !form.phoneNumber || !form.gender || !form.dateOfBirth)
             return toast.error("Vui lòng nhập đầy đủ thông tin!");
+
+        if (!userId) return toast.error("Không tìm thấy ID người dùng!");
 
         setLoading(true);
         try {
@@ -62,8 +64,8 @@ export default function RegisterInfo() {
                 avatarUrl = await uploadToImgBB(form.avatar);
             }
 
-            // ✅ Ghép địa chỉ đầy đủ lại 1 chuỗi
-            const fullAddress = [
+            // ✅ Gộp địa chỉ đầy đủ
+            const address = [
                 form.detailAddress,
                 form.ward,
                 form.district,
@@ -73,22 +75,22 @@ export default function RegisterInfo() {
                 .filter(Boolean)
                 .join(", ");
 
+            // ✅ Gọi API theo chuẩn mới
             await api.patch(
-                "/users/complete",
+                `/users/${userId}/complete`,
                 {
-                    email,
-                    fullname: form.fullname,
+                    fullName: form.fullName,
                     username: form.username,
                     phoneNumber: form.phoneNumber,
+                    address,
                     gender: form.gender === "male",
-                    dateOfBirth: form.dateOfBirth,
-                    address: fullAddress,
                     avatarUrl,
+                    dateOfBirth: form.dateOfBirth,
                 },
                 { withCredentials: true }
             );
 
-            toast.success("Hoàn tất đăng ký thành công!");
+            toast.success("Cập nhật thông tin thành công!");
             localStorage.removeItem("pendingEmail");
             navigate("/login");
         } catch (err: any) {
@@ -141,7 +143,7 @@ export default function RegisterInfo() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <Label className="mb-0.5 block">Họ và tên:</Label>
-                            <Input name="fullname" placeholder="VD: Nguyễn Văn A" onChange={handleChange} />
+                            <Input name="fullName" placeholder="VD: Nguyễn Văn A" onChange={handleChange} />
                         </div>
                         <div>
                             <Label className="mb-0.5 block">Tên đăng nhập:</Label>
@@ -186,9 +188,7 @@ export default function RegisterInfo() {
 
                         {/* ===== ĐỊA CHỈ ===== */}
                         <div className="col-span-2 mt-2">
-                            <h3 className="text-base font-semibold text-[#38A3A5] mb-2">
-                                Địa chỉ cư trú:
-                            </h3>
+                            <h3 className="text-base font-semibold text-[#38A3A5] mb-2">Địa chỉ cư trú:</h3>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div>
                                     <Label className="mb-0.5 block">Quốc gia:</Label>
