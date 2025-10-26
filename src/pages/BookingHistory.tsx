@@ -22,7 +22,7 @@ interface BookingHistoryItem {
     batteryType: string;
     scheduleTime: string;
     note?: string;
-    status: "Đã đặt lịch" | "Đang tiến hành" | "Đã hoàn thành" | "Hủy đặt lịch" | "Quá hạn";
+    status: "Đã đặt lịch" | "Đang đổi pin" | "Đã hoàn thành" | "Hủy đặt lịch" | "Quá hạn";
 }
 
 interface Vehicle {
@@ -49,7 +49,7 @@ interface Vehicle {
     }
 }
 
-interface Station { id: string; name: string; adrress: string; }
+interface Station { id: string; name: string; address: string; }
 
 export default function BookingHistory() {
     const [history, setHistory] = useState<BookingHistoryItem[]>([]);
@@ -276,13 +276,15 @@ export default function BookingHistory() {
                         className="relative p-5 w-full md:w-1/2 bg-white/80 border border-[#C7F9CC] shadow-sm rounded-2xl hover:shadow-lg hover:scale-[1.02] transition-all duration-300"
                     >
                         <div
-                            className={`absolute top-3 right-4 font-medium ${item.status === "Đang tiến hành"
+                            className={`absolute top-3 right-4 font-medium ${item.status === "Đã đặt lịch"
                                 ? "text-[#2D6A4F]"
-                                : item.status === "Đã hoàn thành"
-                                    ? "text-green-600"
-                                    : item.status === "Hủy đặt lịch"
-                                        ? "text-orange-500"
-                                        : "text-red-600"
+                                : item.status === "Đang đổi pin"
+                                    ? "text-blue-600"
+                                    : item.status === "Đã hoàn thành"
+                                        ? "text-green-600"
+                                        : item.status === "Hủy đặt lịch"
+                                            ? "text-orange-500"
+                                            : "text-red-600"
                                 }`}
                         >
                             {item.status}
@@ -351,13 +353,15 @@ export default function BookingHistory() {
                                 <strong>Trạng thái:</strong>{" "}
                                 <span
                                     className={
-                                        selectedBooking.status === "Đang tiến hành"
+                                        selectedBooking.status === "Đã đặt lịch"
                                             ? "text-[#2D6A4F]"
-                                            : selectedBooking.status === "Đã hoàn thành"
-                                                ? "text-green-600"
-                                                : selectedBooking.status === "Hủy đặt lịch"
-                                                    ? "text-orange-500"
-                                                    : "text-red-600"
+                                            : selectedBooking.status === "Đang đổi pin"
+                                                ? "text-blue-600"
+                                                : selectedBooking.status === "Đã hoàn thành"
+                                                    ? "text-green-600"
+                                                    : selectedBooking.status === "Hủy đặt lịch"
+                                                        ? "text-orange-500"
+                                                        : "text-red-600"
                                     }
                                 >
                                     {selectedBooking.status}
@@ -371,7 +375,7 @@ export default function BookingHistory() {
                         <p>Không có dữ liệu để hiển thị.</p>
                     )}
 
-                    {selectedBooking?.status === "Đang tiến hành" && (
+                    {selectedBooking?.status === "Đã đặt lịch" && (
                         <div className="mt-4 flex justify-end">
                             <Button
                                 variant="destructive"
