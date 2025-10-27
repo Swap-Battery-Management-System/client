@@ -11,11 +11,11 @@ import {
 } from "lucide-react";
 import { Footer } from "../components/Footer";
 import { useNavigate } from "react-router-dom";
+import { ProtectedRoute } from "../components/ProtectedRoute";
 
 function App() {
   const navigate = useNavigate();
   const handleLogin = () => navigate("/login");
-
   const handleSignUp = () => navigate("/register");
   return (
     <div className="min-h-screen flex flex-col bg-gradient-to-b from-white to-blue-50 text-[#2F3E46]">

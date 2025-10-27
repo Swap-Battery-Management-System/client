@@ -17,3 +17,4 @@ export interface User {
   googleId?: string | null;
   createdAt?: string;
 }
+

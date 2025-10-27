@@ -37,12 +37,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           gender: userData.gender,
           address: userData.address,
           avatarUrl: userData.avatarUrl,
-          role:userData.role,
+          role: userData.role,
           status: userData.status,
           googleId: userData.googleId,
           createdAt: userData.createdAt,
         };
-        console.log("user: ",user);
+        console.log("user: ", user);
         setUser(user);
       } catch {
         setUser(null);

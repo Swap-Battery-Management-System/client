@@ -48,8 +48,8 @@ interface Vehicle {
   batteryTypeId: string;
 }
 
-interface Battery{
-  id:string;
+interface Battery {
+  id: string;
 
 }
 

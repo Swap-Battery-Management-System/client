@@ -64,10 +64,19 @@ export default function AdminStationManagement() {
     const fetchStations = async () => {
         try {
             setLoading(true);
-            const res = await api.get("/stations", { withCredentials: true });
-            const data = res.data?.data?.station || [];
-            setStations(data);
-        } catch {
+
+            const res = await api.get<{ code: number; data: { stations: Station[] } }>("/stations", {
+                withCredentials: true,
+            });
+
+            if (res.data?.code === 200 && res.data.data?.stations) {
+                setStations(res.data.data.stations);
+            } else {
+                setStations([]);
+                toast.error("Không có dữ liệu trạm hợp lệ.");
+            }
+        } catch (error) {
+            console.error("Lỗi fetchStations:", error);
             toast.error("Không thể lấy dữ liệu trạm");
         } finally {
             setLoading(false);
@@ -146,6 +155,10 @@ export default function AdminStationManagement() {
                             </SelectItem>
                         </SelectContent>
                     </Select>
+
+                    <span className="ml-auto font-semibold text-sm">
+                        Số lượng: {filteredStations.length}
+                    </span>
                 </div>
 
                 {/* Loading */}

@@ -9,6 +9,7 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 
 
 
+
 import StaffLayout from "./layout/StaffLayout";
 import Landing from "./pages/Landing";
 import Layout from "./layout/layout";
@@ -27,12 +28,14 @@ import UpdateVehicle from "./pages/UpdateVehicle";
 import AdminVehicleManagement from "./pages/AdminVehicleManagement";
 import AdminUserManagement from "./pages/AdminUserManagement";
 import AdminStationManagement from "./pages/AdminStationManagement";
+import AdminBatteryTypeManagement from "./pages/AdminBatteryTypeManagement";
 
 import BatteryManagement from "./pages/BatteryManagement";
+import StaffBookingManagement from "./pages/StaffBookingManagement";
+
 import AdminLayout from "./layout/AdminLayout";
 import ResetPassword from "./pages/ResetPassword";
 import BatteryProcess from "./pages/BatteryProcess";
-
 
 function App() {
   return (
@@ -96,6 +99,8 @@ function App() {
             }
           />
           <Route path="swap-battery-process" element={<BatteryProcess/>}/>
+          <Route path="manage-battery" element={<BatteryManagement />} />
+          <Route path="manage-booking" element={<StaffBookingManagement />} />
           {/* <Route index element={<StaffDashboard />} />
          
           <Route path="booking" element={<StaffBooking />} />
@@ -114,6 +119,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="battery-types" element={<AdminBatteryTypeManagement />} />
         </Route>
       </Routes>
       <Toaster richColors position="top-center" />
