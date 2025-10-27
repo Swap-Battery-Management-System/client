@@ -5,6 +5,7 @@ import RegisterInfo from "./pages/RegisterInfo";
 // import RegisterLayout from "./layout/RegisterLayout";
 import { Route, Routes } from "react-router";
 import { Toaster } from "sonner";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
 
 

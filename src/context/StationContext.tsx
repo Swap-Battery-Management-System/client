@@ -32,7 +32,7 @@ export const StationProvider: React.FC<{ children: React.ReactNode }> = ({
     try {
       setLoading(true);
       const res = await api.get("/stations", { withCredentials: true });
-      const data: Station[] = res.data.data.station;
+      const data: Station[] = res.data.data.stations;
       setStations(data);
     } catch (err) {
       console.error("Lỗi khi lấy danh sách trạm:", err);
