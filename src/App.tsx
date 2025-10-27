@@ -31,6 +31,7 @@ import AdminStationManagement from "./pages/AdminStationManagement";
 import BatteryManagement from "./pages/BatteryManagement";
 import AdminLayout from "./layout/AdminLayout";
 import ResetPassword from "./pages/ResetPassword";
+import BatteryProcess from "./pages/BatteryProcess";
 
 
 function App() {
@@ -94,6 +95,7 @@ function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="swap-battery-process" element={<BatteryProcess/>}/>
           {/* <Route index element={<StaffDashboard />} />
          
           <Route path="booking" element={<StaffBooking />} />

@@ -31,7 +31,7 @@ export default function BatteryManagement() {
 
   const [batteries, setBatteries] = useState<Battery[]>([]);
   const [batteryTypes, setBatteryTypes] = useState<BatteryType[]>([]);
-  const { fetchAllStation, stations = [] } = useStation();
+  const { fetchAllStation, stations=[] } = useStation();
 
   const [searchId, setSearchId] = useState("");
   const [filterType, setFilterType] = useState("");
@@ -79,8 +79,10 @@ export default function BatteryManagement() {
     fetchBatteries();
     fetchBatteryTypes();
     fetchAllStation();
+    console.log(stations);
   }, []);
 
+ 
   // Lấy tên trạm
   const getStationName = (id: string) => {
     const st = stations.find((s) => s.id === id);
@@ -132,8 +134,14 @@ export default function BatteryManagement() {
     if (!editingBattery) return;
     try {
       const updatedData = {
-        ...editingBattery,
-        batteryTypeId: editingBattery.batteryType?.id,
+        code: editingBattery.code,
+        currentCapacity: editingBattery.currentCapacity,
+        manufacturedAt: new Date(editingBattery.manufacturedAt).toISOString(), // giữ đúng format yyyy-mm-dd
+        cycleCount: editingBattery.cycleCount,
+        soc: editingBattery.soc,
+        status: editingBattery.status,
+        batteryTypeId: editingBattery.batteryType?.id, // lấy id từ object
+        stationId: editingBattery.stationId,
       };
 
       await api.patch(`/batteries/${editingBattery.id}`, updatedData, {
@@ -248,8 +256,9 @@ export default function BatteryManagement() {
       );
       toast.info("Đã đánh dấu pin lỗi!");
       fetchBatteries();
-    } catch {
+    } catch(err:any) {
       toast.error("Không thể đánh dấu lỗi!");
+      console.log("không đánh dấu lỗi được", err)
     }
   };
 
@@ -301,19 +310,23 @@ export default function BatteryManagement() {
           <option value="reserved">reserved</option>
         </select>
 
-        {/* Lọc theo trạm */}
-        <select
-          value={filterStation}
-          onChange={(e) => setFilterStation(e.target.value)}
-          className="border rounded px-2 py-1 text-sm focus:ring-2 focus:ring-green-200"
-        >
-          <option value="all">Tất cả trạm</option>
-          {stations.map((st) => (
-            <option key={st.id} value={st.id}>
-              {st.name}
-            </option>
-          ))}
-        </select>
+        {role === "admin" && (
+          <>
+            {/* Lọc theo trạm */}
+            <select
+              value={filterStation}
+              onChange={(e) => setFilterStation(e.target.value)}
+              className="border rounded px-2 py-1 text-sm focus:ring-2 focus:ring-green-200"
+            >
+              <option value="all">Tất cả trạm</option>
+              {stations.map((st) => (
+                <option key={st.id} value={st.id}>
+                  {st.name}
+                </option>
+              ))}
+            </select>
+          </>
+        )}
 
         <button
           onClick={() => {
@@ -466,14 +479,26 @@ export default function BatteryManagement() {
               </label>
               <input
                 type="date"
-                max={new Date().toISOString().split("T")[0]} // chặn chọn ngày tương lai
+                max={
+                  new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+                    .toISOString()
+                    .split("T")[0]
+                }
                 value={newBattery.manufacturedAt}
-                onChange={(e) =>
+                onChange={(e) => {
+                  const selected = e.target.value;
+                  const today = new Date().toISOString().split("T")[0];
+
+                  if (selected > today) {
+                    alert("Không thể chọn ngày trong tương lai!");
+                    return; // Không cập nhật state
+                  }
+
                   setNewBattery({
                     ...newBattery,
-                    manufacturedAt: e.target.value,
-                  })
-                }
+                    manufacturedAt: selected,
+                  });
+                }}
                 className="border rounded px-2 py-1 w-full text-sm"
               />
             </div>
@@ -616,6 +641,7 @@ export default function BatteryManagement() {
                   {isEditing ? (
                     <input
                       type="number"
+                      min={0}
                       value={editingBattery.currentCapacity}
                       onChange={(e) =>
                         setEditingBattery({
@@ -635,6 +661,7 @@ export default function BatteryManagement() {
                     <input
                       type="number"
                       value={editingBattery.soc}
+                      min={0}
                       onChange={(e) =>
                         setEditingBattery({
                           ...editingBattery,
@@ -652,6 +679,7 @@ export default function BatteryManagement() {
                   {isEditing ? (
                     <input
                       type="number"
+                      min={0}
                       value={editingBattery.cycleCount}
                       onChange={(e) =>
                         setEditingBattery({
