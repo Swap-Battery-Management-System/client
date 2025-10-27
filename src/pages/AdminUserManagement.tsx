@@ -17,7 +17,7 @@ export default function AdminUserManagement() {
     const [loading, setLoading] = useState(false);
 
     // ==========================
-    // 🧭 1. Lấy toàn bộ users
+    //  1. Lấy toàn bộ users
     // ==========================
     const fetchUsers = async () => {
         try {
@@ -42,7 +42,7 @@ export default function AdminUserManagement() {
     }, []);
 
     // ==========================
-    // 🗑️ 2. Xoá user
+    //  2. Xoá user
     // ==========================
     const handleDelete = async (id: string) => {
         if (!confirm("Bạn có chắc muốn xoá người dùng này?")) return;

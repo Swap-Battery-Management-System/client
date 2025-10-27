@@ -20,7 +20,7 @@ export const ProtectedRoute=({roles,children}:ProtectedRouteProps)=>{
     switch (user.status) {
       
       case "pending":
-        return <Navigate to={`/register/info?id:${user.id}`} replace />;
+        return <Navigate to={`/register/info`} replace />;
       case "inactive":
         return <Navigate to="/" replace />;
       case "banned":
