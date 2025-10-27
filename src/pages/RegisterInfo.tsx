@@ -8,12 +8,16 @@ import api from "@/lib/api";
 import { toast } from "sonner";
 import axios from "axios";
 import { UploadCloud } from "lucide-react";
+import { useAuth } from "@/context/AuthContext";
 
 export default function RegisterInfo() {
     const navigate = useNavigate();
     const location = useLocation();
     const email = location.state?.email || localStorage.getItem("pendingEmail");
-    const userId = location.state?.userId;
+
+    const { user } = useAuth();
+    const userId = user?.id;
+    //  const userId = location.state?.userId || localStorage.getItem("pendingUserId");
 
     const [form, setForm] = useState({
         fullName: "",
@@ -227,6 +231,7 @@ export default function RegisterInfo() {
                             </Label>
                             <Input
                                 name="fullName"
+                                value={form.fullName}
                                 placeholder="VD: Nguyễn Văn A"
                                 onChange={handleChange}
                             />
@@ -238,6 +243,7 @@ export default function RegisterInfo() {
                             </Label>
                             <Input
                                 name="username"
+                                value={form.username}
                                 placeholder="VD: driver001"
                                 onChange={handleChange}
                             />
@@ -249,6 +255,7 @@ export default function RegisterInfo() {
                             </Label>
                             <Input
                                 name="phoneNumber"
+                                value={form.phoneNumber}
                                 placeholder="VD: 0901234567"
                                 onChange={handleChange}
                             />
@@ -264,6 +271,7 @@ export default function RegisterInfo() {
                                         type="radio"
                                         name="gender"
                                         value="male"
+                                        checked={form.gender === "male"}
                                         onChange={handleChange}
                                         className="accent-emerald-500 w-4 h-4"
                                     />
@@ -286,7 +294,11 @@ export default function RegisterInfo() {
                             <Label className="mb-1.5 block">
                                 Ngày sinh <span className="text-red-500">*</span>
                             </Label>
-                            <Input type="date" name="dateOfBirth" onChange={handleChange} />
+                            <Input
+                                type="date"
+                                name="dateOfBirth"
+                                value={form.dateOfBirth}
+                                onChange={handleChange} />
                         </div>
 
                         {/* === Địa chỉ === */}
@@ -380,6 +392,7 @@ export default function RegisterInfo() {
                                     </Label>
                                     <Input
                                         name="detailAddress"
+                                        value={form.detailAddress}
                                         placeholder="VD: 12 Nguyễn Văn Linh, Sky Garden 3"
                                         onChange={handleChange}
                                     />
