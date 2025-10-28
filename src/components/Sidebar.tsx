@@ -16,6 +16,7 @@ import {
   Bike,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import logo from "/svg.svg"
 
 interface SidebarProps {
   isOpen: boolean;
@@ -23,12 +24,12 @@ interface SidebarProps {
 }
 
 export default function Sidebar({ isOpen, onClose }: SidebarProps) {
-  const {logout}=useAuth();
-  const navigate=useNavigate();
+  const { logout } = useAuth();
+  const navigate = useNavigate();
 
-  const handleLogout=async()=>{
-    logout(()=>{
-      navigate("/",{replace:true});
+  const handleLogout = async () => {
+    logout(() => {
+      navigate("/", { replace: true });
     })
   }
   return (
@@ -46,8 +47,12 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
           >
             <Menu className="w-6 h-6" />
           </button>
-          <NavLink to="/home" className="text-2xl font-bold text-[#38A3A5]">
-            SwapNet
+          <NavLink to="/" className="flex items-center gap-2 ml-1">
+            <img
+              src={logo}
+              alt="EV Battery Swap Logo"
+              className="h-14 w-auto object-contain hover:opacity-90 transition"
+            />
           </NavLink>
         </div>
 
@@ -185,8 +190,7 @@ function NavItem({ to, icon, label, onClick, className = "" }: NavItemProps) {
       to={to}
       onClick={onClick}
       className={({ isActive }) =>
-        `flex items-center gap-2 px-3 py-2 rounded-md transition-colors duration-200 hover:bg-[#e8f7f7] hover:text-[#38A3A5] ${
-          isActive ? "bg-[#dff5f5] text-[#38A3A5]" : "text-gray-700"
+        `flex items-center gap-2 px-3 py-2 rounded-md transition-colors duration-200 hover:bg-[#e8f7f7] hover:text-[#38A3A5] ${isActive ? "bg-[#dff5f5] text-[#38A3A5]" : "text-gray-700"
         } ${className}`
       }
     >
