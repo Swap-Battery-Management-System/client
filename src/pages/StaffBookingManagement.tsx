@@ -247,7 +247,13 @@ export default function StaffBookingManagement() {
                 <>
                     {/* 🔹 Thẻ tổng quan booking */}
                     <Card className="p-6 mb-10 shadow-lg bg-white text-center border border-gray-200">
-                        <h2 className="text-2xl font-bold text-[#007577]">Tổng quan booking</h2>
+                        <h2 className="text-2xl font-bold text-[#007577]">{station.name}</h2>
+                        {station.address && (
+                            <p className="text-gray-600 mt-1 font-medium">📍 {station.address}</p>
+                        )}
+
+                        {/* Tiêu đề tổng quan booking */}
+                        <h3 className="text-xl font-semibold text-[#2C8C8E] mt-4">Tổng quan booking</h3>
 
                         <div className="grid grid-cols-2 md:grid-cols-5 gap-5 mt-6 text-sm font-medium">
                             {Object.keys(bookingStatusMap).map(key => {
@@ -272,7 +278,7 @@ export default function StaffBookingManagement() {
                         </div>
 
                         <p className="mt-4 text-gray-900 font-bold">
-                            📦 Tổng số booking: {bookings.length}
+                            Tổng số booking: {bookings.length}
                         </p>
                     </Card>
 

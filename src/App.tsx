@@ -126,6 +126,7 @@ function App() {
           />
           <Route path="battery-types" element={<AdminBatteryTypeManagement />} />
           <Route path="vehicle-models" element={<AdminVehicleModelManagement />} />
+
         </Route>
       </Routes>
       <Toaster richColors position="top-center" />

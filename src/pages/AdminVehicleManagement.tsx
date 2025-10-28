@@ -124,6 +124,26 @@ export default function AdminVehicleManagement() {
         setOpen(true);
     };
 
+    const getAllowedStatuses = (currentStatus: string) => {
+        switch (currentStatus) {
+            case "pending":
+                return [
+                    { value: "active", label: "Duyệt", color: "text-green-600" },
+                    { value: "inactive", label: "Từ chối", color: "text-red-600" },
+                ];
+            case "active":
+                return [
+                    { value: "inactive", label: "Từ chối", color: "text-red-600" },
+                ];
+            case "inactive":
+                return [
+                    { value: "active", label: "Duyệt", color: "text-green-600" },
+                ];
+            default:
+                return [];
+        }
+    };
+
     //  Lọc xe theo từ khóa và trạng thái
     const filteredVehicles = vehicles.filter((v) => {
         const matchSearch =
@@ -152,13 +172,14 @@ export default function AdminVehicleManagement() {
                 { withCredentials: true }
             );
 
-            // Cập nhật local state ngay lập tức
             setVehicles(prev =>
                 prev.map(v =>
                     v.id === id ? { ...v, status: newStatus } : v
                 )
             );
-
+            if (selectedVehicle?.id === id) {
+                setSelectedVehicle({ ...selectedVehicle, status: newStatus });
+            }
             toast.success(`Đã cập nhật trạng thái xe thành "${newStatus}"`);
         } catch (err) {
             console.error("Lỗi khi cập nhật trạng thái:", err);
@@ -274,81 +295,22 @@ export default function AdminVehicleManagement() {
                                             {v.model?.batteryType?.name || "Không rõ"}
                                         </td>
 
-                                        <td className="border border-[#CDE8E5] px-3 py-2 ">
-                                            <Select
-                                                value={v.status}
-                                                onValueChange={(value) => handleChangeStatus(v.id, value)}
+                                        <td className="border border-[#CDE8E5] px-3 py-2 text-center">
+                                            <span
+                                                className={`font-medium ${v.status === "active"
+                                                    ? "text-green-600"
+                                                    : v.status === "pending"
+                                                        ? "text-yellow-600"
+                                                        : "text-red-600"
+                                                    }`}
                                             >
-                                                <SelectTrigger className="w-[150px] mx-auto">
-                                                    <span
-                                                        className={`font-medium ${v.status === "active"
-                                                            ? "text-green-600"
-                                                            : v.status === "pending"
-                                                                ? "text-yellow-600"
-                                                                : v.status === "inactive"
-                                                                    ? "text-red-600"
-                                                                    : "text-gray-600"
-                                                            }`}
-                                                    >
-                                                        {v.status === "active"
-                                                            ? "Đã duyệt"
-                                                            : v.status === "pending"
-                                                                ? "Đang chờ duyệt"
-                                                                : v.status === "inactive"
-                                                                    ? "Từ chối"
-                                                                    : "Không rõ"}
-                                                    </span>
-                                                </SelectTrigger>
-
-                                                <SelectContent>
-                                                    <SelectItem value="pending" className="text-yellow-600">
-                                                        Đang chờ duyệt
-                                                    </SelectItem>
-                                                    <SelectItem value="active" className="text-green-600">
-                                                        Đã duyệt
-                                                    </SelectItem>
-                                                    <SelectItem value="inactive" className="text-red-600">
-                                                        Từ chối
-                                                    </SelectItem>
-                                                </SelectContent><SelectContent>
-                                                    {v.status === "pending" && (
-                                                        <>
-                                                            <SelectItem value="pending" className="text-yellow-600">
-                                                                Đang chờ duyệt
-                                                            </SelectItem>
-                                                            <SelectItem value="active" className="text-green-600">
-                                                                Đã duyệt
-                                                            </SelectItem>
-                                                            <SelectItem value="inactive" className="text-red-600">
-                                                                Từ chối
-                                                            </SelectItem>
-                                                        </>
-                                                    )}
-
-                                                    {v.status === "active" && (
-                                                        <>
-                                                            <SelectItem value="active" className="text-green-600">
-                                                                Đã duyệt
-                                                            </SelectItem>
-                                                            <SelectItem value="inactive" className="text-red-600">
-                                                                Từ chối
-                                                            </SelectItem>
-                                                        </>
-                                                    )}
-
-                                                    {v.status === "inactive" && (
-                                                        <>
-                                                            <SelectItem value="active" className="text-green-600">
-                                                                Đã duyệt
-                                                            </SelectItem>
-                                                            <SelectItem value="inactive" className="text-red-600">
-                                                                Từ chối
-                                                            </SelectItem>
-                                                        </>
-                                                    )}
-                                                </SelectContent>
-
-                                            </Select>
+                                                {v.status === "active"
+                                                    ? "Đã duyệt"
+                                                    : v.status === "pending"
+                                                        ? "Đang chờ duyệt"
+                                                        : "Từ chối"
+                                                }
+                                            </span>
                                         </td>
                                         <td className="border border-[#CDE8E5] px-3 py-2">
                                             <div className="flex justify-center gap-2">
@@ -356,7 +318,7 @@ export default function AdminVehicleManagement() {
                                                     className="bg-blue-500 hover:bg-blue-600 text-white"
                                                     onClick={() => handleViewDetails(v)}
                                                 >
-                                                    Xem chi tiết
+                                                    Quản Lý
                                                 </Button>
                                             </div>
                                         </td>
@@ -397,15 +359,39 @@ export default function AdminVehicleManagement() {
                                     <p>{selectedVehicle.model?.batteryType?.name || "Không rõ"}</p>
                                 </div>
                                 <div>
-                                    <Label className="text-[#2F8F9D]">Trạng thái:</Label>
-                                    <p>
-                                        {selectedVehicle.status === "pending"
-                                            ? "Đang chờ duyệt"
-                                            : selectedVehicle.status === "active"
-                                                ? "Đã duyệt"
-                                                : "Từ chối"}
-                                    </p>
+                                    <Label className="text-[#2F8F9D] mb-2">Trạng thái:</Label>
+                                    <Select
+                                        value={selectedVehicle.status}
+                                        onValueChange={(value) =>
+                                            handleChangeStatus(selectedVehicle.id, value)
+                                        }
+                                    >
+                                        <SelectTrigger className="w-full">
+                                            <span
+                                                className={`font-medium ${selectedVehicle.status === "active"
+                                                    ? "text-green-600"
+                                                    : selectedVehicle.status === "pending"
+                                                        ? "text-yellow-600"
+                                                        : "text-red-600"
+                                                    }`}
+                                            >
+                                                {selectedVehicle.status === "pending"
+                                                    ? "Đang chờ duyệt"
+                                                    : selectedVehicle.status === "active"
+                                                        ? "Đã duyệt"
+                                                        : "Từ chối"}
+                                            </span>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {getAllowedStatuses(selectedVehicle.status).map((s) => (
+                                                <SelectItem key={s.value} value={s.value} className={s.color}>
+                                                    {s.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
+
                             </div>
                         )}
 

@@ -23,7 +23,10 @@ export default function AdminUserManagement() {
     // Giả lập role admin
     const currentUserRole = "admin";
 
-    // Fetch users
+
+
+    // Fetch users    
+ feature/user-update-info
     const fetchUsers = async () => {
         try {
             setLoading(true);
@@ -41,6 +44,10 @@ export default function AdminUserManagement() {
     useEffect(() => {
         fetchUsers();
     }, []);
+
+
+    const handleDelete = async (id: string) => {
+        if (!confirm("Bạn có chắc muốn xoá người dùng này?")) return;
 
     // Delete user
     const handleDeleteConfirm = async () => {
