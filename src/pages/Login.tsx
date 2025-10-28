@@ -171,7 +171,10 @@ export default function Login() {
               type: "text",
               placeholder: "Nhập email hoặc tên đăng nhập",
               icon: (
-                <Mail className="absolute left-3 top-3 text-[#38A3A5]" size={18} />
+                <Mail
+                  className="absolute left-3 top-3 text-[#38A3A5]"
+                  size={18}
+                />
               ),
             },
             {
@@ -180,7 +183,10 @@ export default function Login() {
               type: "password",
               placeholder: "••••••••",
               icon: (
-                <Lock className="absolute left-3 top-3 text-[#38A3A5]" size={18} />
+                <Lock
+                  className="absolute left-3 top-3 text-[#38A3A5]"
+                  size={18}
+                />
               ),
             },
           ].map((field, idx) => (
@@ -228,7 +234,6 @@ export default function Login() {
             </div>
           ))}
 
-
           <Button
             type="submit"
             disabled={loading}
@@ -245,36 +250,19 @@ export default function Login() {
             <div className="flex-1 h-[1px] bg-gray-300"></div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              const googleBtn = document.querySelector<HTMLDivElement>(
-                "div[role='button'][id^='credential_picker']"
-              );
-              googleBtn?.click();
-            }}
-            className="w-full flex items-center justify-center gap-3 py-2.5 border border-gray-300 bg-white text-gray-700 rounded-md hover:bg-gray-100 transition shadow-sm"
-          >
-            <img
-              src="https://www.svgrepo.com/show/475656/google-color.svg"
-              alt="Google logo"
-              className="w-5 h-5"
-            />
-            <span className="font-medium">Đăng nhập với Google</span>
-          </button>
-
-          <div className="absolute opacity-0 pointer-events-none">
-            <GoogleLogin
-              onSuccess={handleGoogleLogin}
-              onError={handleGoogleError}
-              theme="outline"
-              shape="rectangular"
-              text="signin_with"
-              width="380"
-            />
+          <div className="mt-3 w-full flex justify-center">
+            <div className="w-full max-w-[380px]">
+              <GoogleLogin
+                onSuccess={handleGoogleLogin}
+                onError={handleGoogleError}
+                theme="outline"
+                shape="rectangular"
+                text="signin_with"
+                width="380"
+              />
+            </div>
           </div>
         </div>
-
 
         <p className="mt-6 text-sm text-gray-600">
           Chưa có tài khoản?{" "}

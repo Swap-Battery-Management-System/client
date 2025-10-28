@@ -50,7 +50,6 @@ interface Vehicle {
 
 interface Battery {
   id: string;
-
 }
 
 export default function Booking() {
@@ -79,6 +78,7 @@ export default function Booking() {
   const [hasCompatibleBattery, setHasCompatibleBattery] = useState<
     boolean | null
   >(null);
+  const [isCompleteForm,setIsCompleteForm]=useState(true);
 
   const [form, setForm] = useState<BookingForm>({
     userName: user?.fullName ?? "",
@@ -88,6 +88,29 @@ export default function Booking() {
     time: "",
     note: "",
   });
+
+  // useEffect(() => {
+  //     if (!user) return;
+
+  //     const isComplete =
+  //       Boolean(user.fullName) &&
+  //       Boolean(user.phoneNumber) &&
+  //       Boolean(user.address);
+
+  //     // Nếu form chưa complete và thông tin chưa đầy đủ → chỉ toast 1 lần
+  //     if (!isComplete) {
+  //       if (isCompleteForm) {
+  //         toast.error(
+  //           "Vui lòng hoàn thiện thông tin cá nhân trước khi đặt lịch!"
+  //         );
+  //         setIsCompleteForm(false);
+  //       }
+  //     } else {
+  //       setForm((prev) => ({ ...prev, userName: user.fullName as string}));
+  //       setIsCompleteForm(true);
+  //     }
+    
+  // }, [user]);
 
   const checkPendingBooking = async () => {
     try {
@@ -156,8 +179,8 @@ export default function Booking() {
   const checkAvailableBattery = async () => {
     try {
       const res = await api.get(`/batteries/station/${form.stationId}`);
-      const batteries = res.data.data.batteries; 
-      const vehicle = vehicles.find((v) => v.id === form.vehicleId); 
+      const batteries = res.data.data.batteries;
+      const vehicle = vehicles.find((v) => v.id === form.vehicleId);
 
       if (!vehicle) {
         console.warn("Không tìm thấy thông tin xe.");
@@ -167,7 +190,7 @@ export default function Booking() {
 
       // Kiểm tra xem có pin phù hợp và còn khả dụng hay không
       const compatible = batteries.some(
-        (b:any) =>
+        (b: any) =>
           b.batteryTypeId === vehicle.batteryTypeId && b.status === "available"
       );
 
@@ -193,21 +216,6 @@ export default function Booking() {
 
     const scheduleTime = `${date}T${time}:00`;
     const now = new Date();
-    // const diff = scheduleTime.getTime() - now.getTime();
-
-    // // Kiểm tra thời gian có nằm trong 24h không
-    // if (diff <= 0) {
-    //   toast.error("⚠️ Giờ đặt phải lớn hơn thời điểm hiện tại!");
-    //   return;
-    // }
-
-    // if (diff > 24 * 60 * 60 * 1000) {
-    //   alert("⚠️ Bạn chỉ có thể đặt lịch trong vòng 24 giờ tới!");
-    //   return;
-    // }
-
-    // console.log("date, time",date, time);
-    // console.log("scheduletime", scheduleTime);
 
     const payload: BookingPayload = {
       scheduleTime: scheduleTime,
@@ -215,46 +223,46 @@ export default function Booking() {
       vehicleId,
       stationId,
     };
-    console.log("booking",payload);
+    console.log("booking", payload);
 
     try {
-      const res=await api.post("/bookings", payload, {
+      const res = await api.post("/bookings", payload, {
         withCredentials: true,
       });
-      const booking=res.data.data.booking
-        const bookingStatus = booking.status;
+      const booking = res.data.data.booking;
+      const bookingStatus = booking.status;
 
-        setIsSuccess(true);
-        setShowModal(true);
+      setIsSuccess(true);
+      setShowModal(true);
 
-        if (bookingStatus === "pending") {
-          // Trường hợp: chưa có pin phù hợp
-          setModalIcon(
-            <AlertTriangle className="w-10 h-10 text-yellow-500 mx-auto mb-3" />
-          );
-          setModalMessage(
-            "Đặt lịch thành công! Tuy nhiên, hiện tại hệ thống chưa tìm thấy pin phù hợp cho xe của bạn. " +
-              "Lịch của bạn đang ở trạng thái *chờ xử lý*. Nếu sau một thời gian vẫn không có pin phù hợp, " +
-              "lịch có thể sẽ tự động bị hủy. Vui lòng thường xuyên kiểm tra lại trong mục đặt lịch nhé!"
-          );
-        } else if (bookingStatus === "scheduled") {
-          // Trường hợp: có pin phù hợp, đặt lịch hoàn tất
-          setModalIcon(
-            <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" />
-          );
-          setModalMessage(
-            "Đặt lịch thành công! Hệ thống đã tìm thấy pin phù hợp, " +
-              "hãy chuẩn bị để đổi pin đúng giờ nhé!"
-          );
-        } else {
-          //  Trường hợp khác (phòng khi backend thay đổi)
-          setModalIcon(
-            <XCircle className="w-10 h-10 text-gray-500 mx-auto mb-3" />
-          );
-          setModalMessage(
-            `Đặt lịch thành công với trạng thái: ${status}. Vui lòng kiểm tra lại trong danh sách đặt lịch của bạn.`
-          );
-        }
+      if (bookingStatus === "pending") {
+        // Trường hợp: chưa có pin phù hợp
+        setModalIcon(
+          <AlertTriangle className="w-10 h-10 text-yellow-500 mx-auto mb-3" />
+        );
+        setModalMessage(
+          "Đặt lịch thành công! Tuy nhiên, hiện tại hệ thống chưa tìm thấy pin phù hợp cho xe của bạn. " +
+            "Lịch của bạn đang ở trạng thái *chờ xử lý*. Nếu sau một thời gian vẫn không có pin phù hợp, " +
+            "lịch có thể sẽ tự động bị hủy. Vui lòng thường xuyên kiểm tra lại trong mục đặt lịch nhé!"
+        );
+      } else if (bookingStatus === "scheduled") {
+        // Trường hợp: có pin phù hợp, đặt lịch hoàn tất
+        setModalIcon(
+          <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" />
+        );
+        setModalMessage(
+          "Đặt lịch thành công! Hệ thống đã tìm thấy pin phù hợp, " +
+            "hãy chuẩn bị để đổi pin đúng giờ nhé!"
+        );
+      } else {
+        //  Trường hợp khác (phòng khi backend thay đổi)
+        setModalIcon(
+          <XCircle className="w-10 h-10 text-gray-500 mx-auto mb-3" />
+        );
+        setModalMessage(
+          `Đặt lịch thành công với trạng thái: ${status}. Vui lòng kiểm tra lại trong danh sách đặt lịch của bạn.`
+        );
+      }
     } catch (err: any) {
       const status = err.response?.status;
       console.log("không thể đặt lịch ", err);
@@ -477,11 +485,11 @@ export default function Booking() {
                 <div className="col-span-2 flex justify-center pt-4">
                   <Button
                     type="submit"
-                    disabled={
+                    disabled={!isCompleteForm ||                    
                       !form.stationId ||
-                      !form.vehicleId ||
-                      !form.date ||
-                      !form.time
+                        !form.vehicleId ||
+                        !form.date ||
+                        !form.time
                     }
                     className="bg-[#38A3A5] hover:bg-[#2C9A95] text-white px-8 py-3 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
