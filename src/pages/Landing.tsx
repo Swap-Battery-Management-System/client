@@ -12,7 +12,8 @@ import {
 import { Footer } from "../components/Footer";
 import { useNavigate } from "react-router-dom";
 import { ProtectedRoute } from "../components/ProtectedRoute";
-
+import logo from "/png.png";
+import { NavLink } from "react-router-dom";
 function App() {
   const navigate = useNavigate();
   const handleLogin = () => navigate("/login");
@@ -32,10 +33,15 @@ function App() {
       <div className="absolute bottom-10 left-32 w-12 h-12 bg-[#38A3A5]/25 rounded-full pointer-events-none"></div>
 
       {/* ===== HEADER ===== */}
-      <header className="sticky top-0 z-50 flex justify-between items-center py-4 px-8 bg-white/70 backdrop-blur-md shadow-sm border-b border-[#57CC99]/30">
-        <div className="flex items-center gap-2 text-lg font-semibold text-[#2F3E46]">
-          <span className="text-[#38A3A5] text-xl">⚡</span> SwapNet
-        </div>
+      <header className="sticky top-0 z-50 flex justify-between items-center h-20 px-8 bg-white/70 backdrop-blur-md shadow-sm border-b border-[#57CC99]/30">
+        <NavLink to="/" className="flex items-center gap-2 ml-1">
+          <img
+            src={logo}
+            alt="EV Battery Swap Logo"
+            className="h-14 w-auto object-contain hover:opacity-90 transition"
+          />
+        </NavLink>
+
         <nav className="flex items-center gap-6 text-[#2F3E46]/80">
           <a href="#home" className="hover:text-[#38A3A5] transition">
             Home

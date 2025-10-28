@@ -7,6 +7,8 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api from "@/lib/api";
 import { GoogleLogin } from "@react-oauth/google";
+import { NavLink } from "react-router-dom";
+import logo from "/svg.svg";
 
 export default function Register() {
   const navigate = useNavigate();
@@ -83,14 +85,29 @@ export default function Register() {
   return (
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-emerald-300 via-teal-400 to-cyan-500">
       <Card className="w-[420px] rounded-2xl shadow-lg bg-white p-8">
-        <h2 className="text-3xl font-bold text-center text-[#38A3A5] mb-6">
+        <NavLink
+          to="/"
+          className="flex items-center justify-center mb-1"
+        >
+          <img
+            src={logo}
+            alt="EV Battery Swap Logo"
+            className="h-14 w-auto object-contain hover:opacity-90 transition"
+          />
+        </NavLink>
+        <h2
+          className="text-3xl font-extrabold text-center text-[#15b892] 
+           mb-3 -mt-1"
+        >
           Đăng ký tài khoản
         </h2>
 
-        <label className="text-sm font-medium">Email</label>
-        <div className="relative mb-6">
-          <Mail className="absolute left-3 top-3 text-[#38A3A5]" size={18} />
 
+
+        <label className="text-sm font-sans font-bold mb-[-5px] block"
+        >Email: </label>
+        <div className="relative mb-0.5 mt-[-15px]">
+          <Mail className="absolute left-3 top-2.5 text-[#38A3A5]" size={18} />
           <Input
             type="email"
             value={email}
@@ -100,8 +117,8 @@ export default function Register() {
             }}
             placeholder="Nhập email của bạn"
             className={`pl-10 border-2 rounded-md pr-3 ${emailError
-                ? "border-red-500 focus-visible:ring-red-500"
-                : "border-emerald-500 focus-visible:ring-emerald-500"
+              ? "border-red-500 focus-visible:ring-red-500"
+              : "border-emerald-500 focus-visible:ring-emerald-500"
               }`}
           />
 

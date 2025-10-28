@@ -20,9 +20,8 @@ export default function Layout() {
 
         {/* Phần cuộn nội dung */}
         <main
-          className={`flex-1 overflow-y-auto p-4 ${
-            sidebarOpen ? "ml-64" : "ml-0"
-          }`}
+          className={`flex-1 overflow-y-auto p-4 ${sidebarOpen ? "ml-64" : "ml-0"
+            }`}
         >
           <Outlet />
         </main>
