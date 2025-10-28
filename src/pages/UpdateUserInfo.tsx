@@ -7,6 +7,7 @@ import { useAuth } from "@/context/AuthContext";
 import api from "@/lib/api";
 import axios from "axios";
 import { toast } from "sonner";
+
 export default function UpdateUserInfo() {
     const { user } = useAuth();
     const userId = user?.id;
@@ -22,6 +23,7 @@ export default function UpdateUserInfo() {
         status: "",
         role: "",
         avatar: null as File | null,
+        address: "",
         country: "Việt Nam",
         city: "",
         district: "",
@@ -36,7 +38,7 @@ export default function UpdateUserInfo() {
     const [districts, setDistricts] = useState<any[]>([]);
     const [wards, setWards] = useState<any[]>([]);
 
-    //  Lấy danh sách tỉnh/thành
+    // 🔹 Lấy danh sách tỉnh/thành
     useEffect(() => {
         axios
             .get("https://provinces.open-api.vn/api/p/")
@@ -44,29 +46,26 @@ export default function UpdateUserInfo() {
             .catch(() => toast.error("Không thể tải danh sách tỉnh/thành!"));
     }, []);
 
+    // 🔹 Lấy thông tin người dùng
     useEffect(() => {
-        if (!userId) return;
+        if (!userId || provinces.length === 0) return;
         (async () => {
             try {
-                console.log(" Gọi API lấy thông tin user:", `/users/${userId}`);
+                console.log("🔍 Fetch user:", `/users/${userId}`);
                 const res = await api.get(`/users/${userId}`, { withCredentials: true });
-                const u = res.data.data.user;
-                console.log("Kết quả trả về:", u);
+                const u = res.data.data?.user || res.data.data || res.data;
+                console.log("✅ User data:", u);
 
-                // ✅ Tách địa chỉ (nếu có)
-                let detailAddress = "";
-                let wardName = "";
-                let districtName = "";
-                let cityName = "";
-                let country = "Việt Nam";
+                // Tách địa chỉ
+                let detailAddress = "",
+                    wardName = "",
+                    districtName = "",
+                    cityName = "",
+                    country = "Việt Nam";
 
                 if (u.address) {
                     const parts = u.address.split(",").map((p: string) => p.trim());
-                    if (parts.length >= 5) {
-                        [detailAddress, wardName, districtName, cityName, country] = parts.slice(-5);
-                    } else if (parts.length >= 4) {
-                        [detailAddress, wardName, districtName, cityName] = parts.slice(-4);
-                    }
+                    [detailAddress, wardName, districtName, cityName, country] = parts.slice(0, 5);
                 }
 
                 setForm((prev) => ({
@@ -77,15 +76,17 @@ export default function UpdateUserInfo() {
                     phoneNumber: u.phoneNumber || "",
                     gender: u.gender === true ? "male" : u.gender === false ? "female" : "",
                     dateOfBirth: u.dateOfBirth ? u.dateOfBirth.slice(0, 10) : "",
-                    avatarUrl: u.avatarUrl || "",
+                    avatarUrl: u.avatarUrl || u.avatar_url || u.avatar || "",
                     status: u.status || "",
                     role: u.role?.roleName || "",
-                    country: country,
-                    detailAddress: detailAddress,
+                    country,
+                    detailAddress,
+                    address: u.address || "",
                 }));
-                setPreview(u.avatarUrl || null);
 
-                // ✅ Lấy lại mã code tương ứng để hiển thị đúng trong dropdown
+                setPreview(u.avatarUrl || u.avatar_url || u.avatar || null);
+
+                // Load dropdown địa chỉ
                 if (cityName) {
                     const cityObj = provinces.find((p) => p.name.includes(cityName));
                     if (cityObj) {
@@ -111,19 +112,18 @@ export default function UpdateUserInfo() {
                     }
                 }
             } catch (err: any) {
-                console.error("❌ Lỗi khi gọi API /users/{id}:", err.response?.data || err.message);
+                console.error("❌ Lỗi /users/{id}:", err.response?.data || err.message);
                 toast.error("Không thể tải thông tin người dùng!");
             }
         })();
-    }, [userId, provinces]);
+    }, [userId, provinces.length]);
 
-
-    // Sự kiện change input
+    // 🔹 Sự kiện change input
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
-    // Chọn Tỉnh → load Huyện
+    // 🔹 Load danh sách huyện
     const handleCityChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
         const provinceCode = e.target.value;
         setForm({ ...form, city: provinceCode, district: "", ward: "" });
@@ -137,7 +137,7 @@ export default function UpdateUserInfo() {
         }
     };
 
-    //  Chọn Huyện → load Xã
+    // 🔹 Load danh sách xã
     const handleDistrictChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
         const districtCode = e.target.value;
         setForm({ ...form, district: districtCode, ward: "" });
@@ -154,28 +154,47 @@ export default function UpdateUserInfo() {
         setForm({ ...form, ward: e.target.value });
     };
 
-    //  Upload avatar
+    // 🔹 Upload ảnh lên Cloudinary
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
-        setPreview(URL.createObjectURL(file));
+
         setUploading(true);
-        toast.info("Đang tải ảnh lên...");
+        toast.info("Đang tải ảnh lên Cloudinary...");
+
         try {
-            const fd = new FormData();
-            fd.append("key", "4a4efdffaf66aa2a958ea43ace6f49c1");
-            fd.append("image", file);
-            const res = await axios.post("https://api.imgbb.com/1/upload", fd);
-            const uploadedUrl = res.data.data.url;
-            setForm({ ...form, avatar: file, avatarUrl: uploadedUrl });
-            toast.success("Ảnh đã tải lên thành công!");
-        } catch {
-            toast.error("Không thể tải ảnh lên!");
+            const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+            const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("upload_preset", uploadPreset);
+            formData.append("folder", "swapnet_avatars");
+
+            const res = await fetch(`https://api.cloudinary.com/v1_1/${cloudName}/image/upload`, {
+                method: "POST",
+                body: formData,
+            });
+
+            const data = await res.json();
+            if (!data.secure_url) throw new Error("Upload thất bại");
+
+            const uploadedUrl = data.secure_url;
+            setForm((prev) => ({ ...prev, avatar: file, avatarUrl: uploadedUrl }));
+            setPreview(uploadedUrl);
+
+            await api.patch(`/users/${userId}/complete`, { avatarUrl: uploadedUrl }, { withCredentials: true });
+
+            toast.success("Ảnh đại diện đã được cập nhật!");
+        } catch (err: any) {
+            console.error("❌ Lỗi upload:", err);
+            toast.error("Không thể tải hoặc lưu ảnh!");
         } finally {
             setUploading(false);
         }
     };
 
+    // 🔹 Cập nhật toàn bộ thông tin
     const handleUpdate = async () => {
         if (!form.fullname || !form.username || !form.phoneNumber)
             return toast.error("Vui lòng nhập đầy đủ thông tin!");
@@ -190,31 +209,33 @@ export default function UpdateUserInfo() {
 
         setLoading(true);
         try {
-            await api.patch(
+            const res = await api.patch(
                 `/users/${userId}/complete`,
                 {
                     fullName: form.fullname,
                     username: form.username,
                     phoneNumber: form.phoneNumber,
-                    gender: form.gender === "male",
+                    gender:
+                        form.gender === "male" ? true : form.gender === "female" ? false : null,
                     dateOfBirth: form.dateOfBirth,
                     avatarUrl: form.avatarUrl,
                     address,
                 },
                 { withCredentials: true }
             );
+
+            console.log("✅ PATCH response:", res.data);
             toast.success("Cập nhật thông tin thành công!");
         } catch (err: any) {
+            console.error("❌ Lỗi khi PATCH:", err.response?.data || err.message);
             toast.error(err.response?.data?.message || "Không thể cập nhật!");
         } finally {
             setLoading(false);
         }
     };
 
-
     return (
         <div className="flex flex-col gap-5">
-            {/* Header */}
             <div className="text-center md:text-left mb-3">
                 <h2 className="text-2xl font-bold text-[#38A3A5]">Cập nhật thông tin cá nhân</h2>
                 <p className="text-gray-600 text-sm">
@@ -229,7 +250,11 @@ export default function UpdateUserInfo() {
                 <div className="flex flex-col items-center justify-start w-1/3 pr-8">
                     <div className="relative w-28 h-28">
                         <img
-                            src={preview || form.avatarUrl || "https://cdn-icons-png.flaticon.com/512/847/847969.png"}
+                            src={
+                                preview ||
+                                form.avatarUrl ||
+                                "https://cdn-icons-png.flaticon.com/512/847/847969.png"
+                            }
                             alt="Avatar"
                             className="w-28 h-28 rounded-full object-cover border-2 border-emerald-400 shadow-sm"
                         />
@@ -239,6 +264,7 @@ export default function UpdateUserInfo() {
                             </div>
                         )}
                     </div>
+
                     <label
                         htmlFor="avatar-upload"
                         className="flex items-center gap-2 mt-3 bg-[#57CC99] hover:bg-[#38A3A5] text-white font-medium py-1.5 px-3 rounded-md text-sm cursor-pointer transition"
@@ -307,7 +333,6 @@ export default function UpdateUserInfo() {
                         </div>
                     </div>
 
-                    {/* role và status chỉ hiển thị, không sửa */}
                     <div>
                         <Label>Trạng thái</Label>
                         <Input value={form.status} disabled className="bg-gray-100 text-sm" />
@@ -317,7 +342,6 @@ export default function UpdateUserInfo() {
                         <Input value={form.role} disabled className="bg-gray-100 text-sm" />
                     </div>
 
-                    {/* ==== Địa chỉ ==== */}
                     <div className="mt-2">
                         <h3 className="text-base font-semibold text-[#38A3A5] mb-2">Địa chỉ cư trú</h3>
                         <div className="grid grid-cols-1 gap-3">
@@ -383,13 +407,12 @@ export default function UpdateUserInfo() {
                         </div>
                     </div>
 
-                    {/* Nút cập nhật */}
                     <Button
-                        className="mt-6 w-1/2 bg-[#57CC99] text-white hover:bg-[#38A3A5]"
+                        className="mt-6 w-1/2 bg-[#57CC99] text-white hover:bg-[#38A3A5] disabled:opacity-50"
                         onClick={handleUpdate}
                         disabled={loading || uploading}
                     >
-                        {loading ? "Đang cập nhật..." : "Cập nhật"}
+                        {loading ? "Đang cập nhật..." : uploading ? "Đang tải ảnh..." : "Cập nhật"}
                     </Button>
                 </div>
             </div>
