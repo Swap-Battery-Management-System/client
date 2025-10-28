@@ -14,6 +14,7 @@ import {
     DialogTitle,
     DialogDescription,
 } from "@/components/ui/dialog";
+import { useNavigate } from "react-router-dom";
 
 
 interface Booking {
@@ -102,6 +103,8 @@ export default function StaffBookingManagement() {
 
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
+
+    const navigate=useNavigate();
 
     const handleStatusClick = (status: Booking["status"]) => {
         setFilterStatus(prev => (prev === status ? "all" : status));
@@ -223,10 +226,7 @@ export default function StaffBookingManagement() {
     });
 
     const handleCheckin = async (bookingId: string) => {
-
-        try {
-        } catch {
-        }
+        navigate(`/staff/swap-battery-process/${bookingId}`);
     };
 
     return (

@@ -67,7 +67,7 @@ export default function Booking() {
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
 
-  const now = new Date();
+  const now = new Date(Date.now());
   const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const pad = (n: number) => n.toString().padStart(2, "0");
   const minDate = now.toISOString().split("T")[0];
@@ -191,41 +191,70 @@ export default function Booking() {
       return;
     }
 
-    const scheduleTime = new Date(`${date}T${time}`);
+    const scheduleTime = `${date}T${time}:00`;
     const now = new Date();
-    const diff = scheduleTime.getTime() - now.getTime();
+    // const diff = scheduleTime.getTime() - now.getTime();
 
-    // Kiểm tra thời gian có nằm trong 24h không
-    if (diff <= 0) {
-      toast.error("⚠️ Giờ đặt phải lớn hơn thời điểm hiện tại!");
-      return;
-    }
+    // // Kiểm tra thời gian có nằm trong 24h không
+    // if (diff <= 0) {
+    //   toast.error("⚠️ Giờ đặt phải lớn hơn thời điểm hiện tại!");
+    //   return;
+    // }
 
-    if (diff > 24 * 60 * 60 * 1000) {
-      alert("⚠️ Bạn chỉ có thể đặt lịch trong vòng 24 giờ tới!");
-      return;
-    }
+    // if (diff > 24 * 60 * 60 * 1000) {
+    //   alert("⚠️ Bạn chỉ có thể đặt lịch trong vòng 24 giờ tới!");
+    //   return;
+    // }
+
+    // console.log("date, time",date, time);
+    // console.log("scheduletime", scheduleTime);
 
     const payload: BookingPayload = {
-      scheduleTime: scheduleTime.toISOString(),
+      scheduleTime: scheduleTime,
       note,
       vehicleId,
       stationId,
     };
-    console.log(payload);
+    console.log("booking",payload);
 
     try {
-      await api.post("/bookings", payload, {
+      const res=await api.post("/bookings", payload, {
         withCredentials: true,
       });
-      setModalIcon(
-        <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" />
-      );
-      setModalMessage(
-        "Đặt lịch thành công! Hãy chuẩn bị để đổi pin đúng giờ nhé!"
-      );
-      setIsSuccess(true);
-      setShowModal(true);
+      const booking=res.data.data.booking
+        const bookingStatus = booking.status;
+
+        setIsSuccess(true);
+        setShowModal(true);
+
+        if (bookingStatus === "pending") {
+          // Trường hợp: chưa có pin phù hợp
+          setModalIcon(
+            <AlertTriangle className="w-10 h-10 text-yellow-500 mx-auto mb-3" />
+          );
+          setModalMessage(
+            "Đặt lịch thành công! Tuy nhiên, hiện tại hệ thống chưa tìm thấy pin phù hợp cho xe của bạn. " +
+              "Lịch của bạn đang ở trạng thái *chờ xử lý*. Nếu sau một thời gian vẫn không có pin phù hợp, " +
+              "lịch có thể sẽ tự động bị hủy. Vui lòng thường xuyên kiểm tra lại trong mục đặt lịch nhé!"
+          );
+        } else if (bookingStatus === "scheduled") {
+          // Trường hợp: có pin phù hợp, đặt lịch hoàn tất
+          setModalIcon(
+            <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" />
+          );
+          setModalMessage(
+            "Đặt lịch thành công! Hệ thống đã tìm thấy pin phù hợp, " +
+              "hãy chuẩn bị để đổi pin đúng giờ nhé!"
+          );
+        } else {
+          //  Trường hợp khác (phòng khi backend thay đổi)
+          setModalIcon(
+            <XCircle className="w-10 h-10 text-gray-500 mx-auto mb-3" />
+          );
+          setModalMessage(
+            `Đặt lịch thành công với trạng thái: ${status}. Vui lòng kiểm tra lại trong danh sách đặt lịch của bạn.`
+          );
+        }
     } catch (err: any) {
       const status = err.response?.status;
       console.log("không thể đặt lịch ", err);
@@ -471,7 +500,7 @@ export default function Booking() {
                 onClick={() => setShowModal(false)}
               ></div>
 
-              <div className="relative bg-white rounded-2xl shadow-lg p-10 w-[480px] max-w-full text-center z-10">
+              <div className="relative bg-white rounded-2xl shadow-lg p-10 w-[700px] max-w-full text-center z-10">
                 <button
                   onClick={() => setShowModal(false)}
                   className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold"

@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   FaSearch,
   FaEdit,
@@ -31,7 +31,7 @@ export default function BatteryManagement() {
 
   const [batteries, setBatteries] = useState<Battery[]>([]);
   const [batteryTypes, setBatteryTypes] = useState<BatteryType[]>([]);
-  const { fetchAllStation, stations=[] } = useStation();
+  const { fetchAllStation, stations = [] } = useStation();
 
   const [searchId, setSearchId] = useState("");
   const [filterType, setFilterType] = useState("");
@@ -61,6 +61,7 @@ export default function BatteryManagement() {
     try {
       const res = await api.get("/batteries", { withCredentials: true });
       setBatteries(res.data.data);
+      console.log("battery",res.data);
     } catch (err) {
       console.error("Lỗi lấy danh sách pin:", err);
     }
@@ -79,15 +80,12 @@ export default function BatteryManagement() {
     fetchBatteries();
     fetchBatteryTypes();
     fetchAllStation();
-    console.log(stations);
   }, []);
 
- 
-  // Lấy tên trạm
-  const getStationName = (id: string) => {
-    const st = stations.find((s) => s.id === id);
-    return st ? st.name : "Không xác định";
-  };
+  // Tạo map id → tên trạm
+  const stationMap = useMemo(() => {
+    return Object.fromEntries(stations.map((s) => [s.id, s.name]));
+  }, [stations]);
 
   // Màu trạng thái
   const getStatusColor = (status: string) => {
@@ -256,9 +254,9 @@ export default function BatteryManagement() {
       );
       toast.info("Đã đánh dấu pin lỗi!");
       fetchBatteries();
-    } catch(err:any) {
+    } catch (err: any) {
       toast.error("Không thể đánh dấu lỗi!");
-      console.log("không đánh dấu lỗi được", err)
+      console.log("không đánh dấu lỗi được", err);
     }
   };
 
@@ -765,7 +763,7 @@ export default function BatteryManagement() {
                       ))}
                     </select>
                   ) : (
-                    getStationName(pin.stationId)
+                    stationMap[pin.stationId] || "Không xác định"
                   )}
                 </td>
 
@@ -773,7 +771,13 @@ export default function BatteryManagement() {
                   {isEditing ? (
                     <input
                       type="date"
-                      value={editingBattery.manufacturedAt.split("T")[0]}
+                      value={
+                        editingBattery.manufacturedAt
+                          ? new Date(
+                              editingBattery.manufacturedAt
+                            ).toLocaleString("vi-VN")
+                          : "Chưa có"
+                      }
                       onChange={(e) =>
                         setEditingBattery({
                           ...editingBattery,

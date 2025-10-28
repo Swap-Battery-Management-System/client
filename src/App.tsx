@@ -98,7 +98,7 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="swap-battery-process" element={<BatteryProcess/>}/>
+          <Route path="swap-battery-process/:bookingId" element={<BatteryProcess/>}/>
           <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="manage-booking" element={<StaffBookingManagement />} />
           {/* <Route index element={<StaffDashboard />} />
