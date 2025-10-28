@@ -1,5 +1,7 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { Bell, User, Menu } from "lucide-react";
+import AccountModal from "@/pages/AccountModal";
+
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,10 +12,12 @@ import {
 } from "./ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
 import logo from "/svg.svg"
+import { useState } from "react";
 
 export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const [activeModal, setActiveModal] = useState<string | null>(null);
 
 
   const handleLogout = async () => {
@@ -129,7 +133,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <NavLink
-                    to="/notifications"
+                    to="/home/notifications"
                     className="w-full text-center text-[#38A3A5] py-2 hover:underline"
                   >
                     Xem tất cả thông báo
@@ -148,19 +152,17 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
               <DropdownMenuContent align="end" className="w-48">
                 <DropdownMenuLabel>Tài khoản</DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem asChild>
-                  <NavLink to="/profile">Thông tin cá nhân</NavLink>
+                <DropdownMenuItem onClick={() => setActiveModal("profile")}>
+                  Thông tin cá nhân
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <NavLink to="/my-vehicles">Phương tiện của tôi</NavLink>
+                <DropdownMenuItem onClick={() => setActiveModal("vehicles")}>
+                  Phương tiện của tôi
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <NavLink to="/security-settings">Cài đặt bảo mật</NavLink>
+                <DropdownMenuItem onClick={() => setActiveModal("security")}>
+                  Cài đặt bảo mật
                 </DropdownMenuItem>
-                <DropdownMenuItem asChild>
-                  <NavLink to="/my-subscription-packages">
-                    Gói thuê bao của tôi
-                  </NavLink>
+                <DropdownMenuItem onClick={() => setActiveModal("subscription")}>
+                  Gói thuê bao của tôi
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -174,6 +176,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
           </div>
         </div>
       </header>
+      <AccountModal type={activeModal} onClose={() => setActiveModal(null)} />
     </>
   );
 }

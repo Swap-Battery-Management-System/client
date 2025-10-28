@@ -108,7 +108,7 @@ export default function Home() {
               onClick={handleViewTopRated}
               className="bg-gradient-to-r from-emerald-400 to-teal-500 text-white font-semibold px-7 py-3.5 rounded-lg shadow-md hover:shadow-lg hover:from-emerald-500 hover:to-teal-600 transition-all duration-300"
             >
-              Xem thêm các trạm đánh giá cao
+              Xem thêm các trạm khác
             </button>
           </div>
         </div>

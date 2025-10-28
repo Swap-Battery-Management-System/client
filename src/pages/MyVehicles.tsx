@@ -31,7 +31,7 @@ interface Vehicle {
     };
   };
   name?: string;
-  batteryId?:string;
+  batteryId?: string;
 }
 
 export default function MyVehicles() {
@@ -44,6 +44,8 @@ export default function MyVehicles() {
   const [editVehicle, setEditVehicle] = useState<Vehicle | null>(null);
   const [editName, setEditName] = useState("");
   const [editPlate, setEditPlate] = useState("");
+  const [editVIN, setEditVIN] = useState("");
+  const [editModelId, setEditModelId] = useState<string | undefined>(undefined);
   const [editLoading, setEditLoading] = useState(false);
 
   // Modal xác nhận thay đổi status
@@ -53,6 +55,10 @@ export default function MyVehicles() {
     "cancel" | "relink" | null
   >(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
+  const [models, setModels] = useState<
+    { id: string; name: string }[]
+  >([]);
+  const [loadingModels, setLoadingModels] = useState(false);
 
   // Lấy danh sách xe người dùng hiện tại
   const fetchVehicles = async () => {
@@ -68,11 +74,26 @@ export default function MyVehicles() {
     }
   };
 
+  const fetchModels = async () => {
+    try {
+      setLoadingModels(true);
+      const res = await api.get("/models", { withCredentials: true });
+      const data = res.data.data || [];
+      console.log(res.data);
+      setModels(data);
+    } catch (err) {
+      console.error("Lỗi khi lấy danh sách model:", err);
+    } finally {
+      setLoadingModels(false);
+    }
+  };
+
   useEffect(() => {
     fetchVehicles();
+    fetchModels();
   }, []);
 
-  // Hiển thị trạng thái (label + màu)
+  // Hiển thị trạng thái
   const renderStatus = (status: string) => {
     switch (status?.toLowerCase()) {
       case "pending":
@@ -88,27 +109,39 @@ export default function MyVehicles() {
     }
   };
 
-  // Mở modal cập nhật thông tin (name & licensePlates)
+  // Mở modal edit
   const openEditModal = (v: Vehicle) => {
     setEditVehicle(v);
     setEditName(v.name || "");
     setEditPlate(v.licensePlates || "");
+    if (v.status?.toLowerCase() === "invalid") {
+      setEditVIN(v.VIN || "");
+      setEditModelId(v.model?.id);
+    } else {
+      setEditVIN("");
+      setEditModelId(undefined);
+    }
     setEditOpen(true);
   };
 
-  // cập nhập thông tin xe
   const handleSaveEdit = async () => {
     if (!editVehicle) return;
     setEditLoading(true);
     try {
-      await api.patch(
-        `/vehicles/${editVehicle.id}`,
-        {
-          name: editName?.trim(),
-          licensePlates: editPlate?.trim(),
-        },
-        { withCredentials: true }
-      );
+      const payload: any = {
+        name: editName?.trim(),
+        licensePlates: editPlate?.trim(),
+      };
+
+      if (editVehicle.status?.toLowerCase() === "invalid") {
+        payload.VIN = editVIN?.trim();
+        payload.modelId = editModelId;
+      }
+
+      await api.patch(`/vehicles/${editVehicle.id}`, payload, {
+        withCredentials: true,
+      });
+
       toast.success("Cập nhật thông tin xe thành công");
       setEditOpen(false);
       fetchVehicles();
@@ -120,77 +153,89 @@ export default function MyVehicles() {
     }
   };
 
-  // Mở modal xác nhận cho actions liên quan status
+  // Xử lý modal confirm
   const openConfirmModal = (v: Vehicle, action: "cancel" | "relink") => {
     setConfirmVehicle(v);
     setConfirmAction(action);
     setConfirmOpen(true);
   };
 
-  // Xử lý xác nhận: cancel => inactive, relink => pending
-  const handleConfirmAction = async () => {
-    if (!confirmVehicle || !confirmAction) return;
+  const handleConfirmAction = () => {
+    if (confirmAction === "cancel") handleCancel();
+    else handleRelink(confirmVehicle!);
+  };
+
+  // Hủy liên kết
+  const handleCancel = async () => {
+    if (!confirmVehicle) return;
     setConfirmLoading(true);
-
     try {
-      if (confirmAction === "cancel") {
-        const res = await api.get("/bookings", { withCredentials: true });
-        console.log(res.data);
-
-        // Kiểm tra xem xe có đang nằm trong booking đang hoạt động không
-        const hasActiveBooking = res.data.data.bookings.some(
-          (booking: any) =>
-            booking.vehicleId === confirmVehicle.id &&
-            booking.status === "scheduled"
-        );
-
-        if (hasActiveBooking) {
-          toast.error("Xe này đang trong booking, không thể hủy!");
-          setConfirmLoading(false);
-          setConfirmOpen(false);
-          return;
-        }
-      }
-
-      // không có booking đang hoạt động, cho phép cập nhật trạng thái
-      const newStatus = confirmAction === "cancel" ? "inactive" : "pending";
-      await api.patch(
-        `/vehicles/${confirmVehicle.id}`,
-        {
-          status: newStatus,
-        },
-        { withCredentials: true }
+      // Kiểm tra booking active
+      const res = await api.get("/bookings", { withCredentials: true });
+      const hasActiveBooking = res.data.data.bookings.some(
+        (b: any) =>
+          b.vehicleId === confirmVehicle.id && b.status === "scheduled"
       );
 
-      toast.success("Cập nhật trạng thái thành công");
+      if (hasActiveBooking) {
+        toast.error("Xe đang trong booking, không thể hủy!");
+        setConfirmLoading(false);
+        setConfirmOpen(false);
+        return;
+      }
+
+      await api.patch(`/vehicles/${confirmVehicle.id}/unlink`, {
+        withCredentials: true,
+      });
+
+      toast.success("Hủy liên kết thành công");
       setConfirmOpen(false);
       fetchVehicles();
     } catch (err) {
-      console.error("Lỗi khi cập nhật trạng thái:", err);
-      toast.error("Cập nhật trạng thái thất bại");
+      console.error(err);
+      toast.error("Hủy liên kết thất bại");
     } finally {
       setConfirmLoading(false);
     }
   };
-  // Render nút hành động theo status
-  const renderActionButton = (v: Vehicle) => {
-    const s = (v.status || "").toLowerCase();
-    if (s === "active" || s === "pending" || s==="invalid") {
-      // active: show Huỷ liên kết
-      return (
-        <Button
-          variant="destructive"
-          onClick={() => openConfirmModal(v, "cancel")}
-          className="bg-red-500 hover:bg-red-600 text-white"
-        >
-          Hủy liên kết
-        </Button>
+
+  // Relink vehicle (tạo lại)
+  const handleRelink = async (v: Vehicle) => {
+    if (!v) return;
+    setConfirmLoading(true);
+    try {
+      await api.post(
+        `/vehicles`,
+        {
+          name: v.name,
+          licensePlates: v.licensePlates,
+          VIN: v.VIN,
+          modelId: v.model?.id,
+        },
+        { withCredentials: true }
       );
+      toast.success("Gửi yêu cầu liên kết thành công");
+      setConfirmOpen(false);
+      fetchVehicles();
+    } catch (err) {
+      console.error(err);
+      toast.error("Liên kết lại thất bại");
+    } finally {
+      setConfirmLoading(false);
     }
-    if (s === "inactive") {
-      // inactive: show Liên kết lại
-      return (
+  };
+
+  // Render action buttons
+  const renderActionButton = (v: Vehicle) => {
+    const s = v.status.toLowerCase();
+    if (s === "inactive") return null;
+
+    const buttons = [];
+
+    if (s === "invalid") {
+      buttons.push(
         <Button
+          key="relink"
           variant="outline"
           onClick={() => openConfirmModal(v, "relink")}
           className="text-[#38A3A5] border-[#38A3A5] hover:bg-[#38A3A5] hover:text-white transition-all"
@@ -199,19 +244,22 @@ export default function MyVehicles() {
         </Button>
       );
     }
-    if (s === "invalid") {
-      // invalid: show Đăng ký lại (same as relink)
-      return (
+
+    if (s !== "inactive") {
+      buttons.push(
         <Button
-          variant="outline"
-          onClick={() => openConfirmModal(v, "relink")}
-          className="text-[#38A3A5] border-[#38A3A5] hover:bg-[#38A3A5] hover:text-white transition-all"
+          key="cancel"
+          variant="destructive"
+          onClick={() => openConfirmModal(v, "cancel")}
+          className="bg-red-500 hover:bg-red-600 text-white"
         >
-          Đăng ký lại
+          Hủy liên kết
         </Button>
       );
     }
-    return null;
+
+
+    return <div className="flex gap-2">{buttons}</div>;
   };
 
   return (
@@ -221,77 +269,76 @@ export default function MyVehicles() {
           Danh sách xe của tôi
         </h1>
 
-        {/* Loading */}
         {loading && (
           <div className="text-center text-gray-500 mt-10 animate-pulse">
             Đang tải danh sách xe...
           </div>
         )}
 
-        {/* Không có xe */}
-        {!loading && vehicles.length === 0 && (
-          <div className="text-center text-gray-500 mt-10">
-            Bạn chưa đăng ký xe nào.
-          </div>
-        )}
+        {!loading &&
+          vehicles.filter((v) => v.status.toLowerCase() !== "inactive")
+            .length === 0 && (
+            <div className="text-center text-gray-500 mt-10">
+              Bạn chưa đăng ký xe nào.
+            </div>
+          )}
 
-        {/* Danh sách xe */}
         {!loading && vehicles.length > 0 && (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {vehicles.map((v) => {
-              const s = renderStatus(v.status);
-              return (
-                <Card
-                  key={v.id}
-                  className="p-5 bg-white/80 border border-[#BCE7E8] shadow-md hover:shadow-lg transition-all duration-300"
-                >
-                  <div className="space-y-2">
-                    <h2 className="text-xl font-semibold text-[#38A3A5]">
-                      {v.name || "Không có tên"}
-                    </h2>
-                    <p className="text-sm text-gray-600">
-                      Biển số: {v.licensePlates || "Không rõ"}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Loại xe: {v.model?.name || "Không rõ"}
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      Loại pin: {v.model?.batteryType?.name || "Không rõ"}
-                    </p>
-                    <p className="text-sm text-gray-600 truncate">
-                      Số khung (VIN): {v.VIN}
-                    </p>
-                    <p className={`text-sm font-medium ${s.color}`}>
-                      Trạng thái: {s.label}
-                    </p>
-                  </div>
+            {vehicles
+              .filter((v) => v.status.toLowerCase() !== "inactive")
+              .map((v) => {
+                const s = renderStatus(v.status);
+                return (
+                  <Card
+                    key={v.id}
+                    className="p-5 bg-white/80 border border-[#BCE7E8] shadow-md hover:shadow-lg transition-all duration-300"
+                  >
+                    <div className="space-y-2">
+                      <h2 className="text-xl font-semibold text-[#38A3A5]">
+                        {v.name || "Không có tên"}
+                      </h2>
+                      <p className="text-sm text-gray-600">
+                        Biển số: {v.licensePlates || "Không rõ"}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Loại xe: {v.model?.name || "Không rõ"}
+                      </p>
+                      <p className="text-sm text-gray-600">
+                        Loại pin: {v.model?.batteryType?.name || "Không rõ"}
+                      </p>
+                      <p className="text-sm text-gray-600 truncate">
+                        Số khung (VIN): {v.VIN}
+                      </p>
+                      <p className={`text-sm font-medium ${s.color}`}>
+                        Trạng thái: {s.label}
+                      </p>
+                    </div>
 
-                  <div className="flex justify-end mt-4 gap-2">
-                    {/* Cập nhật thông tin (name + plate) */}
-                    <Button
-                      variant="outline"
-                      onClick={() => openEditModal(v)}
-                      className="text-[#38A3A5] border-[#38A3A5] hover:bg-[#38A3A5] hover:text-white transition-all"
-                    >
-                      Cập nhật
-                    </Button>
+                    <div className="flex justify-end mt-4 gap-2">
+                      <Button
+                        variant="outline"
+                        onClick={() => openEditModal(v)}
+                        className="text-[#38A3A5] border-[#38A3A5] hover:bg-[#38A3A5] hover:text-white transition-all"
+                      >
+                        Cập nhật
+                      </Button>
 
-                    {renderActionButton(v)}
-                  </div>
-                </Card>
-              );
-            })}
+                      {renderActionButton(v)}
+                    </div>
+                  </Card>
+                );
+              })}
           </div>
         )}
 
-        {/* Modal: cập nhật thông tin xe (name + licensePlates) */}
+        {/* Modal Edit */}
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
           <DialogContent className="max-w-md bg-white rounded-2xl">
             <DialogHeader>
               <DialogTitle className="text-[#38A3A5] text-lg">
                 Cập nhật thông tin xe
               </DialogTitle>
-              <DialogDescription>Sửa tên xe và biển số</DialogDescription>
             </DialogHeader>
 
             <div className="space-y-3 mt-3">
@@ -300,7 +347,7 @@ export default function MyVehicles() {
                 <Input
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  placeholder="Tên xe (ví dụ: Xe đi làm)"
+                  placeholder="Tên xe"
                 />
               </div>
 
@@ -309,9 +356,43 @@ export default function MyVehicles() {
                 <Input
                   value={editPlate}
                   onChange={(e) => setEditPlate(e.target.value.toUpperCase())}
-                  placeholder="Biển số (VD: 51A-12345)"
+                  placeholder="Biển số"
                 />
               </div>
+
+              {editVehicle?.status?.toLowerCase() === "invalid" && (
+                <>
+                  <div>
+                    <Label className="text-[#38A3A5]">VIN</Label>
+                    <Input
+                      value={editVIN}
+                      onChange={(e) => setEditVIN(e.target.value)}
+                      placeholder="Số khung (VIN)"
+                    />
+                  </div>
+
+                  <div>
+                    <Label className="text-[#38A3A5]">Chọn model *</Label>
+                    <select
+                      className="w-full border border-[#BCE7E8] rounded-md p-2 mt-1 focus:ring-[#38A3A5] focus:border-[#38A3A5]"
+                      onChange={(e) => setEditModelId(e.target.value)}
+                      value={editModelId}
+                      required
+                    >
+                      <option value="">-- Chọn model --</option>
+                      {loadingModels ? (
+                        <option disabled>Đang tải...</option>
+                      ) : (
+                        models.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name}
+                          </option>
+                        ))
+                      )}
+                    </select>
+                  </div>
+                </>
+              )}
             </div>
 
             <DialogFooter className="mt-4 flex justify-end gap-3">
@@ -325,7 +406,7 @@ export default function MyVehicles() {
           </DialogContent>
         </Dialog>
 
-        {/* Modal: xác nhận thay đổi status */}
+        {/* Modal Confirm */}
         <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
           <DialogContent className="max-w-md bg-white rounded-2xl">
             <DialogHeader>

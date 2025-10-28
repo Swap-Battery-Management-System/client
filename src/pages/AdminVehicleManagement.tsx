@@ -65,8 +65,6 @@ export default function AdminVehicleManagement() {
                 withCredentials: true
             });
 
-            console.log(" Tất cả xe:", res.data);
-
             const data =
                 res?.data?.data?.vehicles ||
                 res?.data?.vehicles ||
@@ -199,7 +197,7 @@ export default function AdminVehicleManagement() {
                         <option value="">Tất cả trạng thái</option>
                         <option value="pending">Đang chờ duyệt</option>
                         <option value="active">Đã duyệt</option>
-                        <option value="inactive">Từ chối</option>
+                        <option value="invalid">Từ chối</option>
                     </select>
 
                     {/* Bộ lọc Model */}
@@ -229,6 +227,10 @@ export default function AdminVehicleManagement() {
                             </option>
                         ))}
                     </select>
+
+                    <span className="ml-auto font-semibold text-sm">
+                        Số lượng: {filteredVehicles.length}
+                    </span>
                 </div>
 
 
@@ -308,7 +310,44 @@ export default function AdminVehicleManagement() {
                                                     <SelectItem value="inactive" className="text-red-600">
                                                         Từ chối
                                                     </SelectItem>
+                                                </SelectContent><SelectContent>
+                                                    {v.status === "pending" && (
+                                                        <>
+                                                            <SelectItem value="pending" className="text-yellow-600">
+                                                                Đang chờ duyệt
+                                                            </SelectItem>
+                                                            <SelectItem value="active" className="text-green-600">
+                                                                Đã duyệt
+                                                            </SelectItem>
+                                                            <SelectItem value="inactive" className="text-red-600">
+                                                                Từ chối
+                                                            </SelectItem>
+                                                        </>
+                                                    )}
+
+                                                    {v.status === "active" && (
+                                                        <>
+                                                            <SelectItem value="active" className="text-green-600">
+                                                                Đã duyệt
+                                                            </SelectItem>
+                                                            <SelectItem value="inactive" className="text-red-600">
+                                                                Từ chối
+                                                            </SelectItem>
+                                                        </>
+                                                    )}
+
+                                                    {v.status === "inactive" && (
+                                                        <>
+                                                            <SelectItem value="active" className="text-green-600">
+                                                                Đã duyệt
+                                                            </SelectItem>
+                                                            <SelectItem value="inactive" className="text-red-600">
+                                                                Từ chối
+                                                            </SelectItem>
+                                                        </>
+                                                    )}
                                                 </SelectContent>
+
                                             </Select>
                                         </td>
                                         <td className="border border-[#CDE8E5] px-3 py-2">
