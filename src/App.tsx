@@ -32,6 +32,8 @@ import AdminStationManagement from "./pages/AdminStationManagement";
 import BatteryManagement from "./pages/BatteryManagement";
 import AdminLayout from "./layout/AdminLayout";
 import ResetPassword from "./pages/ResetPassword";
+import AdminVehicleModelManagement from "./pages/ManageModels";
+import NotificationPage from "./pages/NotificationPage";
 
 function App() {
   return (
@@ -69,6 +71,8 @@ function App() {
           <Route path="register-vehicle" element={<RegisterVehicle />} />
           <Route path="my-vehicles" element={<MyVehicles />} />
           <Route path="/home/update-vehicle/:id" element={<UpdateVehicle />} />
+          <Route path="notifications" element={<NotificationPage />} />
+
 
           {/* <Route path="thong-tin-ca-nhan" element={<ThongTinCaNhan />} />
           <Route path="phuong-tien-cua-toi" element={<PhuongTienCuaToi />} />
@@ -101,6 +105,7 @@ function App() {
           <Route path="manage-users" element={<AdminUserManagement />} />
           <Route path="manage-stations" element={<AdminStationManagement />} />
           <Route path="manage-vehicles" element={<AdminVehicleManagement />} />
+          <Route path="vehicle-models" element={<AdminVehicleModelManagement />} />
         </Route>
       </Routes>
       <Toaster richColors position="top-center" />
