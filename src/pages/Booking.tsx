@@ -111,6 +111,7 @@ export default function Booking() {
   //     }
     
   // }, [user]);
+ 
 
   const checkPendingBooking = async () => {
     try {

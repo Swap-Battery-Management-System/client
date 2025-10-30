@@ -125,7 +125,7 @@ export function Step1CheckIn({
           );
           const oldB = resOldBattery.data.data.battery;
           setOldBattery(oldB);
-
+          onUpdate("oldBattery", oldB);
           const resOldType = await api.get(
             `/battery-types/${oldB.batteryTypeId}`,
             { withCredentials: true }
@@ -136,7 +136,7 @@ export function Step1CheckIn({
         onUpdate("booking", bookingData);
         onUpdate("vehicle", vehicleData);
         onUpdate("user", userData);
-        onUpdate("battery", batteryData);
+        onUpdate("Newbattery", batteryData);
         onUpdate("station", stationData);
       } catch (err) {
         console.error("Không thể load dữ liệu đầy đủ", err);
