@@ -37,6 +37,10 @@ export default function UpdateUserInfo() {
     const [provinces, setProvinces] = useState<any[]>([]);
     const [districts, setDistricts] = useState<any[]>([]);
     const [wards, setWards] = useState<any[]>([]);
+    // Kiểm tra username
+    const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+    const [usernameError, setUsernameError] = useState<string>("");
+    const [checkTimer, setCheckTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
     // 🔹 Lấy danh sách tỉnh/thành
     useEffect(() => {
@@ -118,10 +122,59 @@ export default function UpdateUserInfo() {
         })();
     }, [userId, provinces.length]);
 
-    // 🔹 Sự kiện change input
+    //  Sự kiện change input
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
+    //  Hàm kiểm tra hợp lệ tên đăng nhập
+    const validateUsername = (username: string) => {
+        if (!username.trim()) return "Tên đăng nhập không được để trống.";
+        if (username.length < 5 || username.length > 20)
+            return "Tên đăng nhập phải từ 5–20 ký tự.";
+        if (!/^[A-Za-z]/.test(username))
+            return "Ký tự đầu tiên phải là chữ cái.";
+        if (!/^[A-Za-z0-9._]+$/.test(username))
+            return "Chỉ được chứa chữ cái, số, dấu gạch dưới (_) hoặc dấu chấm (.)";
+        if (/\s/.test(username))
+            return "Không được chứa khoảng trắng.";
+        return "";
+    };
+
+    //  Gọi API kiểm tra username
+    const checkAvailability = async (username: string) => {
+        if (!username) return;
+        setUsernameStatus("checking");
+        try {
+            const res = await api.post("/auth/check", { username });
+            if (res.status === 204) setUsernameStatus("available");
+            else setUsernameStatus("taken");
+        } catch (err: any) {
+            if ([400, 404].includes(err.response?.status)) setUsernameStatus("available");
+            else setUsernameStatus("taken");
+        }
+    };
+
+    //  Khi người dùng nhập username
+    const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setForm({ ...form, username: value });
+
+        // Kiểm tra cục bộ
+        const msg = validateUsername(value);
+        setUsernameError(msg);
+
+        if (msg) {
+            setUsernameStatus("idle");
+            if (checkTimer) clearTimeout(checkTimer);
+            return;
+        }
+
+        // Debounce 500ms
+        if (checkTimer) clearTimeout(checkTimer);
+        const timer = setTimeout(() => checkAvailability(value), 500);
+        setCheckTimer(timer);
+    };
+
 
     // 🔹 Load danh sách huyện
     const handleCityChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -298,7 +351,45 @@ export default function UpdateUserInfo() {
                     </div>
                     <div>
                         <Label>Tên đăng nhập</Label>
-                        <Input name="username" value={form.username} onChange={handleChange} />
+                        <div className="relative">
+                            <Input
+                                name="username"
+                                value={form.username}
+                                onChange={handleUsernameChange}
+                                className="pr-10"
+                                placeholder="VD: driver001"
+                            />
+
+                            {/* Icon trạng thái */}
+                            {usernameStatus === "checking" && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-gray-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                            d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 018 8" />
+                                    </svg>
+                                </div>
+                            )}
+                            {usernameStatus === "available" && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                            )}
+                            {usernameStatus === "taken" && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Hiển thị thông báo */}
+                        {usernameError && <p className="text-sm text-red-500 mt-1">{usernameError}</p>}
+                        {!usernameError && usernameStatus === "taken" && <p className="text-sm text-red-500 mt-1">Tên đăng nhập đã tồn tại.</p>}
+                        {!usernameError && usernameStatus === "available" && <p className="text-sm text-green-600 mt-1">Tên đăng nhập khả dụng.</p>}
+
                     </div>
                     <div>
                         <Label>Email</Label>
