@@ -108,6 +108,38 @@ export default function AdminUserManagement() {
         return matchRole && matchSearch;
     });
 
+    // Cập nhật trạng thái user (active <-> banned)
+    const handleToggleStatus = async (userId: string, currentStatus: string) => {
+        const newStatus = currentStatus === "active" ? "banned" : "active";
+
+        const confirmChange = confirm(
+            `Bạn có chắc chắn muốn đổi trạng thái người dùng sang "${newStatus}" không?`
+        );
+        if (!confirmChange) return;
+
+        try {
+            await api.patch(`/users/${userId}/status`, { status: newStatus });
+
+            // Cập nhật ngay trong local state
+            setUsers((prev) =>
+                prev.map((u) =>
+                    u.id === userId ? { ...u, status: newStatus } : u
+                )
+            );
+
+            toast.success(
+                `✅ Trạng thái người dùng đã được đổi sang "${newStatus}".`
+            );
+        } catch (err: any) {
+            console.error("❌ Lỗi cập nhật trạng thái:", err);
+            toast.error(
+                err.response?.data?.message || "Không thể cập nhật trạng thái!"
+            );
+        }
+    };
+
+
+
     return (
         <div className="p-6 space-y-6 min-h-screen">
             <h2 className="text-center text-2xl font-bold text-[#38A3A5]">
@@ -204,7 +236,35 @@ export default function AdminUserManagement() {
                                                 <td className="px-2 py-1">{u.fullName || "—"}</td>
                                                 <td className="px-2 py-1 text-left">{u.email}</td>
                                                 <td className="px-2 py-1">{getRoleName(u.roleId)}</td>
-                                                <td className="px-2 py-1">{u.status}</td>
+                                                <td className="px-2 py-1">
+                                                    <div
+                                                        className={`inline-block rounded-md px-2 py-1 border transition-all duration-150 ${u.status === "active"
+                                                                ? "bg-green-100 border-green-300"
+                                                                : "bg-red-100 border-red-300"
+                                                            }`}
+                                                    >
+                                                        <select
+                                                            value={u.status}
+                                                            onChange={() => handleToggleStatus(u.id, u.status)}
+                                                            className={`text-sm font-medium cursor-pointer bg-transparent outline-none ${u.status === "active" ? "text-green-700" : "text-red-700"
+                                                                }`}
+                                                        >
+                                                            {/* chỉ hiển thị trạng thái hiện tại */}
+                                                            <option value={u.status}>
+                                                                {u.status === "active" ? "Active" : "Banned"}
+                                                            </option>
+
+                                                            {/* hiển thị lựa chọn ngược lại nếu admin muốn đổi */}
+                                                            {u.status === "active" ? (
+                                                                <option value="banned">Banned</option>
+                                                            ) : (
+                                                                <option value="active">Active</option>
+                                                            )}
+                                                        </select>
+                                                    </div>
+                                                </td>
+
+
                                                 <td className="px-2 py-1 flex flex-row gap-4 justify-center text-xl">
                                                     <LuDelete
                                                         className="cursor-pointer text-red-600 hover:text-red-800"
@@ -265,7 +325,10 @@ export default function AdminUserManagement() {
 
             {/* Modal chi tiết người dùng (AdminUpdateInfoUser) */}
             <Dialog open={!!selectedUser} onOpenChange={() => setSelectedUser(null)}>
-                <DialogContent className="max-w-[900px] max-h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-lg">
+                <DialogContent
+                    className="!w-[95vw] !max-w-[1500px] !h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl p-10"
+                >
+
                     <DialogHeader>
                         <DialogTitle className="text-[#38A3A5]">Thông tin chi tiết người dùng</DialogTitle>
                     </DialogHeader>

@@ -33,7 +33,7 @@ export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
     const [districts, setDistricts] = useState<any[]>([]);
     const [wards, setWards] = useState<any[]>([]);
 
-    // Lấy danh sách tỉnh
+    // 🔹 Lấy danh sách tỉnh
     useEffect(() => {
         axios
             .get("https://provinces.open-api.vn/api/p/")
@@ -41,20 +41,26 @@ export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
             .catch(() => toast.error("Không thể tải danh sách tỉnh/thành!"));
     }, []);
 
-    // Lấy thông tin user theo userId
+    // 🔹 Lấy thông tin user theo userId
     useEffect(() => {
-        if (!userId) return;
+        if (!userId || provinces.length === 0) return;
         (async () => {
             try {
                 const res = await api.get(`/users/${userId}`);
                 const u = res.data.data.user;
                 console.log("User data:", u);
 
-                // Xử lý địa chỉ
-                let detailAddress = "", wardName = "", districtName = "", cityName = "", country = "Việt Nam";
+                let detailAddress = "",
+                    wardName = "",
+                    districtName = "",
+                    cityName = "",
+                    country = "Việt Nam";
+
                 if (u.address) {
                     const parts = u.address.split(",").map((p: string) => p.trim());
-                    [detailAddress, wardName, districtName, cityName, country] = parts.slice(-5);
+                    [detailAddress, wardName, districtName, cityName, country] = parts.slice(
+                        -5
+                    );
                 }
 
                 setForm((prev) => ({
@@ -77,14 +83,50 @@ export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
                 toast.error("Không thể tải thông tin người dùng!");
             }
         })();
-    }, [userId]);
+    }, [userId, provinces.length]);
 
-    // Thay đổi input
+    // 🔹 Hàm change input
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
-    // Tải ảnh avatar
+    // 🔹 Thay đổi tỉnh
+    const handleCityChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const provinceCode = e.target.value;
+        setForm({ ...form, city: provinceCode, district: "", ward: "" });
+        setWards([]);
+        if (!provinceCode) return;
+        try {
+            const res = await axios.get(
+                `https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`
+            );
+            setDistricts(res.data.districts || []);
+        } catch {
+            toast.error("Không thể tải danh sách quận/huyện!");
+        }
+    };
+
+    // 🔹 Thay đổi huyện
+    const handleDistrictChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const districtCode = e.target.value;
+        setForm({ ...form, district: districtCode, ward: "" });
+        if (!districtCode) return;
+        try {
+            const res = await axios.get(
+                `https://provinces.open-api.vn/api/d/${districtCode}?depth=2`
+            );
+            setWards(res.data.wards || []);
+        } catch {
+            toast.error("Không thể tải danh sách xã/phường!");
+        }
+    };
+
+    // 🔹 Thay đổi xã
+    const handleWardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setForm({ ...form, ward: e.target.value });
+    };
+
+    // 🔹 Upload ảnh
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -105,41 +147,65 @@ export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
             setUploading(false);
         }
     };
-
-    // Cập nhật thông tin
+    // Cập nhật thông tin người dùng
     const handleUpdate = async () => {
         if (!form.fullname || !form.username || !form.phoneNumber)
             return toast.error("Vui lòng nhập đầy đủ thông tin!");
 
+        if (form.country === "Việt Nam") {
+            if (!form.city || !form.district || !form.ward || !form.detailAddress) {
+                return toast.error("Vui lòng chọn đầy đủ Tỉnh/Thành, Quận/Huyện, Xã/Phường và nhập địa chỉ cụ thể của người dùng!");
+            }
+        }
+
+        const cityName = provinces.find((p) => p.code == form.city)?.name || "";
+        const districtName = districts.find((d) => d.code == form.district)?.name || "";
+        const wardName = wards.find((w) => w.code == form.ward)?.name || "";
+
+        const address = [form.detailAddress, wardName, districtName, cityName, form.country]
+            .filter(Boolean)
+            .join(", ");
+
         setLoading(true);
         try {
-            await api.patch(`/users/${userId}/complete`, {
+            const res = await api.patch(`/users/${userId}`, {
                 fullName: form.fullname,
                 username: form.username,
                 phoneNumber: form.phoneNumber,
-                gender: form.gender === "male",
-                dateOfBirth: form.dateOfBirth,
+                address,
+                gender: form.gender === "male" ? true : false,
                 avatarUrl: form.avatarUrl,
-                address: form.detailAddress,
+                dateOfBirth: form.dateOfBirth,
             });
-            toast.success("Cập nhật thông tin thành công!");
+
+            console.log("✅ PATCH response:", res.data);
+            toast.success("Cập nhật thông tin người dùng thành công!");
         } catch (err: any) {
+            console.error("❌ PATCH /users/{id} lỗi:", err.response?.data || err.message);
             toast.error(err.response?.data?.message || "Không thể cập nhật!");
         } finally {
             setLoading(false);
         }
     };
 
+
     return (
-        <div className="flex flex-col gap-6">
-            <h2 className="text-xl font-bold text-[#38A3A5] text-center">Cập nhật thông tin người dùng</h2>
+        <div className="flex flex-col gap-6 w-full max-w-[1200px] mx-auto">
+
+            <h2 className="text-xl font-bold text-[#38A3A5] text-center">
+                Cập nhật thông tin người dùng
+            </h2>
 
             <div className="flex flex-col md:flex-row gap-8">
                 {/* Avatar */}
                 <div className="flex flex-col items-center w-full md:w-1/3">
                     <div className="relative w-28 h-28">
                         <img
-                            src={preview || form.avatarUrl || "https://cdn-icons-png.flaticon.com/512/847/847969.png"}
+                            src={
+                                preview ||
+                                form.avatarUrl ||
+                                "https://cdn-icons-png.flaticon.com/512/847/847969.png"
+                            }
                             alt="Avatar"
                             className="w-28 h-28 rounded-full object-cover border-2 border-emerald-400 shadow-sm"
                         />
@@ -156,7 +222,13 @@ export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
                         <UploadCloud size={16} />
                         Đổi ảnh
                     </label>
-                    <input id="avatar-upload" type="file" accept="image/*" className="hidden" onChange={handleImageChange} />
+                    <input
+                        id="avatar-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageChange}
+                    />
                 </div>
 
                 {/* Form */}
@@ -171,29 +243,58 @@ export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
                     </div>
                     <div>
                         <Label>Email</Label>
-                        <Input name="email" value={form.email} disabled className="bg-gray-100 text-sm" />
+                        <Input
+                            name="email"
+                            value={form.email}
+                            disabled
+                            className="bg-gray-100 text-sm"
+                        />
                     </div>
                     <div>
                         <Label>Số điện thoại</Label>
-                        <Input name="phoneNumber" value={form.phoneNumber} onChange={handleChange} />
+                        <Input
+                            name="phoneNumber"
+                            value={form.phoneNumber}
+                            onChange={handleChange}
+                        />
                     </div>
                     <div>
                         <Label>Ngày sinh</Label>
-                        <Input type="date" name="dateOfBirth" value={form.dateOfBirth} onChange={handleChange} />
+                        <Input
+                            type="date"
+                            name="dateOfBirth"
+                            value={form.dateOfBirth}
+                            onChange={handleChange}
+                        />
                     </div>
                     <div>
                         <Label>Giới tính</Label>
                         <div className="flex items-center gap-6 mt-1">
                             <label className="flex items-center gap-2 text-sm">
-                                <input type="radio" name="gender" value="male" checked={form.gender === "male"} onChange={handleChange} className="accent-emerald-500" />
+                                <input
+                                    type="radio"
+                                    name="gender"
+                                    value="male"
+                                    checked={form.gender === "male"}
+                                    onChange={handleChange}
+                                    className="accent-emerald-500"
+                                />
                                 Nam
                             </label>
                             <label className="flex items-center gap-2 text-sm">
-                                <input type="radio" name="gender" value="female" checked={form.gender === "female"} onChange={handleChange} className="accent-emerald-500" />
+                                <input
+                                    type="radio"
+                                    name="gender"
+                                    value="female"
+                                    checked={form.gender === "female"}
+                                    onChange={handleChange}
+                                    className="accent-emerald-500"
+                                />
                                 Nữ
                             </label>
                         </div>
                     </div>
+
                     <div>
                         <Label>Trạng thái</Label>
                         <Input value={form.status} disabled className="bg-gray-100 text-sm" />
@@ -202,14 +303,103 @@ export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
                         <Label>Vai trò</Label>
                         <Input value={form.role} disabled className="bg-gray-100 text-sm" />
                     </div>
+
+                    {/* === Địa chỉ === */}
                     <div className="col-span-2 mt-4">
-                        <Label>Địa chỉ</Label>
-                        <Input name="detailAddress" value={form.detailAddress} onChange={handleChange} placeholder="VD: 12 Nguyễn Văn Linh, Quận 7, TP.HCM" />
+                        <h3 className="text-base font-semibold text-[#38A3A5] mb-2">
+                            Địa chỉ cư trú
+                        </h3>
+
+                        {/* Quốc gia */}
+                        <div className="mb-3">
+                            <Label className="mb-1.5 block">Quốc gia</Label>
+                            <select
+                                name="country"
+                                value={form.country}
+                                onChange={(e) => setForm({ ...form, country: e.target.value })}
+                                className="w-full border rounded-md p-2"
+                            >
+                                <option value="Việt Nam">Việt Nam</option>
+                                <option value="Khác">Khác</option>
+                            </select>
+                            {form.country !== "Việt Nam" && (
+                                <p className="text-sm text-red-600 mt-1">
+                                    ⚠️ Ứng dụng này hiện tại chỉ hỗ trợ người cư trú tại Việt Nam.
+                                </p>
+                            )}
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            <div>
+                                <Label className="mb-1.5 block">Tỉnh / Thành phố</Label>
+                                <select
+                                    name="city"
+                                    value={form.city}
+                                    onChange={handleCityChange}
+                                    className="w-full border rounded-md p-2"
+                                    disabled={form.country !== "Việt Nam"}
+                                >
+                                    <option value="">-- Chọn tỉnh/thành phố --</option>
+                                    {provinces.map((p) => (
+                                        <option key={p.code} value={p.code}>
+                                            {p.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <Label className="mb-1.5 block">Quận / Huyện</Label>
+                                <select
+                                    name="district"
+                                    value={form.district}
+                                    onChange={handleDistrictChange}
+                                    className="w-full border rounded-md p-2"
+                                    disabled={!form.city || form.country !== "Việt Nam"}
+                                >
+                                    <option value="">-- Chọn quận/huyện --</option>
+                                    {districts.map((d) => (
+                                        <option key={d.code} value={d.code}>
+                                            {d.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <Label className="mb-1.5 block">Xã / Phường</Label>
+                                <select
+                                    name="ward"
+                                    value={form.ward}
+                                    onChange={handleWardChange}
+                                    className="w-full border rounded-md p-2"
+                                    disabled={!form.district || form.country !== "Việt Nam"}
+                                >
+                                    <option value="">-- Chọn xã/phường --</option>
+                                    {wards.map((w) => (
+                                        <option key={w.code} value={w.code}>
+                                            {w.name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <Label className="mb-1.5 block">Địa chỉ cụ thể</Label>
+                                <Input
+                                    name="detailAddress"
+                                    value={form.detailAddress}
+                                    placeholder="VD: 12 Nguyễn Văn Linh, Sky Garden 3"
+                                    onChange={handleChange}
+                                />
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <Button className="mt-4 w-1/2 mx-auto bg-[#57CC99] text-white hover:bg-[#38A3A5]" onClick={handleUpdate} disabled={loading || uploading}>
+            <Button
+                className="mt-4 w-1/2 mx-auto bg-[#57CC99] text-white hover:bg-[#38A3A5]"
+                onClick={handleUpdate}
+                disabled={loading || uploading}
+            >
                 {loading ? "Đang cập nhật..." : "Cập nhật thông tin"}
             </Button>
         </div>

@@ -194,10 +194,17 @@ export default function UpdateUserInfo() {
         }
     };
 
-    // 🔹 Cập nhật toàn bộ thông tin
+    //  Cập nhật toàn bộ thông tin
     const handleUpdate = async () => {
         if (!form.fullname || !form.username || !form.phoneNumber)
-            return toast.error("Vui lòng nhập đầy đủ thông tin!");
+            return toast.error("Vui lòng nhập đầy đủ thông tin cá nhân!");
+
+        // ✅ Kiểm tra địa chỉ (chỉ khi quốc gia là Việt Nam)
+        if (form.country === "Việt Nam") {
+            if (!form.city || !form.district || !form.ward || !form.detailAddress) {
+                return toast.error("Vui lòng chọn đầy đủ Tỉnh/Thành, Quận/Huyện, Xã/Phường và nhập địa chỉ cụ thể!");
+            }
+        }
 
         const cityName = provinces.find((p) => p.code == form.city)?.name || "";
         const districtName = districts.find((d) => d.code == form.district)?.name || "";
@@ -233,6 +240,7 @@ export default function UpdateUserInfo() {
             setLoading(false);
         }
     };
+
 
     return (
         <div className="flex flex-col gap-5">
