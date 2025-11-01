@@ -32,7 +32,7 @@ export default function StaffLayout() {
     },
     {
       name: "Đặt lịch khách hàng",
-      path: "bookings",
+      path: "manage-booking",
       icon: <CalendarCheck size={18} />,
     },
     { name: "Báo cáo trạm", path: "reports", icon: <FileBarChart size={18} /> },

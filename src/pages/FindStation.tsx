@@ -28,13 +28,21 @@ export default function FindStation() {
     getStationWithDistance,
   } = useStation();
 
+  let watchId: number | null | undefined = null;
   // Lấy danh sách trạm
   useEffect(() => {
     fetchAllStation();
     const checkPermiss = localStorage.getItem("permissionUserLocation");
-    if(checkPermiss==="granted"){
-      startWatchingLocation();
+    if (checkPermiss === "granted") {
+      watchId = startWatchingLocation();
     }
+
+    return () => {
+      if (typeof watchId === "number") {
+        navigator.geolocation.clearWatch(watchId);
+        console.log(" Đã clear watchPosition khi rời FindStation");
+      }
+    };
   }, []);
 
   // Lọc theo từ khóa hoặc coords
@@ -90,15 +98,16 @@ export default function FindStation() {
         const newCoords = { lat: latitude, lng: longitude };
         setCoords(newCoords);
         setLoadingCoords(false);
+        console.log(newCoords);
       },
       (error) => {
         console.error("Không thể lấy vị trí", error);
         setLoadingCoords(false);
       },
-      { enableHighAccuracy: true, maximumAge: 10000, timeout: 5000 }
+      { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
     );
 
-    return () => navigator.geolocation.clearWatch(watchId);
+    return watchId;
   };
 
   const handleAllow = () => {
@@ -109,7 +118,7 @@ export default function FindStation() {
 
   const handleDeny = () => {
     localStorage.setItem("permissionUserLocation", "denied");
-    localStorage.setItem("userCoords","");
+    localStorage.setItem("userCoords", "");
     setCoords(null);
     setShowModal(false);
   };

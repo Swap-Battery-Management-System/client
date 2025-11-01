@@ -133,8 +133,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <NavLink
-                    to="/home/notifications
-"
+                    to="/home/notifications"
                     className="w-full text-center text-[#38A3A5] py-2 hover:underline"
                   >
                     Xem tất cả thông báo

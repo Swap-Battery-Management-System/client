@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Mail, Lock, CheckCircle } from "lucide-react";
+import { Mail, Lock, CheckCircle, EyeOff, Eye } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import api from "@/lib/api";
@@ -13,13 +13,17 @@ export default function ResetPassword() {
   const [otp, setOtp] = useState("");
   const [newPass, setNewPass] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [loading, setLoading] = useState(false);
   const [resetToken, setResetToken] = useState(""); // lưu token từ /revoke
 
+
+
   const validatePassword = (password: string) => {
     const regex =
-      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$/;
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{7,}$/;
     return regex.test(password);
   };
 
@@ -165,28 +169,45 @@ export default function ResetPassword() {
                 size={18}
               />
               <Input
-                type="password"
+                type={showNewPass ? "text" : "password"}
                 value={newPass}
                 onChange={(e) => setNewPass(e.target.value)}
                 placeholder="••••••••"
-                className="pl-10 border-2 border-emerald-500 rounded-md"
+                className="pl-10 pr-10 border-2 border-emerald-500 rounded-md"
               />
+              <button
+                type="button"
+                onClick={() => setShowNewPass(!showNewPass)}
+                className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+              >
+                {showNewPass ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
             </div>
             {newPass && !validatePassword(newPass) && (
               <p className="text-red-500 text-sm mt-1">
-                Mật khẩu phải ≥ 8 ký tự, có chữ hoa, chữ thường, số và ký tự đặc
-                biệt.
+                Mật khẩu phải có ít nhất 8 ký tự, bao gồm chữ hoa, chữ thường,
+                số và ký tự đặc biệt.
               </p>
             )}
 
+            {/* Xác nhận mật khẩu */}
             <label className="text-sm font-medium">Xác nhận mật khẩu</label>
-            <Input
-              type="password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              placeholder="Nhập lại mật khẩu"
-              className="border-2 border-emerald-500 rounded-md"
-            />
+            <div className="relative">
+              <Input
+                type={showConfirm ? "text" : "password"}
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                placeholder="Nhập lại mật khẩu"
+                className="pr-10 border-2 border-emerald-500 rounded-md"
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirm(!showConfirm)}
+                className="absolute right-3 top-2.5 text-gray-500 hover:text-gray-700"
+              >
+                {showConfirm ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            </div>
 
             <Button
               className="w-full bg-[#57CC99] hover:bg-[#38A3A5] text-white"

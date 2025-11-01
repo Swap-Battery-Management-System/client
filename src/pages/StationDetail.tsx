@@ -63,8 +63,8 @@ export default function StationDetail() {
       ? `https://www.google.com/maps?saddr=My+Location&daddr=${station.latitude},${station.longitude}&hl=vi&output=embed`
       : `https://www.google.com/maps?q=${station.latitude},${station.longitude}&hl=vi&output=embed`;
 
-  const handleBooking=()=>{
-    navigate(`/home/booking`,{state:{id:station.id}});
+  const handleBooking = () => {
+    navigate(`/home/booking`, { state: { id: station.id } });
   }
 
   return (
@@ -101,7 +101,7 @@ export default function StationDetail() {
           <h1 className="text-2xl font-bold">{station.name}</h1>
           <p className="text-gray-700">Địa chỉ: {station.address}</p>
 
-          <p className="text-gray-700">Pin khả dụng: {station.batteries.filter((s)=>s.status==="available").length}</p>
+          <p className="text-gray-700">Pin khả dụng: {station.batteries.filter((s) => s.status === "available").length}</p>
           <p className="text-gray-700">Đánh giá: {station.avgRating} ⭐</p>
 
           <div className="flex justify-end mt-4">

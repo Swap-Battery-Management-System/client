@@ -9,8 +9,9 @@ import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { NavLink } from "react-router-dom";
-import logo from "/svg.svg"
+import logo from "/svg.svg";
 import { Eye, EyeOff } from "lucide-react";
+import { useAuthStore } from "@/stores/authStores";
 interface FormData {
   identifier: string;
   password: string;
@@ -33,7 +34,6 @@ export default function Login() {
 
     if (type === "success") toast.success(message, { duration: 1000 });
     else toast.error(message, { duration: 1000 });
-
   }, [message, type]);
 
   const redirectByRole = (role: string) => {
@@ -77,7 +77,7 @@ export default function Login() {
       const res = await api.post("/auth/login", payload, {
         withCredentials: true,
       });
-
+      useAuthStore.getState().setAccessToken(res.data.data.accessToken);
       const user = res.data.data.user;
       console.log("login", res.data);
       setUser(user);
@@ -111,6 +111,7 @@ export default function Login() {
         { credential },
         { withCredentials: true }
       );
+      useAuthStore.getState().setAccessToken(res.data.data.accessToken);
       const user = res.data.data.user;
       console.log("gg:", res.data);
 
@@ -137,7 +138,6 @@ export default function Login() {
   };
 
   const handleResetPassword = (e: React.MouseEvent) => {
-
     e.preventDefault;
     navigate("/login/reset-password");
   };
@@ -171,7 +171,10 @@ export default function Login() {
               type: "text",
               placeholder: "Nhập email hoặc tên đăng nhập",
               icon: (
-                <Mail className="absolute left-3 top-3 text-[#38A3A5]" size={18} />
+                <Mail
+                  className="absolute left-3 top-3 text-[#38A3A5]"
+                  size={18}
+                />
               ),
             },
             {
@@ -180,7 +183,10 @@ export default function Login() {
               type: "password",
               placeholder: "••••••••",
               icon: (
-                <Lock className="absolute left-3 top-3 text-[#38A3A5]" size={18} />
+                <Lock
+                  className="absolute left-3 top-3 text-[#38A3A5]"
+                  size={18}
+                />
               ),
             },
           ].map((field, idx) => (
@@ -192,7 +198,6 @@ export default function Login() {
                   name={field.name}
                   value={form[field.name as keyof typeof form]}
                   onChange={handleChange}
-                  // 👇 chỉ áp dụng showPassword cho trường "password"
                   type={
                     field.name === "password"
                       ? showPassword
@@ -205,7 +210,7 @@ export default function Login() {
                   required
                 />
 
-                {/* 👇 nút con mắt chỉ xuất hiện cho trường password */}
+                {/* nút con mắt chỉ xuất hiện cho trường password */}
                 {field.name === "password" && (
                   <button
                     type="button"
@@ -228,7 +233,6 @@ export default function Login() {
             </div>
           ))}
 
-
           <Button
             type="submit"
             disabled={loading}
@@ -245,36 +249,19 @@ export default function Login() {
             <div className="flex-1 h-[1px] bg-gray-300"></div>
           </div>
 
-          <button
-            type="button"
-            onClick={() => {
-              const googleBtn = document.querySelector<HTMLDivElement>(
-                "div[role='button'][id^='credential_picker']"
-              );
-              googleBtn?.click();
-            }}
-            className="w-full flex items-center justify-center gap-3 py-2.5 border border-gray-300 bg-white text-gray-700 rounded-md hover:bg-gray-100 transition shadow-sm"
-          >
-            <img
-              src="https://www.svgrepo.com/show/475656/google-color.svg"
-              alt="Google logo"
-              className="w-5 h-5"
-            />
-            <span className="font-medium">Đăng nhập với Google</span>
-          </button>
-
-          <div className="absolute opacity-0 pointer-events-none">
-            <GoogleLogin
-              onSuccess={handleGoogleLogin}
-              onError={handleGoogleError}
-              theme="outline"
-              shape="rectangular"
-              text="signin_with"
-              width="380"
-            />
+          <div className="mt-3 w-full flex justify-center">
+            <div className="w-full max-w-[380px]">
+              <GoogleLogin
+                onSuccess={handleGoogleLogin}
+                onError={handleGoogleError}
+                theme="outline"
+                shape="rectangular"
+                text="signin_with"
+                width="350"
+              />
+            </div>
           </div>
         </div>
-
 
         <p className="mt-6 text-sm text-gray-600">
           Chưa có tài khoản?{" "}

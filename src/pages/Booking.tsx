@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
+import { toast } from "sonner";
 import {
   MapPin,
   AlertTriangle,
@@ -47,9 +48,8 @@ interface Vehicle {
   batteryTypeId: string;
 }
 
-interface Battery{
-  id:string;
-
+interface Battery {
+  id: string;
 }
 
 export default function Booking() {
@@ -66,18 +66,19 @@ export default function Booking() {
 
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
 
-  const now = new Date();
+  const now = new Date(Date.now());
   const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const pad = (n: number) => n.toString().padStart(2, "0");
   const minDate = now.toISOString().split("T")[0];
   const maxDate = in24h.toISOString().split("T")[0];
   const minTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  const maxTime = "23:59";
+  const maxTime = `${pad(in24h.getHours())}:${pad(in24h.getMinutes())}`;
   const location = useLocation();
   const defaultStationId = location.state?.id ?? "";
   const [hasCompatibleBattery, setHasCompatibleBattery] = useState<
     boolean | null
   >(null);
+  const [isCompleteForm,setIsCompleteForm]=useState(true);
 
   const [form, setForm] = useState<BookingForm>({
     userName: user?.fullName ?? "",
@@ -88,12 +89,36 @@ export default function Booking() {
     note: "",
   });
 
+  // useEffect(() => {
+  //     if (!user) return;
+
+  //     const isComplete =
+  //       Boolean(user.fullName) &&
+  //       Boolean(user.phoneNumber) &&
+  //       Boolean(user.address);
+
+  //     // Nếu form chưa complete và thông tin chưa đầy đủ → chỉ toast 1 lần
+  //     if (!isComplete) {
+  //       if (isCompleteForm) {
+  //         toast.error(
+  //           "Vui lòng hoàn thiện thông tin cá nhân trước khi đặt lịch!"
+  //         );
+  //         setIsCompleteForm(false);
+  //       }
+  //     } else {
+  //       setForm((prev) => ({ ...prev, userName: user.fullName as string}));
+  //       setIsCompleteForm(true);
+  //     }
+    
+  // }, [user]);
+ 
+
   const checkPendingBooking = async () => {
     try {
       const res = await api.get("/bookings", { withCredentials: true });
       const bookings = res.data.data.bookings || [];
       const pending = bookings.some(
-        (b: any) => b.userId === user?.id && b.status === "scheduled"
+        (b: any) => b.status === "scheduled" || b.status === "pending"
       );
       setHasPendingBooking(pending);
     } catch (err) {
@@ -114,7 +139,7 @@ export default function Booking() {
         .filter((v: any) => v.status === "active" && v.userId === user?.id)
         .map((v: any) => ({
           id: v.id,
-          name:v.name,
+          name: v.name,
           status: v.status,
           batteryTypeId: v.model.batteryType.id,
         }));
@@ -152,25 +177,30 @@ export default function Booking() {
   };
 
   //kiểm tra có pin phù hợp hay không
-  const checkAvailableBattery = () => {
-    const vehicle = vehicles.find((v) => v.id === form.vehicleId);
-    const station = stations.find((s) => s.id === form.stationId);
-    if (vehicle) {
-      if (station) {
-        const compatible = station.batteries.some(
-          (b) =>
-            b.batteryTypeId === vehicle.batteryTypeId &&
-            b.status === "available"
-        );
-        if (!compatible) {
-          setHasCompatibleBattery(false);
-        } else {
-          setHasCompatibleBattery(true);
-        }
+  const checkAvailableBattery = async () => {
+    try {
+      const res = await api.get(`/batteries/station/${form.stationId}`);
+      const batteries = res.data.data.batteries;
+      const vehicle = vehicles.find((v) => v.id === form.vehicleId);
+
+      if (!vehicle) {
+        console.warn("Không tìm thấy thông tin xe.");
+        setHasCompatibleBattery(false);
+        return;
       }
+
+      // Kiểm tra xem có pin phù hợp và còn khả dụng hay không
+      const compatible = batteries.some(
+        (b: any) =>
+          b.batteryTypeId === vehicle.batteryTypeId && b.status === "available"
+      );
+
+      setHasCompatibleBattery(compatible);
+    } catch (err) {
+      console.error("Lỗi khi kiểm tra pin:", err);
+      setHasCompatibleBattery(false);
     }
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const { stationId, vehicleId, date, time, note } = form;
@@ -180,44 +210,69 @@ export default function Booking() {
       return;
     }
 
-    const scheduleTime = new Date(`${date}T${time}`).toISOString();
+    if (!stationId || !vehicleId || !date || !time) {
+      alert("⚠️ Vui lòng điền đầy đủ thông tin bắt buộc!");
+      return;
+    }
+
+    const scheduleTime = `${date}T${time}:00`;
+    const now = new Date();
+
     const payload: BookingPayload = {
-      scheduleTime,
+      scheduleTime: scheduleTime,
       note,
       vehicleId,
       stationId,
     };
-
-    console.log(payload);
+    console.log("booking", payload);
 
     try {
-      await api.post("/bookings", payload, {
+      const res = await api.post("/bookings", payload, {
         withCredentials: true,
       });
-      setModalIcon(
-        <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" />
-      );
-      setModalMessage(
-        "Đặt lịch thành công! Hãy chuẩn bị để đổi pin đúng giờ nhé!"
-      );
+      const booking = res.data.data.booking;
+      const bookingStatus = booking.status;
+
       setIsSuccess(true);
       setShowModal(true);
+
+      if (bookingStatus === "pending") {
+        // Trường hợp: chưa có pin phù hợp
+        setModalIcon(
+          <AlertTriangle className="w-10 h-10 text-yellow-500 mx-auto mb-3" />
+        );
+        setModalMessage(
+          "Đặt lịch thành công! Tuy nhiên, hiện tại hệ thống chưa tìm thấy pin phù hợp cho xe của bạn. " +
+            "Lịch của bạn đang ở trạng thái *chờ xử lý*. Nếu sau một thời gian vẫn không có pin phù hợp, " +
+            "lịch có thể sẽ tự động bị hủy. Vui lòng thường xuyên kiểm tra lại trong mục đặt lịch nhé!"
+        );
+      } else if (bookingStatus === "scheduled") {
+        // Trường hợp: có pin phù hợp, đặt lịch hoàn tất
+        setModalIcon(
+          <CheckCircle className="w-10 h-10 text-green-500 mx-auto mb-3" />
+        );
+        setModalMessage(
+          "Đặt lịch thành công! Hệ thống đã tìm thấy pin phù hợp, " +
+            "hãy chuẩn bị để đổi pin đúng giờ nhé!"
+        );
+      } else {
+        //  Trường hợp khác (phòng khi backend thay đổi)
+        setModalIcon(
+          <XCircle className="w-10 h-10 text-gray-500 mx-auto mb-3" />
+        );
+        setModalMessage(
+          `Đặt lịch thành công với trạng thái: ${status}. Vui lòng kiểm tra lại trong danh sách đặt lịch của bạn.`
+        );
+      }
     } catch (err: any) {
       const status = err.response?.status;
-
+      console.log("không thể đặt lịch ", err);
       if (status === 400) {
         setModalIcon(
           <AlertTriangle className="w-10 h-10 text-yellow-500 mx-auto mb-3" />
         );
         setModalMessage(
-          "Bạn đang có một lịch đặt chưa hoàn tất. Vui lòng hoàn tất hoặc hủy lịch cũ trước khi đặt mới!"
-        );
-      } else if (status === 404) {
-        setModalIcon(
-          <BatteryWarning className="w-10 h-10 text-blue-500 mx-auto mb-3" />
-        );
-        setModalMessage(
-          "Hiện trạm này không còn pin phù hợp để đổi. Hãy chọn trạm khác nhé!"
+          "Dữ liệu đầu vào không hợp lệ hoặc bị thiếu. Vui lòng kiểm tra lại thông tin!"
         );
       } else if (status === 500) {
         setModalIcon(
@@ -364,9 +419,16 @@ export default function Booking() {
                     </Select>
 
                     {hasCompatibleBattery === false && (
-                      <div className="flex items-center gap-2 mt-2 text-red-500 text-sm">
+                      <div className="flex items-center gap-2 mt-2 text-yellow-600 text-sm">
                         <AlertTriangle className="w-4 h-4" />
-                        <span>Trạm này không có pin phù hợp với xe bạn.</span>
+                        <span>
+                          Trạm hiện chưa có pin phù hợp với xe của bạn. Bạn vẫn
+                          có thể đặt lịch trước — lịch sẽ ở trạng thái{" "}
+                          <b>chờ xử lý (pending)</b>. Khi có pin, lịch sẽ được
+                          chuyển sang <b>đã sắp xếp (scheduled)</b>. Nếu đến
+                          thời gian hẹn mà trạm vẫn chưa có pin, lịch sẽ tự động{" "}
+                          <b>bị hủy</b>.
+                        </span>
                       </div>
                     )}
 
@@ -424,11 +486,11 @@ export default function Booking() {
                 <div className="col-span-2 flex justify-center pt-4">
                   <Button
                     type="submit"
-                    disabled={
+                    disabled={!isCompleteForm ||                    
                       !form.stationId ||
-                      !form.vehicleId ||
-                      !form.date ||
-                      !form.time
+                        !form.vehicleId ||
+                        !form.date ||
+                        !form.time
                     }
                     className="bg-[#38A3A5] hover:bg-[#2C9A95] text-white px-8 py-3 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
@@ -447,7 +509,7 @@ export default function Booking() {
                 onClick={() => setShowModal(false)}
               ></div>
 
-              <div className="relative bg-white rounded-2xl shadow-lg p-10 w-[480px] max-w-full text-center z-10">
+              <div className="relative bg-white rounded-2xl shadow-lg p-10 w-[700px] max-w-full text-center z-10">
                 <button
                   onClick={() => setShowModal(false)}
                   className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 text-xl font-bold"
