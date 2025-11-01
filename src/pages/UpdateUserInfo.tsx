@@ -343,15 +343,39 @@ export default function UpdateUserInfo() {
                     </div>
 
                     <div className="mt-2">
-                        <h3 className="text-base font-semibold text-[#38A3A5] mb-2">Địa chỉ cư trú</h3>
-                        <div className="grid grid-cols-1 gap-3">
+                        <h3 className="text-base font-semibold text-[#38A3A5] mb-2">
+                            Địa chỉ cư trú
+                        </h3>
+
+                        {/* Quốc gia */}
+                        <div className="mb-3">
+                            <Label className="mb-1.5 block">Quốc gia</Label>
+                            <select
+                                name="country"
+                                value={form.country}
+                                onChange={(e) => setForm({ ...form, country: e.target.value })}
+                                className="w-full border rounded-md p-2"
+                            >
+                                <option value="Việt Nam">Việt Nam</option>
+                                <option value="Khác">Khác</option>
+                            </select>
+                            {form.country !== "Việt Nam" && (
+                                <p className="text-sm text-red-600 mt-1">
+                                    ⚠️ Ứng dụng này hiện tại chỉ hỗ trợ người cư trú tại Việt Nam.
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Địa chỉ chi tiết */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <Label>Tỉnh / Thành phố</Label>
+                                <Label className="mb-1.5 block">Tỉnh / Thành phố</Label>
                                 <select
                                     name="city"
                                     value={form.city}
                                     onChange={handleCityChange}
                                     className="w-full border rounded-md p-2"
+                                    disabled={form.country !== "Việt Nam"}
                                 >
                                     <option value="">-- Chọn tỉnh/thành phố --</option>
                                     {provinces.map((p) => (
@@ -361,14 +385,15 @@ export default function UpdateUserInfo() {
                                     ))}
                                 </select>
                             </div>
+
                             <div>
-                                <Label>Quận / Huyện</Label>
+                                <Label className="mb-1.5 block">Quận / Huyện</Label>
                                 <select
                                     name="district"
                                     value={form.district}
                                     onChange={handleDistrictChange}
                                     className="w-full border rounded-md p-2"
-                                    disabled={!form.city}
+                                    disabled={!form.city || form.country !== "Việt Nam"}
                                 >
                                     <option value="">-- Chọn quận/huyện --</option>
                                     {districts.map((d) => (
@@ -378,14 +403,15 @@ export default function UpdateUserInfo() {
                                     ))}
                                 </select>
                             </div>
+
                             <div>
-                                <Label>Xã / Phường</Label>
+                                <Label className="mb-1.5 block">Xã / Phường</Label>
                                 <select
                                     name="ward"
                                     value={form.ward}
                                     onChange={handleWardChange}
                                     className="w-full border rounded-md p-2"
-                                    disabled={!form.district}
+                                    disabled={!form.district || form.country !== "Việt Nam"}
                                 >
                                     <option value="">-- Chọn xã/phường --</option>
                                     {wards.map((w) => (
@@ -395,8 +421,9 @@ export default function UpdateUserInfo() {
                                     ))}
                                 </select>
                             </div>
+
                             <div>
-                                <Label>Địa chỉ cụ thể</Label>
+                                <Label className="mb-1.5 block">Địa chỉ cụ thể</Label>
                                 <Input
                                     name="detailAddress"
                                     value={form.detailAddress}
@@ -406,6 +433,7 @@ export default function UpdateUserInfo() {
                             </div>
                         </div>
                     </div>
+
 
                     <Button
                         className="mt-6 w-1/2 bg-[#57CC99] text-white hover:bg-[#38A3A5] disabled:opacity-50"
