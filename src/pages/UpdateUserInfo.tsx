@@ -37,6 +37,10 @@ export default function UpdateUserInfo() {
     const [provinces, setProvinces] = useState<any[]>([]);
     const [districts, setDistricts] = useState<any[]>([]);
     const [wards, setWards] = useState<any[]>([]);
+    // Kiểm tra username
+    const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+    const [usernameError, setUsernameError] = useState<string>("");
+    const [checkTimer, setCheckTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
     // 🔹 Lấy danh sách tỉnh/thành
     useEffect(() => {
@@ -118,10 +122,59 @@ export default function UpdateUserInfo() {
         })();
     }, [userId, provinces.length]);
 
-    // 🔹 Sự kiện change input
+    //  Sự kiện change input
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
+    //  Hàm kiểm tra hợp lệ tên đăng nhập
+    const validateUsername = (username: string) => {
+        if (!username.trim()) return "Tên đăng nhập không được để trống.";
+        if (username.length < 5 || username.length > 20)
+            return "Tên đăng nhập phải từ 5–20 ký tự.";
+        if (!/^[A-Za-z]/.test(username))
+            return "Ký tự đầu tiên phải là chữ cái.";
+        if (!/^[A-Za-z0-9._]+$/.test(username))
+            return "Chỉ được chứa chữ cái, số, dấu gạch dưới (_) hoặc dấu chấm (.)";
+        if (/\s/.test(username))
+            return "Không được chứa khoảng trắng.";
+        return "";
+    };
+
+    //  Gọi API kiểm tra username
+    const checkAvailability = async (username: string) => {
+        if (!username) return;
+        setUsernameStatus("checking");
+        try {
+            const res = await api.post("/auth/check", { username });
+            if (res.status === 204) setUsernameStatus("available");
+            else setUsernameStatus("taken");
+        } catch (err: any) {
+            if ([400, 404].includes(err.response?.status)) setUsernameStatus("available");
+            else setUsernameStatus("taken");
+        }
+    };
+
+    //  Khi người dùng nhập username
+    const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setForm({ ...form, username: value });
+
+        // Kiểm tra cục bộ
+        const msg = validateUsername(value);
+        setUsernameError(msg);
+
+        if (msg) {
+            setUsernameStatus("idle");
+            if (checkTimer) clearTimeout(checkTimer);
+            return;
+        }
+
+        // Debounce 500ms
+        if (checkTimer) clearTimeout(checkTimer);
+        const timer = setTimeout(() => checkAvailability(value), 500);
+        setCheckTimer(timer);
+    };
+
 
     // 🔹 Load danh sách huyện
     const handleCityChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -194,10 +247,17 @@ export default function UpdateUserInfo() {
         }
     };
 
-    // 🔹 Cập nhật toàn bộ thông tin
+    //  Cập nhật toàn bộ thông tin
     const handleUpdate = async () => {
         if (!form.fullname || !form.username || !form.phoneNumber)
-            return toast.error("Vui lòng nhập đầy đủ thông tin!");
+            return toast.error("Vui lòng nhập đầy đủ thông tin cá nhân!");
+
+        // ✅ Kiểm tra địa chỉ (chỉ khi quốc gia là Việt Nam)
+        if (form.country === "Việt Nam") {
+            if (!form.city || !form.district || !form.ward || !form.detailAddress) {
+                return toast.error("Vui lòng chọn đầy đủ Tỉnh/Thành, Quận/Huyện, Xã/Phường và nhập địa chỉ cụ thể!");
+            }
+        }
 
         const cityName = provinces.find((p) => p.code == form.city)?.name || "";
         const districtName = districts.find((d) => d.code == form.district)?.name || "";
@@ -233,6 +293,7 @@ export default function UpdateUserInfo() {
             setLoading(false);
         }
     };
+
 
     return (
         <div className="flex flex-col gap-5">
@@ -290,7 +351,45 @@ export default function UpdateUserInfo() {
                     </div>
                     <div>
                         <Label>Tên đăng nhập</Label>
-                        <Input name="username" value={form.username} onChange={handleChange} />
+                        <div className="relative">
+                            <Input
+                                name="username"
+                                value={form.username}
+                                onChange={handleUsernameChange}
+                                className="pr-10"
+                                placeholder="VD: driver001"
+                            />
+
+                            {/* Icon trạng thái */}
+                            {usernameStatus === "checking" && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-gray-400">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                            d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 018 8" />
+                                    </svg>
+                                </div>
+                            )}
+                            {usernameStatus === "available" && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                            )}
+                            {usernameStatus === "taken" && (
+                                <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Hiển thị thông báo */}
+                        {usernameError && <p className="text-sm text-red-500 mt-1">{usernameError}</p>}
+                        {!usernameError && usernameStatus === "taken" && <p className="text-sm text-red-500 mt-1">Tên đăng nhập đã tồn tại.</p>}
+                        {!usernameError && usernameStatus === "available" && <p className="text-sm text-green-600 mt-1">Tên đăng nhập khả dụng.</p>}
+
                     </div>
                     <div>
                         <Label>Email</Label>
@@ -343,15 +442,39 @@ export default function UpdateUserInfo() {
                     </div>
 
                     <div className="mt-2">
-                        <h3 className="text-base font-semibold text-[#38A3A5] mb-2">Địa chỉ cư trú</h3>
-                        <div className="grid grid-cols-1 gap-3">
+                        <h3 className="text-base font-semibold text-[#38A3A5] mb-2">
+                            Địa chỉ cư trú
+                        </h3>
+
+                        {/* Quốc gia */}
+                        <div className="mb-3">
+                            <Label className="mb-1.5 block">Quốc gia</Label>
+                            <select
+                                name="country"
+                                value={form.country}
+                                onChange={(e) => setForm({ ...form, country: e.target.value })}
+                                className="w-full border rounded-md p-2"
+                            >
+                                <option value="Việt Nam">Việt Nam</option>
+                                <option value="Khác">Khác</option>
+                            </select>
+                            {form.country !== "Việt Nam" && (
+                                <p className="text-sm text-red-600 mt-1">
+                                    ⚠️ Ứng dụng này hiện tại chỉ hỗ trợ người cư trú tại Việt Nam.
+                                </p>
+                            )}
+                        </div>
+
+                        {/* Địa chỉ chi tiết */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                             <div>
-                                <Label>Tỉnh / Thành phố</Label>
+                                <Label className="mb-1.5 block">Tỉnh / Thành phố</Label>
                                 <select
                                     name="city"
                                     value={form.city}
                                     onChange={handleCityChange}
                                     className="w-full border rounded-md p-2"
+                                    disabled={form.country !== "Việt Nam"}
                                 >
                                     <option value="">-- Chọn tỉnh/thành phố --</option>
                                     {provinces.map((p) => (
@@ -361,14 +484,15 @@ export default function UpdateUserInfo() {
                                     ))}
                                 </select>
                             </div>
+
                             <div>
-                                <Label>Quận / Huyện</Label>
+                                <Label className="mb-1.5 block">Quận / Huyện</Label>
                                 <select
                                     name="district"
                                     value={form.district}
                                     onChange={handleDistrictChange}
                                     className="w-full border rounded-md p-2"
-                                    disabled={!form.city}
+                                    disabled={!form.city || form.country !== "Việt Nam"}
                                 >
                                     <option value="">-- Chọn quận/huyện --</option>
                                     {districts.map((d) => (
@@ -378,14 +502,15 @@ export default function UpdateUserInfo() {
                                     ))}
                                 </select>
                             </div>
+
                             <div>
-                                <Label>Xã / Phường</Label>
+                                <Label className="mb-1.5 block">Xã / Phường</Label>
                                 <select
                                     name="ward"
                                     value={form.ward}
                                     onChange={handleWardChange}
                                     className="w-full border rounded-md p-2"
-                                    disabled={!form.district}
+                                    disabled={!form.district || form.country !== "Việt Nam"}
                                 >
                                     <option value="">-- Chọn xã/phường --</option>
                                     {wards.map((w) => (
@@ -395,8 +520,9 @@ export default function UpdateUserInfo() {
                                     ))}
                                 </select>
                             </div>
+
                             <div>
-                                <Label>Địa chỉ cụ thể</Label>
+                                <Label className="mb-1.5 block">Địa chỉ cụ thể</Label>
                                 <Input
                                     name="detailAddress"
                                     value={form.detailAddress}
@@ -406,6 +532,7 @@ export default function UpdateUserInfo() {
                             </div>
                         </div>
                     </div>
+
 
                     <Button
                         className="mt-6 w-1/2 bg-[#57CC99] text-white hover:bg-[#38A3A5] disabled:opacity-50"

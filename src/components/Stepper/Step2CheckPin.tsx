@@ -8,11 +8,14 @@ import { Label } from "@/components/ui/label";
 export function Step2CheckPin({
   onNext,
   onPrev,
+  data,
 }: {
   onNext: () => void;
   onPrev: () => void;
+  data:any;
 }) {
-  const [batteryId, setBatteryId] = useState("");
+  const initialBatteryId = data.oldBattery.id || "";
+  const [batteryId, setBatteryId] = useState(initialBatteryId);
   const [checked, setChecked] = useState(false);
 
   const handleCheck = () => {

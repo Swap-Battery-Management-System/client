@@ -9,8 +9,9 @@ import { GoogleLogin } from "@react-oauth/google";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { NavLink } from "react-router-dom";
-import logo from "/svg.svg"
+import logo from "/svg.svg";
 import { Eye, EyeOff } from "lucide-react";
+import { useAuthStore } from "@/stores/authStores";
 interface FormData {
   identifier: string;
   password: string;
@@ -33,7 +34,6 @@ export default function Login() {
 
     if (type === "success") toast.success(message, { duration: 1000 });
     else toast.error(message, { duration: 1000 });
-
   }, [message, type]);
 
   const redirectByRole = (role: string) => {
@@ -77,7 +77,7 @@ export default function Login() {
       const res = await api.post("/auth/login", payload, {
         withCredentials: true,
       });
-
+      useAuthStore.getState().setAccessToken(res.data.data.accessToken);
       const user = res.data.data.user;
       console.log("login", res.data);
       setUser(user);
@@ -111,6 +111,7 @@ export default function Login() {
         { credential },
         { withCredentials: true }
       );
+      useAuthStore.getState().setAccessToken(res.data.data.accessToken);
       const user = res.data.data.user;
       console.log("gg:", res.data);
 
@@ -137,7 +138,6 @@ export default function Login() {
   };
 
   const handleResetPassword = (e: React.MouseEvent) => {
-
     e.preventDefault;
     navigate("/login/reset-password");
   };
@@ -198,7 +198,6 @@ export default function Login() {
                   name={field.name}
                   value={form[field.name as keyof typeof form]}
                   onChange={handleChange}
-                  // 👇 chỉ áp dụng showPassword cho trường "password"
                   type={
                     field.name === "password"
                       ? showPassword
@@ -211,7 +210,7 @@ export default function Login() {
                   required
                 />
 
-                {/* 👇 nút con mắt chỉ xuất hiện cho trường password */}
+                {/* nút con mắt chỉ xuất hiện cho trường password */}
                 {field.name === "password" && (
                   <button
                     type="button"
@@ -258,7 +257,7 @@ export default function Login() {
                 theme="outline"
                 shape="rectangular"
                 text="signin_with"
-                width="380"
+                width="350"
               />
             </div>
           </div>

@@ -56,7 +56,7 @@ export default function BatteryProcess() {
               onNext={goToNext}
               onPrev={goToPrev}
               // onUpdate={handleUpdateData}
-              // data={processData}
+              data={processData}
               // disabled={currentStep > 1}
             />
           )}

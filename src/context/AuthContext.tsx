@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import api from "@/lib/api";
 import type { User } from "@/types/user";
+import { create } from "zustand";
+import { useAuthStore } from "@/stores/authStores";
 
 interface AuthContextType {
   user: User | null;
@@ -18,7 +20,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const [message, setMessage] = useState<string>("");
   const [initialized, setInitialized] = useState(false);
-
+  const accessToken = useAuthStore.getState().accessToken;
 
   //kiem tra token con khong
   useEffect(() => {

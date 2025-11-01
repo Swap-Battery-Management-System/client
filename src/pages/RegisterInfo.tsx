@@ -14,6 +14,30 @@ export default function RegisterInfo() {
     const navigate = useNavigate();
     const location = useLocation();
     const email = location.state?.email || localStorage.getItem("pendingEmail");
+    // 🔹 Kiểm tra username
+    const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+    const [checkTimer, setCheckTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+
+    const checkAvailability = async (username: string) => {
+        if (!username) return;
+        setUsernameStatus("checking");
+
+        try {
+            const res = await api.post("/auth/check", { username });
+            if (res.status === 204) {
+                setUsernameStatus("available");
+            } else {
+                setUsernameStatus("taken");
+            }
+        } catch (err: any) {
+            if ([400, 404].includes(err.response?.status)) {
+                setUsernameStatus("available");
+            } else {
+                setUsernameStatus("taken");
+            }
+        }
+    };
+
 
     const { user } = useAuth();
     const userId = user?.id;
@@ -33,6 +57,18 @@ export default function RegisterInfo() {
         avatar: null as File | null,
         avatarUrl: "", // ✅ thêm để lưu link ảnh upload
     });
+    const validateUsername = (username: string) => {
+        if (!username.trim()) return "Tên đăng nhập không được để trống.";
+        if (username.length < 5 || username.length > 20)
+            return "Tên đăng nhập phải từ 5–20 ký tự.";
+        if (!/^[A-Za-z]/.test(username))
+            return "Ký tự đầu tiên phải là chữ cái.";
+        if (!/^[A-Za-z0-9._]+$/.test(username))
+            return "Chỉ được chứa chữ cái, số, dấu gạch dưới (_) hoặc dấu chấm (.)";
+        if (/\s/.test(username))
+            return "Không được chứa khoảng trắng.";
+        return "";
+    };
 
     const [preview, setPreview] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -116,6 +152,31 @@ export default function RegisterInfo() {
             setUploading(false);
         }
     };
+    const [usernameError, setUsernameError] = useState<string>("");
+
+    const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value;
+        setForm({ ...form, username: value });
+
+        // Kiểm tra hợp lệ tại client
+        const validationMessage = validateUsername(value);
+        setUsernameError(validationMessage);
+
+        // Nếu có lỗi local thì không cần gọi API
+        if (validationMessage) {
+            setUsernameStatus("idle");
+            if (checkTimer) clearTimeout(checkTimer);
+            return;
+        }
+
+        // Nếu hợp lệ thì debounce check API
+        if (checkTimer) clearTimeout(checkTimer);
+        const timer = setTimeout(() => {
+            checkAvailability(value);
+        }, 500);
+        setCheckTimer(timer);
+    };
+
 
     // 🔹 Gửi form hoàn tất đăng ký
     const handleComplete = async () => {
@@ -241,12 +302,58 @@ export default function RegisterInfo() {
                             <Label className="mb-1.5 block">
                                 Tên đăng nhập <span className="text-red-500">*</span>
                             </Label>
-                            <Input
-                                name="username"
-                                value={form.username}
-                                placeholder="VD: driver001"
-                                onChange={handleChange}
-                            />
+                            <div className="relative">
+                                <Input
+                                    name="username"
+                                    value={form.username}
+                                    placeholder="VD: driver001"
+                                    onChange={handleUsernameChange}
+                                    className="pr-10"
+                                />
+
+                                {/* Vòng tròn xoay khi đang kiểm tra */}
+                                {usernameStatus === "checking" && (
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-gray-400">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                                                d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 018 8" />
+                                        </svg>
+                                    </div>
+                                )}
+
+                                {/* Tick xanh nếu khả dụng */}
+                                {usernameStatus === "available" && (
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    </div>
+                                )}
+
+                                {/* X đỏ nếu trùng */}
+                                {usernameStatus === "taken" && (
+                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Hiển thị thông báo hợp lệ / lỗi của username */}
+                            {usernameError && (
+                                <p className="text-sm text-red-500 mt-1">{usernameError}</p>
+                            )}
+
+                            {!usernameError && usernameStatus === "taken" && (
+                                <p className="text-sm text-red-500 mt-1">Tên đăng nhập đã tồn tại.</p>
+                            )}
+
+                            {!usernameError && usernameStatus === "available" && (
+                                <p className="text-sm text-green-600 mt-1">Tên đăng nhập khả dụng.</p>
+                            )}
+
+
                         </div>
 
                         <div>

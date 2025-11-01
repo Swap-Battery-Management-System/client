@@ -71,7 +71,6 @@ function App() {
           <Route path="subscription-packages" element={<Subscription />} />
           <Route path="register-vehicle" element={<RegisterVehicle />} />
           <Route path="my-vehicles" element={<MyVehicles />} />
-          <Route path="/home/update-vehicle/:id" element={<UpdateVehicle />} />
           <Route path="notifications" element={<NotificationPage />} />
 
 
