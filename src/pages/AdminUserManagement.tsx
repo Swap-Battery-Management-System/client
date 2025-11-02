@@ -340,10 +340,6 @@ export default function AdminUserManagement() {
                 <DialogContent
                     className="!w-[95vw] !max-w-[1500px] !h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl p-10"
                 >
-
-                    <DialogHeader>
-                        <DialogTitle className="text-[#38A3A5]">Thông tin chi tiết người dùng</DialogTitle>
-                    </DialogHeader>
                     {selectedUser && (
                         <AdminUpdateInfoUser
                             userId={selectedUser.id}
