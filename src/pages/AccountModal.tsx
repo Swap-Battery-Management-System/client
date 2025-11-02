@@ -26,7 +26,7 @@ export default function AccountModal({ type, onClose }: Props) {
             case "profile":
                 return (
                     <div className="pb-6">
-                        <UpdateUserInfo />
+                        <UpdateUserInfo onSuccess={onClose} />
                     </div>
                 );
 
