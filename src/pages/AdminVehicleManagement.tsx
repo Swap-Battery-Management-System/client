@@ -22,29 +22,51 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
+interface BatteryType {
+    id: string;
+    name: string;
+    designCapacity?: string;
+    price?: string;
+}
+
+interface Model {
+    id: string;
+    name: string;
+    brand?: string;
+    batteryTypeId?: string;
+    batteryType?: BatteryType;
+}
+
 interface Vehicle {
     id: string;
     licensePlates: string;
-    name: string;
     VIN: string;
-    status: string;
-    model?: {
-        id: string;
-        name: string;
-        batteryType?: {
-            name: string;
-            designCapacity?: string;
-        };
-    };
-    user?: {
-        id: string;
-        fullName: string;
-        email: string;
+    status: "pending" | "active" | "invalid";
+    modelId?: string;
+    model?: Model;
+    userId?: string;
+    user?: User;
+    validatedImage?: string;
+}
+
+interface User {
+    id: string;
+    fullName: string;
+    email: string;
+}
+
+interface VehicleResponse {
+    status: "success" | "error";
+    code: number;
+    data: {
+        vehicles: Vehicle[];
     };
 }
 
+
 export default function AdminVehicleManagement() {
     const { user } = useAuth();
+    const [users, setUsers] = useState<User[]>([]);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
     const [batteryTypes, setBatteryTypes] = useState<{ id: string; name: string }[]>([]);
@@ -56,71 +78,65 @@ export default function AdminVehicleManagement() {
     const [filterBattery, setFilterBattery] = useState("");
     const [filterModel, setFilterModel] = useState("");
 
-    // Lấy toàn bộ danh sách xe trong hệ thống
-    const fetchAllVehicles = async () => {
+    // Fetch tất cả dữ liệu cần thiết
+    const fetchData = async () => {
         try {
             setLoading(true);
 
-            const res = await api.get("/vehicles", {
-                withCredentials: true
+            // Fetch users và vehicles song song
+            const [usersRes, vehiclesRes, batteryRes, modelsRes] = await Promise.all([
+                api.get("/users", { withCredentials: true }),
+                api.get("/vehicles", { withCredentials: true }),
+                api.get("/battery-types", { withCredentials: true }),
+                api.get("/models", { withCredentials: true }),
+            ]);
+
+            const usersData: User[] = usersRes?.data?.data?.users || [];
+            const vehiclesData: Vehicle[] = vehiclesRes?.data?.data?.vehicles || [];
+            const batteryData: BatteryType[] = batteryRes?.data?.data?.batteryTypes || [];
+            const modelsData: Model[] = modelsRes?.data?.data || [];
+
+            console.log("Users:", usersData);
+            console.log("Vehicles:", vehiclesData);
+            console.log("Battery types:", batteryData);
+            console.log("Models:", modelsData);
+
+            // Gán user và model vào vehicle
+            const vehiclesWithUser = vehiclesData.map((v) => {
+                const vehicleModel = v.modelId ? modelsData.find((m) => m.id === v.modelId) : undefined;
+                const batteryType = vehicleModel?.batteryTypeId
+                    ? batteryData.find((b) => b.id === vehicleModel.batteryTypeId)
+                    : undefined;
+
+                const vehicleWithDetails = {
+                    ...v,
+                    user: usersData.find((u) => u.id === v.userId),
+                    model: vehicleModel ? { ...vehicleModel, batteryType } : undefined,
+                };
+
+                console.log("Processed vehicle:", vehicleWithDetails);
+                return vehicleWithDetails;
             });
 
-            const data =
-                res?.data?.data?.vehicles ||
-                res?.data?.vehicles ||
-                res?.data?.data ||
-                [];
-
-                console.log("vehicle",res.data);
-            if (!Array.isArray(data)) {
-                throw new Error("Phản hồi không hợp lệ.");
-            }
-
-            setVehicles(data);
+            setUsers(usersData);
+            setVehicles(vehiclesWithUser);
+            setBatteryTypes(batteryData);
+            setModels(modelsData);
         } catch (err) {
-            console.error("Lỗi khi lấy danh sách xe:", err);
+            console.error("Lỗi khi lấy dữ liệu:", err);
+            toast.error("Lấy dữ liệu thất bại!");
         } finally {
             setLoading(false);
         }
     };
 
-    // Lấy danh sách loại pin
-    const fetchBatteryTypes = async () => {
-        try {
-            const res = await api.get("/battery-types", { withCredentials: true });
-            const types = res.data?.data?.batteryTypes || [];
-            setBatteryTypes(types);
-        } catch (err) {
-            console.error("Lỗi khi lấy danh sách pin:", err);
-        }
-    };
-
-    const fetchModels = async () => {
-        try {
-            const res = await api.get("/models", { withCredentials: true });
-            const data = res.data?.data || [];
-            setModels(data);
-        } catch (err) {
-            console.error("Lỗi khi lấy danh sách model:", err);
-        }
-    };
-
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                await Promise.all([fetchAllVehicles(), fetchBatteryTypes(), fetchModels()]);
-            } catch (err) {
-                console.error("Lỗi khi lấy dữ liệu:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchData();
     }, []);
 
     //  Mở modal xem chi tiết xe
     const handleViewDetails = (vehicles: Vehicle) => {
+        console.log("Viewing vehicle:", vehicles);
         setSelectedVehicle(vehicles);
         setOpen(true);
     };
@@ -145,27 +161,31 @@ export default function AdminVehicleManagement() {
     });
 
     // Cập nhật trạng thái xe
-    const handleChangeStatus = async (id: string, newStatus: string) => {
+    const handleChangeStatus = async (id: string, newStatus: "pending" | "active" | "invalid") => {
+        if (!id) return toast.error("ID xe không hợp lệ!");
+
         try {
-            await api.patch(
+            console.log("Updating vehicle:", id, "to status:", newStatus);
+            const res = await api.patch(
                 `/vehicles/${id}`,
                 { status: newStatus },
                 { withCredentials: true }
             );
 
-            // Cập nhật local state ngay lập tức
-            setVehicles(prev =>
-                prev.map(v =>
-                    v.id === id ? { ...v, status: newStatus } : v
-                )
-            );
-
-            toast.success(`Đã cập nhật trạng thái xe thành "${newStatus}"`);
-        } catch (err) {
-            console.error("Lỗi khi cập nhật trạng thái:", err);
-            toast.error("Không thể cập nhật trạng thái!");
+            if (res.data?.status === "success") {
+                setVehicles(prev =>
+                    prev.map(v => (v.id === id ? { ...v, status: newStatus } : v))
+                );
+                toast.success(`Đã cập nhật trạng thái xe thành "${newStatus}"`);
+            } else {
+                toast.error("Cập nhật thất bại!");
+            }
+        } catch (err: any) {
+            console.error(err.response?.data || err);
+            toast.error(err.response?.data?.message || "Không thể cập nhật trạng thái!");
         }
     };
+
 
 
 
@@ -278,7 +298,9 @@ export default function AdminVehicleManagement() {
                                         <td className="border border-[#CDE8E5] px-3 py-2 ">
                                             <Select
                                                 value={v.status}
-                                                onValueChange={(value) => handleChangeStatus(v.id, value)}
+                                                onValueChange={(value) =>
+                                                    handleChangeStatus(v.id, value as "pending" | "active" | "invalid")
+                                                }
                                             >
                                                 <SelectTrigger className="w-[150px] mx-auto">
                                                     <span
@@ -286,7 +308,7 @@ export default function AdminVehicleManagement() {
                                                             ? "text-green-600"
                                                             : v.status === "pending"
                                                                 ? "text-yellow-600"
-                                                                : v.status === "inactive"
+                                                                : v.status === "invalid"
                                                                     ? "text-red-600"
                                                                     : "text-gray-600"
                                                             }`}
@@ -337,7 +359,7 @@ export default function AdminVehicleManagement() {
                                                         </>
                                                     )}
 
-                                                    {v.status === "inactive" && (
+                                                    {v.status === "invalid" && (
                                                         <>
                                                             <SelectItem value="active" className="text-green-600">
                                                                 Đã duyệt
@@ -367,9 +389,9 @@ export default function AdminVehicleManagement() {
                         </table>
                     </div>
                 )}
-                {/*  Modal xem chi tiết */}
+                {/* Modal xem chi tiết */}
                 <Dialog open={open} onOpenChange={setOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl">
+                    <DialogContent className="max-w-3xl bg-white rounded-2xl p-6">
                         <DialogHeader>
                             <DialogTitle className="text-[#2F8F9D] text-lg">
                                 Chi tiết xe
@@ -380,26 +402,59 @@ export default function AdminVehicleManagement() {
                         </DialogHeader>
 
                         {selectedVehicle && (
-                            <div className="space-y-3 mt-3">
-                                <div>
-                                    <Label className="text-[#2F8F9D]">Biển số:</Label>
-                                    <p>{selectedVehicle.licensePlates}</p>
+                            <div className="mt-4 flex flex-col md:flex-row gap-6">
+                                {/* Cột trái: Thông tin người dùng */}
+                                <div className="flex-1 space-y-3">
+                                    <div>
+                                        <Label className="text-[#2F8F9D]">Người đăng ký:</Label>
+                                        <p>{selectedVehicle.user?.fullName || "Chưa rõ"}</p>
+                                    </div>
+                                    <div>
+                                        <Label className="text-[#2F8F9D]">Email:</Label>
+                                        <p>{selectedVehicle.user?.email || "Chưa rõ"}</p>
+                                    </div>
+                                    <div>
+                                        <Label className="text-[#2F8F9D]">Ảnh xác thực:</Label>
+                                        {selectedVehicle.validatedImage ? (
+                                            <img
+                                                src={selectedVehicle.validatedImage}
+                                                alt="Validated Vehicle"
+                                                className="mt-2 w-full max-w-sm rounded-lg shadow-md"
+                                            />
+                                        ) : (
+                                            <p>Chưa có ảnh</p>
+                                        )}
+                                    </div>
                                 </div>
-                                <div>
-                                    <Label className="text-[#2F8F9D]">Model:</Label>
-                                    <p>{selectedVehicle.model?.name || "Không rõ"}</p>
+
+                                {/* Cột phải: Thông tin xe */}
+                                <div className="flex-1 space-y-3">
+                                    <div>
+                                        <Label className="text-[#2F8F9D]">Biển số:</Label>
+                                        <p>{selectedVehicle.licensePlates}</p>
+                                    </div>
+                                    <div>
+                                        <Label className="text-[#2F8F9D]">Model:</Label>
+                                        <p>{selectedVehicle.model?.name || "Không rõ"}</p>
+                                    </div>
+                                    <div>
+                                        <Label className="text-[#2F8F9D]">Số khung (VIN):</Label>
+                                        <p>{selectedVehicle.VIN}</p>
+                                    </div>
+                                    <div>
+                                        <Label className="text-[#2F8F9D]">Loại Battery:</Label>
+                                        <p>{selectedVehicle.model?.batteryType?.name || "Không rõ"}</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <Label className="text-[#2F8F9D]">Số khung (VIN):</Label>
-                                    <p>{selectedVehicle.VIN}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-[#2F8F9D]">Loại Battery:</Label>
-                                    <p>{selectedVehicle.model?.batteryType?.name || "Không rõ"}</p>
-                                </div>
+                            </div>
+                        )}
+
+                        {/* Trạng thái ở giữa dưới cùng */}
+                        {selectedVehicle && (
+                            <div className="flex justify-center mt-6">
                                 <div>
                                     <Label className="text-[#2F8F9D]">Trạng thái:</Label>
-                                    <p>
+                                    <p className="text-center font-semibold">
                                         {selectedVehicle.status === "pending"
                                             ? "Đang chờ duyệt"
                                             : selectedVehicle.status === "active"
@@ -420,6 +475,7 @@ export default function AdminVehicleManagement() {
                         </div>
                     </DialogContent>
                 </Dialog>
+
             </main>
         </div>
     );
