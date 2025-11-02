@@ -298,8 +298,8 @@ export default function AdminVehicleManagement() {
                                         <td className="border border-[#CDE8E5] px-3 py-2 ">
                                             <Select
                                                 value={v.status}
-                                                onValueChange={(value) =>
-                                                    handleChangeStatus(v.id, value as "pending" | "active" | "invalid")
+                                                onValueChange={(value: "pending" | "active" | "invalid") =>
+                                                    handleChangeStatus(v.id, value)
                                                 }
                                             >
                                                 <SelectTrigger className="w-[150px] mx-auto">
