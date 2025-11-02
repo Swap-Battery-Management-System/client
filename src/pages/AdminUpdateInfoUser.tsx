@@ -7,7 +7,13 @@ import api from "@/lib/api";
 import axios from "axios";
 import { toast } from "sonner";
 
-export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
+export default function AdminUpdateInfoUser({
+    userId,
+    onSuccess,
+}: {
+    userId: string;
+    onSuccess?: () => void;
+}) {
     const [form, setForm] = useState({
         fullname: "",
         username: "",
@@ -233,6 +239,8 @@ export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
 
             console.log("✅ PATCH response:", res.data);
             toast.success("Cập nhật thông tin người dùng thành công!");
+            if (onSuccess) onSuccess(); // ✅ load lại & đóng modal
+
         } catch (err: any) {
             console.error("❌ PATCH /users/{id} lỗi:", err.response?.data || err.message);
             toast.error(err.response?.data?.message || "Không thể cập nhật!");
