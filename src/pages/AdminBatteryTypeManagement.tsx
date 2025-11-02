@@ -33,7 +33,6 @@ export default function AdminBatteryTypeManagement() {
             const res = await api.get<{ data: { batteryTypes: BatteryType[] } }>("/battery-types");
             setBatteryTypes(res.data.data.batteryTypes || []);
         } catch (error) {
-            console.error("Lỗi fetchBatteryTypes:", error);
             toast.error("Không thể lấy dữ liệu loại pin");
         } finally {
             setLoading(false);
@@ -60,7 +59,6 @@ export default function AdminBatteryTypeManagement() {
             setShowCreateModal(false);
             setNewBatteryType({ name: "", designCapacity: "", price: "" });
         } catch (error) {
-            console.error("Lỗi tạo loại pin:", error);
             toast.error("Tạo loại pin thất bại");
         }
     };
@@ -86,34 +84,34 @@ export default function AdminBatteryTypeManagement() {
 
             toast.success("Cập nhật loại pin thành công");
         } catch (error) {
-            console.error("Lỗi cập nhật loại pin:", error);
             toast.error("Cập nhật loại pin thất bại");
         }
     };
 
     const handleDeleteBatteryType = async (id: string) => {
         if (!confirm("Bạn có chắc muốn xóa loại pin này không?")) return;
-
-        console.log("ID loại pin muốn xóa:", id);
-        console.log("Danh sách pin trước khi xóa:", batteryTypes);
-
         try {
-            const res = await api.delete(`/battery-types/${id}`, { withCredentials: true });
-            toast.success(res.data?.message || "Xóa loại pin thành công");
-
-            setBatteryTypes((prev) => {
-                const updated = prev.filter((b) => b.id !== id);
-                console.log("Danh sách pin sau khi xóa:", updated);
-                return updated;
+            const res = await api.delete(`/battery-types/${id}`, {
+                withCredentials: true,
+                validateStatus: () => true,
             });
+
+
+            if (res.data?.status === "success") {
+                setBatteryTypes((prev) => {
+                    const updated = prev.filter((b) => b.id !== id);
+                    return updated;
+                });
+                toast.success(res.data.data || "Xóa loại pin thành công");
+            } else {
+                toast.error(res.data?.data || "Xóa loại pin thất bại");
+            }
         } catch (error: any) {
-            console.error("Lỗi xóa loại pin:", error.response?.data || error);
-            toast.error(
-                "Xóa loại pin thất bại: " +
-                (error.response?.data?.message || error.message)
-            );
+            toast.error("Xóa loại pin thất bại do lỗi server!");
         }
     };
+
+
 
     // Lọc pin theo search
     const filteredBatteryTypes = batteryTypes.filter(b =>
