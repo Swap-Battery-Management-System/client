@@ -16,6 +16,7 @@ import axios from "axios";
 import { toast } from "sonner";
 import { ImageIcon, UploadCloud } from "lucide-react";
 
+
 export default function RegisterVehicle() {
   const [plate, setPlate] = useState("");
   const [models, setModels] = useState<Model[]>([]);
@@ -30,6 +31,9 @@ export default function RegisterVehicle() {
   const [message, setMessage] = useState("");
 
   const [cavetUrl, setCavetUrl] = useState(""); // link ảnh cavet sau khi upload
+
+  // state mới để lưu kết quả OCR
+  const [ocrLoading, setOcrLoading] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
 
@@ -52,31 +56,67 @@ export default function RegisterVehicle() {
     modelList();
   }, []);
 
- const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-  const file = e.target.files?.[0];
-  if (!file) return;
+  // const handleOCR = async (file: File) => {
+  //   setOcrLoading(true);
+  //   toast.info("Đang đọc dữ liệu từ cavet xe...");
 
-  setPreview(URL.createObjectURL(file));
-  setUploading(true);
-  toast.info("Đang tải ảnh cavet lên...");
+  //   try {
+  //     const { data } = await Tesseract.recognize(file, "vie", {
+  //       logger: (m) => console.log(m),
+  //     });
 
-  try {
-    const formData = new FormData();
-    formData.append("key", "4a4efdffaf66aa2a958ea43ace6f49c1"); // key ImgBB của bạn
-    formData.append("image", file);
+  //     const text = data.text;
+  //     console.log("OCR Result:", text);
 
-    const res = await axios.post("https://api.imgbb.com/1/upload", formData);
-    const uploadedUrl = res.data.data.url;
+  //     // Ví dụ regex để lấy biển số và VIN
+  //     const licenseMatch = text.match(
+  //       /\b\d{2}[A-Z]{1,2}-\d{3,4}(\.\d{1,2})?\b/
+  //     );
+  //     const vinMatch = text.match(/[A-HJ-NPR-Z0-9]{17}/);
 
-    setCavetUrl(uploadedUrl);
-    toast.success("Tải ảnh cavet thành công!");
-  } catch (err) {
-    console.error(err);
-    toast.error("Không thể tải ảnh cavet lên!");
-  } finally {
-    setUploading(false);
-  }
-};
+  //     if (licenseMatch || vinMatch) {
+  //       if (licenseMatch) setPlate(licenseMatch[0]);
+  //       if (vinMatch) setVin(vinMatch[0]);
+  //       toast.success("Đã tự động điền thông tin từ cavet!");
+  //     } else {
+  //       // Không tìm thấy biển số hay VIN nào
+  //       toast.error("Không đọc được dữ liệu từ cavet. Vui lòng nhập thủ công.");
+  //       console.warn("OCR không tìm thấy biển số hoặc VIN trong ảnh.");
+  //     }
+  //   } catch (err) {
+  //     console.error("OCR Error:", err);
+  //     toast.error("Không đọc được dữ liệu từ cavet. Vui lòng nhập thủ công.");
+  //   } finally {
+  //     setOcrLoading(false);
+  //   }
+  // };
+
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPreview(URL.createObjectURL(file));
+    setUploading(true);
+
+    try {
+      // Upload ảnh lên ImgBB nếu cần lưu cloud
+      const formData = new FormData();
+      formData.append("key", "4a4efdffaf66aa2a958ea43ace6f49c1");
+      formData.append("image", file);
+
+      const res = await axios.post("https://api.imgbb.com/1/upload", formData);
+      setCavetUrl(res.data.data.url);
+      toast.success("Tải ảnh cavet thành công!");
+
+      // Bước OCR
+      // await handleOCR(file);
+    } catch (err) {
+      console.error(err);
+      toast.error("Không thể tải ảnh cavet lên!");
+    } finally {
+      setUploading(false);
+    }
+  };
   // Gửi form đăng ký xe
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -86,6 +126,7 @@ export default function RegisterVehicle() {
       VIN: vin.trim(),
       modelId,
       name: name.trim(),
+      validatedImage: cavetUrl,
     };
 
     setLoading(true);
@@ -240,18 +281,36 @@ export default function RegisterVehicle() {
                 disabled={uploading}
               />
 
-              {preview ? (
-                <img
-                  src={preview}
-                  alt="Cavet Preview"
-                  className="mt-4 w-80 h-auto rounded-lg border border-[#BCE7E8] shadow-sm"
-                />
-              ) : (
-                <div className="mt-4 flex flex-col items-center justify-center border border-dashed border-[#BCE7E8] rounded-lg p-6 text-gray-500 w-80 h-48">
-                  <ImageIcon className="mb-2" />
-                  Chưa chọn ảnh
-                </div>
-              )}
+              {/* Khung preview với nút X */}
+              <div className="mt-4 relative w-80 h-48 border border-dashed border-[#BCE7E8] rounded-lg overflow-hidden">
+                {preview ? (
+                  <>
+                    <img
+                      src={preview}
+                      alt="Cavet Preview"
+                      className="w-full h-full object-contain"
+                    />
+                    {/* Nút X góc trên phải */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPreview(null);
+                        setCavetUrl("");
+                        setPlate(""); // nếu muốn reset luôn biển số
+                        setVin(""); // nếu muốn reset luôn VIN
+                      }}
+                      className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow"
+                    >
+                      ×
+                    </button>
+                  </>
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-gray-500 w-full h-full">
+                    <ImageIcon className="mb-2" />
+                    Chưa chọn ảnh
+                  </div>
+                )}
+              </div>
             </div>
           </form>
         </Card>

@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
+import axios from "axios";
 import {
   Dialog,
   DialogContent,
@@ -14,23 +15,20 @@ import {
   DialogDescription,
   DialogFooter,
 } from "@/components/ui/dialog";
+import { ImageIcon, UploadCloud } from "lucide-react";
 
 interface Vehicle {
   id: string;
+  name?: string;
   licensePlates: string;
   VIN: string;
   status: string;
+  validatedImage?: string;
   model?: {
     id: string;
     name: string;
-    brand?: string;
-    batteryType?: {
-      id: string;
-      name: string;
-    };
+    batteryType?: { id: string; name: string };
   };
-  name?: string;
-  batteryId?: string;
 }
 
 export default function MyVehicles() {
@@ -39,7 +37,7 @@ export default function MyVehicles() {
   const [loading, setLoading] = useState(true);
   const [filterStatus, setFilterStatus] = useState("all");
 
-  // modal edit
+  // Modal Edit
   const [editOpen, setEditOpen] = useState(false);
   const [editVehicle, setEditVehicle] = useState<Vehicle | null>(null);
   const [editName, setEditName] = useState("");
@@ -47,10 +45,17 @@ export default function MyVehicles() {
   const [editVIN, setEditVIN] = useState("");
   const [editModelId, setEditModelId] = useState<string | undefined>();
   const [editLoading, setEditLoading] = useState(false);
+
+  // Models
   const [models, setModels] = useState<{ id: string; name: string }[]>([]);
   const [loadingModels, setLoadingModels] = useState(false);
 
-  // confirm modal
+  // Image
+  const [cavetUrl, setCavetUrl] = useState<string | undefined>();
+  const [preview, setPreview] = useState<string | undefined>();
+  const [uploading, setUploading] = useState(false);
+
+  // Confirm Modal
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmVehicle, setConfirmVehicle] = useState<Vehicle | null>(null);
   const [confirmAction, setConfirmAction] = useState<
@@ -58,14 +63,15 @@ export default function MyVehicles() {
   >(null);
   const [confirmLoading, setConfirmLoading] = useState(false);
 
-  // fetch API
+  // Fetch vehicles
   const fetchVehicles = async () => {
     try {
       setLoading(true);
       const res = await api.get("/vehicles", { withCredentials: true });
       setVehicles(res.data.data?.vehicles || []);
-    } catch (err) {
-      console.error(err);
+      console.log("vehicles", res.data);
+    } catch {
+      toast.error("Không thể tải danh sách xe!");
     } finally {
       setLoading(false);
     }
@@ -76,8 +82,8 @@ export default function MyVehicles() {
       setLoadingModels(true);
       const res = await api.get("/models", { withCredentials: true });
       setModels(res.data.data || []);
-    } catch (err) {
-      console.error(err);
+    } catch {
+      toast.error("Không thể tải danh sách model!");
     } finally {
       setLoadingModels(false);
     }
@@ -88,7 +94,7 @@ export default function MyVehicles() {
     fetchModels();
   }, []);
 
-  // render status
+  // Render status
   const renderStatus = (status: string) => {
     switch (status?.toLowerCase()) {
       case "pending":
@@ -104,36 +110,54 @@ export default function MyVehicles() {
     }
   };
 
-  // filter xe
+  // Filtered vehicles
   const filteredVehicles =
     filterStatus === "all"
       ? vehicles
       : vehicles.filter((v) => v.status.toLowerCase() === filterStatus);
 
-  // mở modal edit
+  // Open edit modal
   const openEditModal = (v: Vehicle) => {
     setEditVehicle(v);
     setEditName(v.name || "");
     setEditPlate(v.licensePlates || "");
     setEditVIN(v.VIN || "");
     setEditModelId(v.model?.id);
+    setCavetUrl(v.validatedImage);
+    setPreview(v.validatedImage);
     setEditOpen(true);
   };
 
-  // lưu edit
+  // Handle save edit
   const handleSaveEdit = async () => {
     if (!editVehicle) return;
+
+    // Check required fields for invalid vehicle
+    if (editVehicle.status.toLowerCase() === "invalid") {
+      if (!editModelId) {
+        toast.error("Vui lòng chọn model!");
+        return;
+      }
+      if (!cavetUrl) {
+        toast.error("Vui lòng tải ảnh cavet!");
+        return;
+      }
+    }
+
     setEditLoading(true);
     try {
-      const payload: any = {
-        name: editName.trim(),
-        licensePlates: editPlate.trim(),
-        VIN: editVIN.trim(),
-        modelId: editModelId,
-      };
-      await api.patch(`/vehicles/${editVehicle.id}`, payload, {
-        withCredentials: true,
-      });
+      await api.patch(
+        `/vehicles/${editVehicle.id}`,
+        {
+          name: editName.trim(),
+          licensePlates: editPlate.trim(),
+          VIN: editVIN.trim(),
+          modelId: editModelId,
+          validatedImage: cavetUrl,
+        },
+        { withCredentials: true }
+      );
+
       toast.success("Cập nhật thông tin xe thành công");
       setEditOpen(false);
       fetchVehicles();
@@ -144,14 +168,38 @@ export default function MyVehicles() {
     }
   };
 
-  // mở confirm
+  // Handle image upload
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setPreview(URL.createObjectURL(file));
+    setUploading(true);
+
+    try {
+      const formData = new FormData();
+      formData.append("key", "4a4efdffaf66aa2a958ea43ace6f49c1");
+      formData.append("image", file);
+
+      const res = await axios.post("https://api.imgbb.com/1/upload", formData);
+      setCavetUrl(res.data.data.url);
+      toast.success("Tải ảnh cavet thành công!");
+    } catch {
+      toast.error("Không thể tải ảnh cavet lên!");
+      setCavetUrl(undefined);
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Open confirm modal
   const openConfirmModal = (v: Vehicle, action: "cancel" | "relink") => {
     setConfirmVehicle(v);
     setConfirmAction(action);
     setConfirmOpen(true);
   };
 
-  // xác nhận hành động
+  // Handle confirm action
   const handleConfirmAction = async () => {
     if (!confirmVehicle || !confirmAction) return;
     setConfirmLoading(true);
@@ -171,6 +219,7 @@ export default function MyVehicles() {
             licensePlates: confirmVehicle.licensePlates,
             VIN: confirmVehicle.VIN,
             modelId: confirmVehicle.model?.id,
+            validatedImage: confirmVehicle.validatedImage,
           },
           { withCredentials: true }
         );
@@ -186,13 +235,13 @@ export default function MyVehicles() {
   };
 
   return (
-    <div className="flex h-full bg-[#E9F8F8] min-h-[80vh] max-h-[90vh] overflow-y-auto">
+    <div className="flex h-full bg-[#E9F8F8] min-h-[80vh] max-h-[90vh]">
       <main className="flex-1 p-6 md:p-8">
         <h1 className="text-3xl text-center font-semibold mb-8 text-[#38A3A5]">
           Danh sách xe của tôi
         </h1>
 
-        {/* Bộ lọc trạng thái */}
+        {/* Filter */}
         <div className="flex flex-wrap justify-center gap-3 mb-8">
           {[
             { label: "Tất cả", value: "all" },
@@ -204,19 +253,18 @@ export default function MyVehicles() {
             <Button
               key={btn.value}
               onClick={() => setFilterStatus(btn.value)}
-              className={`px-5 py-2 text-sm font-medium rounded-full border transition-all
-        ${
-          filterStatus === btn.value
-            ? "bg-[#38A3A5] text-white border-[#38A3A5] shadow-md"
-            : "bg-white text-[#38A3A5] border-[#38A3A5] hover:bg-[#38A3A5]/10"
-        }`}
+              className={`px-5 py-2 text-sm font-medium rounded-full border transition-all ${
+                filterStatus === btn.value
+                  ? "bg-[#38A3A5] text-white border-[#38A3A5] shadow-md"
+                  : "bg-white text-[#38A3A5] border-[#38A3A5] hover:bg-[#38A3A5]/10"
+              }`}
             >
               {btn.label}
             </Button>
           ))}
         </div>
 
-        {/* DANH SÁCH XE */}
+        {/* Vehicle list */}
         {loading ? (
           <div className="text-center text-gray-500 mt-10 animate-pulse">
             Đang tải danh sách xe...
@@ -226,7 +274,7 @@ export default function MyVehicles() {
             Không có xe nào trong trạng thái này.
           </div>
         ) : (
-          <div className="grid gap-6 justify-start grid-cols-[repeat(auto-fit,minmax(280px,500px))]">
+          <div className="grid gap-6 justify-start grid-cols-[repeat(auto-fit,minmax(280px,450px))]">
             {filteredVehicles.map((v) => {
               const s = renderStatus(v.status);
               return (
@@ -247,7 +295,7 @@ export default function MyVehicles() {
                     </p>
                   </div>
 
-                  {/* BUTTONS */}
+                  {/* Buttons */}
                   <div className="flex justify-between items-center gap-2 mt-4 border-t border-[#DFF6F6] pt-3">
                     <Button
                       variant="outline"
@@ -283,99 +331,158 @@ export default function MyVehicles() {
           </div>
         )}
 
-        {/* Modal Cập nhật thông tin xe */}
+        {/* Edit Modal */}
         <Dialog open={editOpen} onOpenChange={setEditOpen}>
-          <DialogContent className="max-w-md bg-white rounded-2xl shadow-xl border border-[#BCE7E8]">
-            <DialogHeader>
-              <DialogTitle className="text-xl font-semibold text-[#38A3A5]">
-                Cập nhật thông tin xe
-              </DialogTitle>
-              <DialogDescription className="text-gray-500">
-                Vui lòng kiểm tra kỹ trước khi lưu thay đổi.
-              </DialogDescription>
-            </DialogHeader>
+          <DialogContent className="w-full max-w-7xl bg-white rounded-2xl shadow-xl border border-[#BCE7E8] p-6">
+            <div className="overflow-y-auto max-h-[80vh]">
+              <DialogHeader>
+                <DialogTitle className="text-xl font-semibold text-[#38A3A5]">
+                  Cập nhật thông tin xe
+                </DialogTitle>
+                <DialogDescription className="text-gray-500">
+                  Vui lòng kiểm tra kỹ trước khi lưu thay đổi.
+                </DialogDescription>
+              </DialogHeader>
 
-            <div className="space-y-4 mt-4">
-              <div>
-                <Label className="text-[#38A3A5] font-medium">Tên xe</Label>
-                <Input
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  placeholder="Nhập tên xe"
-                  className="mt-1"
-                />
+              <div className="space-y-4 mt-4 border-b border-[#DFF6F6] pb-4">
+                <h3 className="text-[#38A3A5] font-semibold">
+                  Thông tin cơ bản
+                </h3>
+
+                <div>
+                  <Label className="text-[#38A3A5] font-medium">Tên xe</Label>
+                  <Input
+                    value={editName}
+                    onChange={(e) => setEditName(e.target.value)}
+                    placeholder="Nhập tên xe"
+                    className="mt-1"
+                  />
+                </div>
+
+                <div>
+                  <Label className="text-[#38A3A5] font-medium">Biển số</Label>
+                  <Input
+                    value={editPlate}
+                    onChange={(e) => setEditPlate(e.target.value.toUpperCase())}
+                    placeholder="Nhập biển số"
+                    className="mt-1"
+                  />
+                </div>
+
+                {editVehicle?.status.toLowerCase() === "invalid" && (
+                  <>
+                    <div>
+                      <Label className="text-[#38A3A5] font-medium">
+                        Số khung (VIN)
+                      </Label>
+                      <Input
+                        value={editVIN}
+                        onChange={(e) => setEditVIN(e.target.value)}
+                        placeholder="Nhập số khung (VIN)"
+                        className="mt-1"
+                      />
+                    </div>
+
+                    <div>
+                      <Label className="text-[#38A3A5] font-medium">
+                        Chọn model *
+                      </Label>
+                      <select
+                        className="w-full border border-[#BCE7E8] rounded-md p-2 mt-1 focus:ring-[#38A3A5] focus:border-[#38A3A5] outline-none"
+                        onChange={(e) => setEditModelId(e.target.value)}
+                        value={editModelId}
+                        required
+                      >
+                        <option value="">-- Chọn model --</option>
+                        {loadingModels ? (
+                          <option disabled>Đang tải...</option>
+                        ) : (
+                          models.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name}
+                            </option>
+                          ))
+                        )}
+                      </select>
+                    </div>
+
+                    {/* Ảnh cavet mới */}
+                    <div className="mt-4 flex flex-col items-start justify-start">
+                      <Label className="text-[#38A3A5] self-start">
+                        Ảnh cavet xe *
+                      </Label>
+
+                      <label
+                        htmlFor="cavet-upload"
+                        className="flex items-center justify-start gap-2 mt-3 bg-[#38A3A5] hover:bg-[#2C8C8E] text-white font-medium py-2 px-6 rounded-lg cursor-pointer transition"
+                      >
+                        <UploadCloud size={18} />
+                        {uploading ? "Đang tải..." : "Chọn ảnh"}
+                      </label>
+
+                      <input
+                        id="cavet-upload"
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={handleImageChange}
+                        disabled={uploading}
+                      />
+
+                      <div className="mt-4 relative w-full max-w-md h-48 border border-dashed border-[#BCE7E8] rounded-lg overflow-hidden">
+                        {preview ? (
+                          <>
+                            <img
+                              src={preview}
+                              alt="Cavet Preview"
+                              className="w-full h-full object-contain"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPreview(undefined);
+                                setCavetUrl(undefined);
+                                setEditPlate("");
+                                setEditVIN("");
+                              }}
+                              className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow"
+                            >
+                              ×
+                            </button>
+                          </>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center text-gray-500 w-full h-full">
+                            <ImageIcon className="mb-2" />
+                            Chưa chọn ảnh
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </>
+                )}
               </div>
 
-              <div>
-                <Label className="text-[#38A3A5] font-medium">Biển số</Label>
-                <Input
-                  value={editPlate}
-                  onChange={(e) => setEditPlate(e.target.value.toUpperCase())}
-                  placeholder="Nhập biển số"
-                  className="mt-1"
-                />
-              </div>
-
-              {editVehicle?.status?.toLowerCase() === "invalid" && (
-                <>
-                  <div>
-                    <Label className="text-[#38A3A5] font-medium">
-                      Số khung (VIN)
-                    </Label>
-                    <Input
-                      value={editVIN}
-                      onChange={(e) => setEditVIN(e.target.value)}
-                      placeholder="Nhập số khung (VIN)"
-                      className="mt-1"
-                    />
-                  </div>
-
-                  <div>
-                    <Label className="text-[#38A3A5] font-medium">
-                      Chọn model *
-                    </Label>
-                    <select
-                      className="w-full border border-[#BCE7E8] rounded-md p-2 mt-1 focus:ring-[#38A3A5] focus:border-[#38A3A5] outline-none"
-                      onChange={(e) => setEditModelId(e.target.value)}
-                      value={editModelId}
-                      required
-                    >
-                      <option value="">-- Chọn model --</option>
-                      {loadingModels ? (
-                        <option disabled>Đang tải...</option>
-                      ) : (
-                        models.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name}
-                          </option>
-                        ))
-                      )}
-                    </select>
-                  </div>
-                </>
-              )}
+              <DialogFooter className="mt-6 flex justify-end gap-3">
+                <Button
+                  variant="outline"
+                  onClick={() => setEditOpen(false)}
+                  className="border-[#38A3A5] text-[#38A3A5] hover:bg-[#38A3A5]/10"
+                >
+                  Hủy
+                </Button>
+                <Button
+                  onClick={handleSaveEdit}
+                  disabled={editLoading || uploading}
+                  className="bg-[#38A3A5] hover:bg-[#2E8788] text-white"
+                >
+                  {editLoading || uploading ? "Đang lưu..." : "Lưu thay đổi"}
+                </Button>
+              </DialogFooter>
             </div>
-
-            <DialogFooter className="mt-6 flex justify-end gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setEditOpen(false)}
-                className="border-[#38A3A5] text-[#38A3A5] hover:bg-[#38A3A5]/10"
-              >
-                Hủy
-              </Button>
-              <Button
-                onClick={handleSaveEdit}
-                disabled={editLoading}
-                className="bg-[#38A3A5] hover:bg-[#2E8788] text-white"
-              >
-                {editLoading ? "Đang lưu..." : "Lưu thay đổi"}
-              </Button>
-            </DialogFooter>
           </DialogContent>
         </Dialog>
 
-        {/* MODAL XÁC NHẬN */}
+        {/* Confirm Modal */}
         <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
           <DialogContent className="max-w-md bg-white rounded-2xl">
             <DialogHeader>
