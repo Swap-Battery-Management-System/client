@@ -6,8 +6,15 @@ import { UploadCloud } from "lucide-react";
 import api from "@/lib/api";
 import axios from "axios";
 import { toast } from "sonner";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
-export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
+export default function AdminUpdateInfoUser({
+    userId,
+    onSuccess,
+}: {
+    userId: string;
+    onSuccess?: () => void;
+}) {
     const [form, setForm] = useState({
         fullname: "",
         username: "",
@@ -30,6 +37,19 @@ export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
     const [usernameError, setUsernameError] = useState<string>("");
     const [checkTimer, setCheckTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
+    const [ageError, setAgeError] = useState<string>("");
+
+    // Hàm kiểm tra tuổi hợp lệ
+    const validateAge = (dateString: string) => {
+        if (!dateString) return true;
+        const birthDate = new Date(dateString);
+        const today = new Date();
+        const age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        const dayDiff = today.getDate() - birthDate.getDate();
+        const realAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+        return realAge >= 18;
+    };
 
     const [preview, setPreview] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
@@ -37,6 +57,39 @@ export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
     const [provinces, setProvinces] = useState<any[]>([]);
     const [districts, setDistricts] = useState<any[]>([]);
     const [wards, setWards] = useState<any[]>([]);
+    const [otpDialogOpen, setOtpDialogOpen] = useState(false);
+    const [otp, setOtp] = useState("");
+    const [otpSent, setOtpSent] = useState(false);
+    const [otpVerified, setOtpVerified] = useState(false);
+    const [otpLoading, setOtpLoading] = useState(false);
+    const handleSendOtp = async () => {
+        try {
+            setOtpLoading(true);
+            await api.post("/auth/send-otp", { email: form.email });
+            toast.success(`OTP đã được gửi đến email ${form.email}`);
+            setOtpSent(true);
+            setOtpDialogOpen(true);
+        } catch (err: any) {
+            toast.error(err.response?.data?.message || "Không thể gửi OTP!");
+        } finally {
+            setOtpLoading(false);
+        }
+    };
+    const handleVerifyOtp = async () => {
+        if (!otp) return toast.error("Vui lòng nhập mã OTP!");
+        try {
+            setOtpLoading(true);
+            await api.post("/auth/verify-otp", { email: form.email, otp });
+            toast.success("Xác thực OTP thành công! Có thể đổi username.");
+            setOtpVerified(true);
+            setOtpDialogOpen(false);
+        } catch (err: any) {
+            toast.error("OTP không hợp lệ hoặc đã hết hạn!");
+        } finally {
+            setOtpLoading(false);
+        }
+    };
+
 
     // 🔹 Lấy danh sách tỉnh
     useEffect(() => {
@@ -46,7 +99,7 @@ export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
             .catch(() => toast.error("Không thể tải danh sách tỉnh/thành!"));
     }, []);
 
-
+    const [originalUsername, setOriginalUsername] = useState("");
     // Lấy thông tin user theo userId
     useEffect(() => {
         if (!userId || provinces.length === 0) return;
@@ -84,6 +137,7 @@ export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
                     detailAddress,
                 }));
                 setPreview(u.avatarUrl || null);
+                setOriginalUsername(u.username || "");
             } catch (err: any) {
                 console.error("❌ Lỗi khi tải user:", err);
                 toast.error("Không thể tải thông tin người dùng!");
@@ -202,6 +256,15 @@ export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
     };
     // Cập nhật thông tin người dùng
     const handleUpdate = async () => {
+        if (!otpVerified && form.username !== originalUsername) {
+            return toast.error("Bạn cần xác thực OTP trước khi đổi tên đăng nhập!");
+        }
+
+        if (!validateAge(form.dateOfBirth)) {
+            toast.error("Người dùng phải đủ 18 tuổi để cập nhật!");
+            return;
+        }
+
         if (!form.fullname || !form.username || !form.phoneNumber)
             return toast.error("Vui lòng nhập đầy đủ thông tin!");
 
@@ -233,6 +296,8 @@ export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
 
             console.log("✅ PATCH response:", res.data);
             toast.success("Cập nhật thông tin người dùng thành công!");
+            if (onSuccess) onSuccess(); // ✅ load lại & đóng modal
+
         } catch (err: any) {
             console.error("❌ PATCH /users/{id} lỗi:", err.response?.data || err.message);
             toast.error(err.response?.data?.message || "Không thể cập nhật!");
@@ -246,8 +311,9 @@ export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
         <div className="flex flex-col gap-6 w-full max-w-[1200px] mx-auto">
 
             <h2 className="text-xl font-bold text-[#38A3A5] text-center">
-                Cập nhật thông tin người dùng
+                Cập nhật thông tin người dùng (ID: {userId})
             </h2>
+
 
             <div className="flex flex-col md:flex-row gap-8">
                 {/* Avatar */}
@@ -293,13 +359,28 @@ export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
                     <div>
                         <Label>Tên đăng nhập</Label>
                         <div className="relative">
-                            <Input
-                                name="username"
-                                value={form.username}
-                                onChange={handleUsernameChange}
-                                className="pr-10"
-                                placeholder="VD: driver001"
-                            />
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <Input
+                                        name="username"
+                                        value={form.username}
+                                        onChange={handleChange}
+                                        disabled={!otpVerified} // Chỉ cho đổi sau khi xác thực OTP
+                                        className="pr-10 flex-1"
+                                        placeholder="VD: driver001"
+                                    />
+                                    <Button
+                                        type="button"
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={handleSendOtp}
+                                        disabled={otpLoading || otpVerified}
+                                    >
+                                        {otpVerified ? "Đã xác thực" : "Gửi OTP"}
+                                    </Button>
+                                </div>
+                            </div>
+
 
                             {/* Icon trạng thái */}
                             {usernameStatus === "checking" && (
@@ -355,8 +436,19 @@ export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
                             type="date"
                             name="dateOfBirth"
                             value={form.dateOfBirth}
-                            onChange={handleChange}
+                            onChange={(e) => {
+                                handleChange(e);
+                                const value = e.target.value;
+                                if (!value) return setAgeError("");
+                                if (!validateAge(value)) {
+                                    setAgeError("Người dùng phải từ 18 tuổi trở lên.");
+                                } else {
+                                    setAgeError("");
+                                }
+                            }}
                         />
+                        {ageError && <p className="text-sm text-red-500 mt-1">{ageError}</p>}
+
                     </div>
                     <div>
                         <Label>Giới tính</Label>
@@ -493,6 +585,53 @@ export default function AdminUpdateInfoUser({ userId }: { userId: string }) {
             >
                 {loading ? "Đang cập nhật..." : "Cập nhật thông tin"}
             </Button>
+            <Dialog open={otpDialogOpen} onOpenChange={setOtpDialogOpen}>
+                <DialogContent className="sm:max-w-[400px]">
+                    <DialogHeader>
+                        <DialogTitle className="text-center text-[#38A3A5] text-xl font-semibold">
+                            Xác thực OTP
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    <p className="text-sm text-gray-600 text-center mb-4">
+                        Nhập <b>6 chữ số</b> được gửi đến <b>{form.email}</b>.
+                    </p>
+
+                    <div className="flex justify-center gap-2 mb-4">
+                        {Array.from({ length: 6 }).map((_, i) => (
+                            <input
+                                key={i}
+                                type="text"
+                                maxLength={1}
+                                value={otp[i] || ""}
+                                onChange={(e) => {
+                                    const value = e.target.value.replace(/\D/g, "");
+                                    const newOtp = otp.substring(0, i) + value + otp.substring(i + 1, 6);
+                                    setOtp(newOtp);
+                                    const next = document.getElementById(`otp-${i + 1}`);
+                                    if (next) (next as HTMLInputElement).focus();
+                                }}
+                                id={`otp-${i}`}
+                                className="w-10 h-12 text-center text-lg font-semibold border-2 border-gray-300 rounded-md bg-white focus:border-[#57CC99] focus:ring-2 focus:ring-[#57CC99] outline-none transition-all"
+                            />
+                        ))}
+                    </div>
+
+                    <div className="flex justify-end gap-2">
+                        <Button variant="outline" onClick={() => setOtpDialogOpen(false)}>
+                            Hủy
+                        </Button>
+                        <Button
+                            onClick={handleVerifyOtp}
+                            disabled={otpLoading || otp.length !== 6}
+                            className="bg-[#57CC99] hover:bg-[#38A3A5] text-white"
+                        >
+                            {otpLoading ? "Đang kiểm tra..." : "Xác nhận"}
+                        </Button>
+                    </div>
+                </DialogContent>
+            </Dialog>
+
         </div>
     );
 }

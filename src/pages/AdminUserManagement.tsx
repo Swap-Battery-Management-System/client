@@ -340,11 +340,15 @@ export default function AdminUserManagement() {
                 <DialogContent
                     className="!w-[95vw] !max-w-[1500px] !h-[90vh] overflow-y-auto bg-white rounded-2xl shadow-2xl p-10"
                 >
-
-                    <DialogHeader>
-                        <DialogTitle className="text-[#38A3A5]">Thông tin chi tiết người dùng</DialogTitle>
-                    </DialogHeader>
-                    {selectedUser && <AdminUpdateInfoUser userId={selectedUser.id} />}
+                    {selectedUser && (
+                        <AdminUpdateInfoUser
+                            userId={selectedUser.id}
+                            onSuccess={() => {
+                                fetchUsers();       // ✅ Reload danh sách
+                                setSelectedUser(null); // ✅ Đóng modal
+                            }}
+                        />
+                    )}
                 </DialogContent>
             </Dialog>
 
@@ -634,8 +638,9 @@ export default function AdminUserManagement() {
                                     const roleId = "df04443d-75f1-4ef4-a475-54627ddf2d8a";
                                     const res = await api.post("/users", { ...newStaff, roleId });
                                     toast.success("Tạo nhân viên thành công ✅");
-                                    setUsers((prev) => [...prev, res.data.data.user]);
-                                    setCreateModalOpen(false);
+
+                                    await fetchUsers(); // ✅ load lại danh sách
+                                    setCreateModalOpen(false); // ✅ đóng modal
                                     setNewStaff({ email: "", password: "", username: "", fullName: "" });
                                     setUsernameStatus("idle");
                                     setEmailStatus("idle");
