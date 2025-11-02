@@ -10,7 +10,7 @@ import {
   LogOut,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
-
+import logo from "/png.png";
 export default function StaffLayout() {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
@@ -48,7 +48,14 @@ export default function StaffLayout() {
       {/* Sidebar */}
       <aside className="w-64 bg-white border-r shadow-sm flex flex-col">
         <div className="p-6 border-b">
-          <h1 className="text-lg font-bold text-[#38A3A5]">⚡ SwapNet Staff</h1>
+          <NavLink to="/" className="flex items-center gap-2 ml-1">
+            <img
+              src={logo}
+              alt="EV Battery Swap Logo"
+              className="h-14 w-auto object-contain hover:opacity-90 transition"
+            />
+          </NavLink>
+
           <p className="text-sm mt-1 text-gray-600">
             Hello, <span className="font-semibold">Staff Name</span>
           </p>
