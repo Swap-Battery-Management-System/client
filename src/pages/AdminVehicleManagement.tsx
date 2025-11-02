@@ -71,6 +71,7 @@ export default function AdminVehicleManagement() {
                 res?.data?.data ||
                 [];
 
+                console.log("vehicle",res.data);
             if (!Array.isArray(data)) {
                 throw new Error("Phản hồi không hợp lệ.");
             }
@@ -294,7 +295,7 @@ export default function AdminVehicleManagement() {
                                                             ? "Đã duyệt"
                                                             : v.status === "pending"
                                                                 ? "Đang chờ duyệt"
-                                                                : v.status === "inactive"
+                                                                : v.status === "invalid"
                                                                     ? "Từ chối"
                                                                     : "Không rõ"}
                                                     </span>
@@ -307,7 +308,7 @@ export default function AdminVehicleManagement() {
                                                     <SelectItem value="active" className="text-green-600">
                                                         Đã duyệt
                                                     </SelectItem>
-                                                    <SelectItem value="inactive" className="text-red-600">
+                                                    <SelectItem value="invalid" className="text-red-600">
                                                         Từ chối
                                                     </SelectItem>
                                                 </SelectContent><SelectContent>
@@ -319,7 +320,7 @@ export default function AdminVehicleManagement() {
                                                             <SelectItem value="active" className="text-green-600">
                                                                 Đã duyệt
                                                             </SelectItem>
-                                                            <SelectItem value="inactive" className="text-red-600">
+                                                            <SelectItem value="invalid" className="text-red-600">
                                                                 Từ chối
                                                             </SelectItem>
                                                         </>
@@ -330,7 +331,7 @@ export default function AdminVehicleManagement() {
                                                             <SelectItem value="active" className="text-green-600">
                                                                 Đã duyệt
                                                             </SelectItem>
-                                                            <SelectItem value="inactive" className="text-red-600">
+                                                            <SelectItem value="invalid" className="text-red-600">
                                                                 Từ chối
                                                             </SelectItem>
                                                         </>
@@ -341,7 +342,7 @@ export default function AdminVehicleManagement() {
                                                             <SelectItem value="active" className="text-green-600">
                                                                 Đã duyệt
                                                             </SelectItem>
-                                                            <SelectItem value="inactive" className="text-red-600">
+                                                            <SelectItem value="invalid" className="text-red-600">
                                                                 Từ chối
                                                             </SelectItem>
                                                         </>

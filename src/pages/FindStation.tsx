@@ -1,26 +1,22 @@
 import StationCard from "@/components/StationCard";
 import SearchStation from "@/components/SearchStation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import LocationPermissionModal from "@/components/LocationPermissionModal";
 import { MdMyLocation } from "react-icons/md";
 import { useLocation, useNavigate } from "react-router-dom";
 import type { Station } from "@/types/station";
 import { useStation } from "@/context/StationContext";
+import { useAuth } from "@/context/AuthContext";
 
 export default function FindStation() {
   const navigate = useNavigate();
   const location = useLocation();
-  const keyword = (location.state as { keyword?: string })?.keyword || "";
+  const keywordFromState =
+    (location.state as { keyword?: string })?.keyword || "";
 
-  const [filteredStation, setFilteredStation] = useState<Station[]>([]);
-  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
-    () => {
-      const saved = localStorage.getItem("userCoords");
-      return saved ? JSON.parse(saved) : null;
-    }
-  );
-  const [showModal, setShowModal] = useState(false);
-  const [loadingCoords, setLoadingCoords] = useState(false);
+  const { user } = useAuth();
+  const userId = user?.id || "guest";
+
   const {
     fetchAllStation,
     stations,
@@ -28,100 +24,102 @@ export default function FindStation() {
     getStationWithDistance,
   } = useStation();
 
-  let watchId: number | null | undefined = null;
-  // Lấy danh sách trạm
-  useEffect(() => {
-    fetchAllStation();
-    const checkPermiss = localStorage.getItem("permissionUserLocation");
-    if (checkPermiss === "granted") {
-      watchId = startWatchingLocation();
+  const [filteredStation, setFilteredStation] = useState<Station[]>([]);
+  const [coords, setCoords] = useState<{ lat: number; lng: number } | null>(
+    () => {
+      const saved = localStorage.getItem(`userCoords_${userId}`);
+      return saved ? JSON.parse(saved) : null;
     }
+  );
+  const [showModal, setShowModal] = useState(false);
+  const [loadingCoords, setLoadingCoords] = useState(false);
+  const watchIdRef = useRef<number | null>(null);
+
+  const [keyword, setKeyword] = useState(keywordFromState);
+
+  //Fetch stations chỉ khi chưa có
+  useEffect(() => {
+    if (!stations || stations.length === 0) fetchAllStation();
+  }, [stations, fetchAllStation]);
+
+  // Permission và theo dõi vị trí
+  useEffect(() => {
+    const permission = localStorage.getItem(`permissionUserLocation_${userId}`);
+    if (permission === "granted") watchIdRef.current = startWatchingLocation();
+    else if (permission === "denied") setShowModal(false);
+    else setShowModal(true);
 
     return () => {
-      if (typeof watchId === "number") {
-        navigator.geolocation.clearWatch(watchId);
-        console.log(" Đã clear watchPosition khi rời FindStation");
-      }
+      if (watchIdRef.current)
+        navigator.geolocation.clearWatch(watchIdRef.current);
     };
-  }, []);
-
-  // Lọc theo từ khóa hoặc coords
-  useEffect(() => {
-    const filterStations = async () => {
-      if (keyword.trim()) {
-        const filtered = stations.filter(
-          (s) =>
-            s.name.toLowerCase().includes(keyword.toLowerCase()) ||
-            s.address.toLowerCase().includes(keyword.toLowerCase())
-        );
-        if (coords) {
-          const stationWithDistance = await getStationWithDistance(
-            coords,
-            filtered
-          );
-          setFilteredStation(stationWithDistance);
-        } else {
-          setFilteredStation(filtered);
-        }
-        return;
-      } else if (coords) {
-        const stationWithDistance = await getStationWithDistance(
-          coords,
-          stations
-        );
-        setFilteredStation(stationWithDistance);
-        return;
-      }
-      setFilteredStation(stations);
-    };
-    filterStations();
-  }, [keyword, coords, stations]);
-
-  // Lưu vị trí vào localStorage
-  useEffect(() => {
-    if (coords) {
-      localStorage.setItem("userCoords", JSON.stringify(coords));
-    }
-  }, [coords]);
+  }, [userId]);
 
   const startWatchingLocation = () => {
     if (!navigator.geolocation) {
-      setShowModal(false);
-      return;
+      alert("Trình duyệt không hỗ trợ định vị.");
+      return null;
     }
 
     setLoadingCoords(true);
-
-    const watchId = navigator.geolocation.watchPosition(
-      (position) => {
-        const { latitude, longitude } = position.coords;
-        const newCoords = { lat: latitude, lng: longitude };
+    const id = navigator.geolocation.watchPosition(
+      (pos) => {
+        const newCoords = {
+          lat: pos.coords.latitude,
+          lng: pos.coords.longitude,
+        };
         setCoords(newCoords);
-        setLoadingCoords(false);
-        console.log(newCoords);
-      },
-      (error) => {
-        console.error("Không thể lấy vị trí", error);
+        console.log("coords updated:", newCoords);
         setLoadingCoords(false);
       },
+      (err) => setLoadingCoords(false),
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
     );
 
-    return watchId;
+    return id;
   };
 
   const handleAllow = () => {
-    localStorage.setItem("permissionUserLocation", "granted");
+    localStorage.setItem(`permissionUserLocation_${userId}`, "granted");
     setShowModal(false);
-    startWatchingLocation();
+    watchIdRef.current = startWatchingLocation();
   };
 
   const handleDeny = () => {
-    localStorage.setItem("permissionUserLocation", "denied");
-    localStorage.setItem("userCoords", "");
+    localStorage.setItem(`permissionUserLocation_${userId}`, "denied");
+    localStorage.removeItem(`userCoords_${userId}`);
     setCoords(null);
     setShowModal(false);
   };
+
+  //  Lọc station + tính khoảng cách
+  useEffect(() => {
+    if (!stations || stations.length === 0) return;
+
+    let result = stations;
+
+    if (keyword.trim()) {
+      const k = keyword.toLowerCase();
+      result = stations.filter(
+        (s) =>
+          s.name.toLowerCase().includes(k) ||
+          s.address.toLowerCase().includes(k)
+      );
+    }
+
+    if (coords) {
+      // async không block UI
+      getStationWithDistance(coords, result).then(setFilteredStation);
+    } else {
+      setFilteredStation(result);
+    }
+  }, [keyword, coords, stations, getStationWithDistance]);
+
+  // 4️Lưu coords
+  useEffect(() => {
+    if (coords)
+      localStorage.setItem(`userCoords_${userId}`, JSON.stringify(coords));
+  }, [coords, userId]);
 
   const handleViewDetail = (station: Station) => {
     navigate(`/home/find-station/station-detail/${station.id}`);
@@ -140,7 +138,7 @@ export default function FindStation() {
       )}
 
       <div className="min-h-screen bg-gray-50 py-10 px-4">
-        {/* Thanh search */}
+        {/* Search */}
         <div className="mb-10 flex justify-center">
           <div className="flex gap-2 max-w-lg w-full">
             <div className="flex-1">
@@ -149,13 +147,16 @@ export default function FindStation() {
           </div>
         </div>
 
-        {/* Danh sách trạm */}
+        {/* Station list */}
         <div className="max-w-5xl mx-auto space-y-6">
           {loading ? (
-            <div className="text-center py-10 text-gray-500">
-              Loading… Chỉ một lát thôi 😄
-            </div>
-          ) : !filteredStation || filteredStation.length === 0 ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-28 rounded-lg bg-gray-200 animate-pulse"
+              />
+            ))
+          ) : filteredStation.length === 0 ? (
             <div className="text-center py-10 text-gray-500">
               Hiện tại không tìm thấy trạm nào 😢
             </div>
@@ -175,7 +176,7 @@ export default function FindStation() {
         </div>
       </div>
 
-      {/* Button định vị */}
+      {/* Nút định vị */}
       <button
         onClick={() => setShowModal(true)}
         className="fixed bottom-5 right-5 p-3 bg-[#38A3A5] text-white rounded-full hover:bg-[#2e827f] hover:scale-105 transition-all duration-200 shadow-lg flex items-center justify-center z-50"

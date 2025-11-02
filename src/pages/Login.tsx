@@ -74,12 +74,14 @@ export default function Login() {
       : { username: form.identifier.trim(), password: form.password };
 
     try {
-      const res = await api.post("/auth/login", payload, {
+       const res=await api.post("/auth/login", payload, {
         withCredentials: true,
       });
       useAuthStore.getState().setAccessToken(res.data.data.accessToken);
-      const user = res.data.data.user;
-      console.log("login", res.data);
+      const userData = await api.get("auth/me", { withCredentials: true });
+      
+      const user = userData.data.data.user;
+      console.log("login", userData.data);
       setUser(user);
 
       setType("success");
