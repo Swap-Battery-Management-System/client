@@ -153,7 +153,18 @@ export default function RegisterInfo() {
         }
     };
     const [usernameError, setUsernameError] = useState<string>("");
+    const [ageError, setAgeError] = useState<string>("");
+    const validateAge = (dateString: string) => {
+        const birthDate = new Date(dateString);
+        const today = new Date();
+        const age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        const dayDiff = today.getDate() - birthDate.getDate();
 
+        // Nếu tháng/ngày hiện tại chưa qua sinh nhật → trừ 1 tuổi
+        const realAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+        return realAge >= 18;
+    };
     const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const value = e.target.value;
         setForm({ ...form, username: value });
@@ -180,6 +191,7 @@ export default function RegisterInfo() {
 
     // 🔹 Gửi form hoàn tất đăng ký
     const handleComplete = async () => {
+
         if (
             !form.fullName ||
             !form.username ||
@@ -207,6 +219,10 @@ export default function RegisterInfo() {
             ]
                 .filter(Boolean)
                 .join(", ");
+            if (!validateAge(form.dateOfBirth)) {
+                toast.error("Người dùng phải đủ 18 tuổi để đăng ký!");
+                return;
+            }
 
             await api.patch(
                 `/users/${userId}/complete`,
@@ -405,7 +421,19 @@ export default function RegisterInfo() {
                                 type="date"
                                 name="dateOfBirth"
                                 value={form.dateOfBirth}
-                                onChange={handleChange} />
+                                onChange={(e) => {
+                                    handleChange(e);
+                                    const value = e.target.value;
+                                    if (!value) return setAgeError("");
+                                    if (!validateAge(value)) {
+                                        setAgeError("Người dùng phải từ 18 tuổi trở lên.");
+                                    } else {
+                                        setAgeError("");
+                                    }
+                                }}
+                            />
+                            {ageError && <p className="text-sm text-red-500 mt-1">{ageError}</p>}
+
                         </div>
 
                         {/* === Địa chỉ === */}

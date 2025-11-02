@@ -41,6 +41,19 @@ export default function UpdateUserInfo() {
     const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
     const [usernameError, setUsernameError] = useState<string>("");
     const [checkTimer, setCheckTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
+    const [ageError, setAgeError] = useState<string>("");
+
+    //  Hàm kiểm tra tuổi hợp lệ
+    const validateAge = (dateString: string) => {
+        if (!dateString) return true;
+        const birthDate = new Date(dateString);
+        const today = new Date();
+        const age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        const dayDiff = today.getDate() - birthDate.getDate();
+        const realAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
+        return realAge >= 18;
+    };
 
     // 🔹 Lấy danh sách tỉnh/thành
     useEffect(() => {
@@ -249,6 +262,11 @@ export default function UpdateUserInfo() {
 
     //  Cập nhật toàn bộ thông tin
     const handleUpdate = async () => {
+        if (!validateAge(form.dateOfBirth)) {
+            toast.error("Người dùng phải đủ 18 tuổi để cập nhật!");
+            return;
+        }
+
         if (!form.fullname || !form.username || !form.phoneNumber)
             return toast.error("Vui lòng nhập đầy đủ thông tin cá nhân!");
 
@@ -401,7 +419,22 @@ export default function UpdateUserInfo() {
                     </div>
                     <div>
                         <Label>Ngày sinh</Label>
-                        <Input type="date" name="dateOfBirth" value={form.dateOfBirth} onChange={handleChange} />
+                        <Input
+                            type="date"
+                            name="dateOfBirth"
+                            value={form.dateOfBirth}
+                            onChange={(e) => {
+                                handleChange(e);
+                                const value = e.target.value;
+                                if (!value) return setAgeError("");
+                                if (!validateAge(value)) {
+                                    setAgeError("Người dùng phải từ 18 tuổi trở lên.");
+                                } else {
+                                    setAgeError("");
+                                }
+                            }}
+                        />
+                        {ageError && <p className="text-sm text-red-500 mt-1">{ageError}</p>}
                     </div>
 
                     <div>
