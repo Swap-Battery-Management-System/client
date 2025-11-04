@@ -107,19 +107,15 @@ export default function AdminUpdateInfoUser({
             try {
                 const res = await api.get(`/users/${userId}`);
                 const u = res.data.data.user;
-                console.log("User data:", u);
 
-                let detailAddress = "",
-                    wardName = "",
-                    districtName = "",
-                    cityName = "",
-                    country = "Việt Nam";
-
+                let detailAddress = "", wardName = "", districtName = "", cityName = "", country = "Việt Nam";
                 if (u.address) {
                     const parts = u.address.split(",").map((p: string) => p.trim());
-                    [detailAddress, wardName, districtName, cityName, country] = parts.slice(
-                        -5
-                    );
+                    detailAddress = parts[0] || "";
+                    wardName = parts[1] || "";
+                    districtName = parts[2] || "";
+                    cityName = parts[3] || "";
+                    country = parts[4] || "Việt Nam";
                 }
 
                 setForm((prev) => ({
@@ -138,6 +134,28 @@ export default function AdminUpdateInfoUser({
                 }));
                 setPreview(u.avatarUrl || null);
                 setOriginalUsername(u.username || "");
+
+                // 🔹 Load địa chỉ chi tiết
+                const cityObj = provinces.find(p => p.name === cityName);
+                if (cityObj) {
+                    setForm(prev => ({ ...prev, city: cityObj.code }));
+                    const resDistricts = await axios.get(`https://provinces.open-api.vn/api/p/${cityObj.code}?depth=2`);
+                    const districtList = resDistricts.data.districts || [];
+                    setDistricts(districtList);
+
+                    const districtObj = districtList.find((d: any) => d.name === districtName);
+                    if (districtObj) {
+                        setForm(prev => ({ ...prev, district: districtObj.code }));
+                        const resWards = await axios.get(`https://provinces.open-api.vn/api/d/${districtObj.code}?depth=2`);
+                        const wardList = resWards.data.wards || [];
+                        setWards(wardList);
+
+                        const wardObj = wardList.find((w: any) => w.name === wardName);
+                        if (wardObj) {
+                            setForm(prev => ({ ...prev, ward: wardObj.code }));
+                        }
+                    }
+                }
             } catch (err: any) {
                 console.error("❌ Lỗi khi tải user:", err);
                 toast.error("Không thể tải thông tin người dùng!");

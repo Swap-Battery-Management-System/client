@@ -27,7 +27,6 @@ import { useAuth } from "@/context/AuthContext";
 import { useStation } from "@/context/StationContext";
 
 interface BookingForm {
-  userName: string;
   stationId: string;
   vehicleId: string;
   date: string;
@@ -78,10 +77,8 @@ export default function Booking() {
   const [hasCompatibleBattery, setHasCompatibleBattery] = useState<
     boolean | null
   >(null);
-  const [isCompleteForm,setIsCompleteForm]=useState(true);
 
   const [form, setForm] = useState<BookingForm>({
-    userName: user?.fullName ?? "",
     stationId: defaultStationId,
     vehicleId: "",
     date: "",
@@ -89,29 +86,27 @@ export default function Booking() {
     note: "",
   });
 
-  // useEffect(() => {
-  //     if (!user) return;
+  useEffect(() => {
+    if (!user) return;
 
-  //     const isComplete =
-  //       Boolean(user.fullName) &&
-  //       Boolean(user.phoneNumber) &&
-  //       Boolean(user.address);
+    // const isComplete =
+    //   Boolean(user.fullName) &&
+    //   Boolean(user.phoneNumber) &&
+    //   Boolean(user.address);
 
-  //     // Nếu form chưa complete và thông tin chưa đầy đủ → chỉ toast 1 lần
-  //     if (!isComplete) {
-  //       if (isCompleteForm) {
-  //         toast.error(
-  //           "Vui lòng hoàn thiện thông tin cá nhân trước khi đặt lịch!"
-  //         );
-  //         setIsCompleteForm(false);
-  //       }
-  //     } else {
-  //       setForm((prev) => ({ ...prev, userName: user.fullName as string}));
-  //       setIsCompleteForm(true);
-  //     }
-    
-  // }, [user]);
- 
+    // // Nếu form chưa complete và thông tin chưa đầy đủ → chỉ toast 1 lần
+    // if (!isComplete) {
+    //   if (isCompleteForm) {
+    //     toast.error(
+    //       "Vui lòng hoàn thiện thông tin cá nhân trước khi đặt lịch!"
+    //     );
+    //     setIsCompleteForm(false);
+    //   }
+    // } else {
+    //   setForm((prev) => ({ ...prev, userName: user.fullName as string}));
+    //   setIsCompleteForm(true);
+    // }
+  }, []);
 
   const checkPendingBooking = async () => {
     try {
@@ -155,6 +150,7 @@ export default function Booking() {
     fetchAllStation();
     fetchAllAvailableVehicle();
     checkPendingBooking();
+    console.log("user booking", user);
   }, []);
 
   //gọi hàm kiểm tra pin available khi stationId or VehicleId thay đổi
@@ -216,7 +212,6 @@ export default function Booking() {
     }
 
     const scheduleTime = `${date}T${time}:00`;
-    const now = new Date();
 
     const payload: BookingPayload = {
       scheduleTime: scheduleTime,
@@ -343,21 +338,6 @@ export default function Booking() {
 
               <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-6">
                 <div className="flex flex-col gap-4">
-                  <div>
-                    <Label
-                      htmlFor="userName"
-                      className="text-[#38A3A5] mb-2 block"
-                    >
-                      Tên người dùng
-                    </Label>
-                    <Input
-                      id="userName"
-                      name="userName"
-                      value={form.userName}
-                      disabled
-                      className="bg-gray-100"
-                    />
-                  </div>
 
                   <div>
                     <Label className="text-[#38A3A5] mb-2 block">
@@ -486,11 +466,11 @@ export default function Booking() {
                 <div className="col-span-2 flex justify-center pt-4">
                   <Button
                     type="submit"
-                    disabled={!isCompleteForm ||                    
+                    disabled={
                       !form.stationId ||
-                        !form.vehicleId ||
-                        !form.date ||
-                        !form.time
+                      !form.vehicleId ||
+                      !form.date ||
+                      !form.time
                     }
                     className="bg-[#38A3A5] hover:bg-[#2C9A95] text-white px-8 py-3 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >

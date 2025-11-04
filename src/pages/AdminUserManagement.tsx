@@ -250,32 +250,36 @@ export default function AdminUserManagement() {
                                                 <td className="px-2 py-1">{getRoleName(u.roleId)}</td>
                                                 <td className="px-2 py-1">
                                                     <div
-                                                        className={`inline-block rounded-md px-2 py-1 border transition-all duration-150 ${u.status === "active"
-                                                            ? "bg-green-100 border-green-300"
-                                                            : "bg-red-100 border-red-300"
+                                                        className={`inline-block rounded-md px-2 py-1 border transition-all duration-150
+            ${u.status === "active"
+                                                                ? "bg-green-100 text-green-700 border-green-300"
+                                                                : u.status === "banned"
+                                                                    ? "bg-red-100 text-red-700 border-red-300"
+                                                                    : "bg-blue-100 text-blue-700 border-blue-300" // ✅ pending
                                                             }`}
                                                     >
-                                                        <select
-                                                            value={u.status}
-                                                            onChange={() => handleToggleStatus(u.id, u.status)}
-                                                            className={`text-sm font-medium cursor-pointer bg-transparent outline-none ${u.status === "active" ? "text-green-700" : "text-red-700"
-                                                                }`}
-                                                        >
-                                                            {/* chỉ hiển thị trạng thái hiện tại */}
-                                                            <option value={u.status}>
-                                                                {u.status === "active" ? "Active" : "Banned"}
-                                                            </option>
-
-                                                            {/* hiển thị lựa chọn ngược lại nếu admin muốn đổi */}
-                                                            {u.status === "active" ? (
-                                                                <option value="banned">Banned</option>
-                                                            ) : (
-                                                                <option value="active">Active</option>
-                                                            )}
-                                                        </select>
+                                                        {u.status === "pending" ? (
+                                                            // 🔹 Pending: chỉ hiển thị text, không có select
+                                                            <span className="text-sm font-medium">Pending</span>
+                                                        ) : (
+                                                            // 🔹 Active/Banned: có thể chọn đổi trạng thái
+                                                            <select
+                                                                value={u.status}
+                                                                onChange={() => handleToggleStatus(u.id, u.status)}
+                                                                className="text-sm font-medium cursor-pointer bg-transparent outline-none"
+                                                            >
+                                                                <option value={u.status}>
+                                                                    {u.status === "active" ? "Active" : "Banned"}
+                                                                </option>
+                                                                {u.status === "active" ? (
+                                                                    <option value="banned">Banned</option>
+                                                                ) : (
+                                                                    <option value="active">Active</option>
+                                                                )}
+                                                            </select>
+                                                        )}
                                                     </div>
                                                 </td>
-
 
                                                 <td className="px-2 py-1 flex flex-row gap-4 justify-center text-xl">
                                                     <LuDelete
