@@ -1,6 +1,6 @@
 import { Search } from "lucide-react";
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import api from "@/lib/api";
 
 type Station = {
@@ -15,6 +15,14 @@ export default function SearchStation() {
   const [stations, setStations] = useState<Station[]>([]);
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Lấy keyword từ URL nếu có
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const keywordFromUrl = params.get("keyword") || "";
+    setInput(keywordFromUrl);
+  }, [location.search]);
 
   // Gọi API lấy tất cả trạm
   const fetchAllStation = async () => {
@@ -26,7 +34,6 @@ export default function SearchStation() {
         ? data.stations
         : [data.stations];
       setStations(stationArray);
-      console.log("Fetched stations:", stationArray);
     } catch (err) {
       console.error("Lỗi khi lấy danh sách trạm:", err);
     } finally {
@@ -51,51 +58,50 @@ export default function SearchStation() {
       );
       setSuggestions(filtered);
     } else {
-      setSuggestions([]);
+      setSuggestions(stations);
     }
   };
 
-  //Khi nhấn nút tìm
+  // Khi nhấn nút tìm
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!input.trim()) return;
-    navigate("/home/find-station", { state: { keyword: input.trim() } });
+    const keyword = input.trim();
+    navigate(`/home/find-station?keyword=${encodeURIComponent(keyword)}`);
     setSuggestions([]);
   };
 
-  //Khi chọn gợi ý
+  // Khi chọn gợi ý
   const handleSelectSuggestion = (station: Station) => {
     setInput(station.name);
     setSuggestions([]);
-    navigate("/home/find-station", { state: { keyword: station.name } });
+    navigate(`/home/find-station?keyword=${encodeURIComponent(station.name)}`);
   };
 
   return (
     <div className="relative w-full max-w-lg mx-auto z-20">
-      {/* Icon search */}
       <Search
         className="absolute left-5 top-1/2 -translate-y-1/2 text-teal-500"
         size={22}
       />
 
-      {/* Ô nhập */}
       <input
         type="text"
         value={input}
         onChange={handleChange}
+        onFocus={() => {
+          if (!input.trim()) setSuggestions(stations);
+        }}
         placeholder="Nhập vị trí để tìm trạm đổi pin gần nhất..."
         className="w-full pl-12 pr-28 py-4 rounded-full text-gray-700 placeholder-gray-400 shadow-lg border border-teal-200 focus:border-teal-400 focus:ring-2 focus:ring-teal-300/40 focus:outline-none transition-all duration-300 bg-white backdrop-blur-sm"
       />
 
-      {/* Nút tìm */}
       <button
         onClick={handleSearch}
-        className={`absolute right-2 top-1/2 -translate-y-1/2 font-semibold px-6 py-2 rounded-full shadow-md transition-all duration-300 ${"bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white hover:shadow-lg"}`}
+        className="absolute right-2 top-1/2 -translate-y-1/2 font-semibold px-6 py-2 rounded-full shadow-md transition-all duration-300 bg-gradient-to-r from-emerald-400 to-teal-500 hover:from-emerald-500 hover:to-teal-600 text-white hover:shadow-lg"
       >
         Tìm
       </button>
 
-      {/* Danh sách gợi ý */}
       {suggestions.length > 0 && (
         <ul className="absolute w-full bg-white mt-2 rounded-xl shadow-lg border border-gray-100 max-h-60 overflow-y-auto z-30">
           {suggestions.map((station) => (

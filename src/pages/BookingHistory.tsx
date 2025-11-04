@@ -226,7 +226,7 @@ export default function BookingHistory() {
     if (!confirm(`Bạn có chắc muốn hủy đặt lịch ${id} không?`)) return;
 
     try {
-      await api.delete(`/bookings/${id}`, { withCredentials: true });
+      await api.patch(`/bookings/${id}/cancel`, { withCredentials: true });
       toast.success("Hủy đặt lịch thành công!");
       setHistory((prev) =>
         prev.map((item) =>

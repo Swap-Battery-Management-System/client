@@ -116,6 +116,7 @@ export default function StaffBookingManagement() {
             try {
                 // 🔹 Lấy danh sách trạm
                 const res = await api.get("/stations", { withCredentials: true });
+                console.log("Dữ liệu trạm:", res.data);
                 const myStation: Station | undefined = res.data.data.stations;
 
                 if (!myStation) {
