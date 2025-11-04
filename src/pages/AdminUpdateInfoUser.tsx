@@ -94,7 +94,7 @@ export default function AdminUpdateInfoUser({
     // 🔹 Lấy danh sách tỉnh
     useEffect(() => {
         axios
-            .get("https://provinces.open-api.vn/api/p/")
+            .get("http://provinces.open-api.vn/api/p/")
             .then((res) => setProvinces(res.data))
             .catch(() => toast.error("Không thể tải danh sách tỉnh/thành!"));
     }, []);
@@ -139,14 +139,14 @@ export default function AdminUpdateInfoUser({
                 const cityObj = provinces.find(p => p.name === cityName);
                 if (cityObj) {
                     setForm(prev => ({ ...prev, city: cityObj.code }));
-                    const resDistricts = await axios.get(`https://provinces.open-api.vn/api/p/${cityObj.code}?depth=2`);
+                    const resDistricts = await axios.get(`http://provinces.open-api.vn/api/p/${cityObj.code}?depth=2`);
                     const districtList = resDistricts.data.districts || [];
                     setDistricts(districtList);
 
                     const districtObj = districtList.find((d: any) => d.name === districtName);
                     if (districtObj) {
                         setForm(prev => ({ ...prev, district: districtObj.code }));
-                        const resWards = await axios.get(`https://provinces.open-api.vn/api/d/${districtObj.code}?depth=2`);
+                        const resWards = await axios.get(`http://provinces.open-api.vn/api/d/${districtObj.code}?depth=2`);
                         const wardList = resWards.data.wards || [];
                         setWards(wardList);
 
@@ -223,7 +223,7 @@ export default function AdminUpdateInfoUser({
         if (!provinceCode) return;
         try {
             const res = await axios.get(
-                `https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`
+                `http://provinces.open-api.vn/api/p/${provinceCode}?depth=2`
             );
             setDistricts(res.data.districts || []);
         } catch {
@@ -238,7 +238,7 @@ export default function AdminUpdateInfoUser({
         if (!districtCode) return;
         try {
             const res = await axios.get(
-                `https://provinces.open-api.vn/api/d/${districtCode}?depth=2`
+                `http://provinces.open-api.vn/api/d/${districtCode}?depth=2`
             );
             setWards(res.data.wards || []);
         } catch {

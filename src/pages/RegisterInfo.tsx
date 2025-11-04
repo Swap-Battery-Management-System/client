@@ -9,8 +9,10 @@ import { toast } from "sonner";
 import axios from "axios";
 import { UploadCloud } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
+import { useAuthStore } from "@/stores/authStores";
 
 export default function RegisterInfo() {
+    const { setUser } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
     const email = location.state?.email || localStorage.getItem("pendingEmail");
@@ -78,43 +80,52 @@ export default function RegisterInfo() {
     const [wards, setWards] = useState<any[]>([]);
 
     // 🔹 Lấy danh sách tỉnh
+    // 🔹 Lấy danh sách tỉnh/thành từ GitHub JSON (không lỗi SSL)
     useEffect(() => {
-        axios
-            .get("https://provinces.open-api.vn/api/p/")
-            .then((res) => setProvinces(res.data))
-            .catch(() => toast.error("Không thể tải danh sách tỉnh/thành!"));
+        const fetchProvinces = async () => {
+            try {
+                const res = await axios.get(
+                    "https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json"
+                );
+                setProvinces(res.data);
+            } catch (error) {
+                console.error(error);
+                toast.error("Không thể tải danh sách tỉnh/thành!");
+            }
+        };
+        fetchProvinces();
     }, []);
 
-    const handleCityChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const provinceCode = e.target.value;
-        setForm({ ...form, city: provinceCode, district: "", ward: "" });
-        setWards([]);
-        if (!provinceCode) return;
-        try {
-            const res = await axios.get(
-                `https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`
-            );
-            setDistricts(res.data.districts || []);
-        } catch {
-            toast.error("Không thể tải danh sách quận/huyện!");
+
+    const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const cityId = e.target.value;
+        setForm({ ...form, city: cityId, district: "", ward: "" });
+
+        if (!cityId) {
+            setDistricts([]);
+            setWards([]);
+            return;
         }
+
+        const selectedCity = provinces.find((p) => p.Id === cityId);
+        setDistricts(selectedCity?.Districts || []);
+        setWards([]);
     };
 
-    const handleDistrictChange = async (
-        e: React.ChangeEvent<HTMLSelectElement>
-    ) => {
-        const districtCode = e.target.value;
-        setForm({ ...form, district: districtCode, ward: "" });
-        if (!districtCode) return;
-        try {
-            const res = await axios.get(
-                `https://provinces.open-api.vn/api/d/${districtCode}?depth=2`
-            );
-            setWards(res.data.wards || []);
-        } catch {
-            toast.error("Không thể tải danh sách xã/phường!");
+
+    const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const districtId = e.target.value;
+        setForm({ ...form, district: districtId, ward: "" });
+
+        if (!districtId) {
+            setWards([]);
+            return;
         }
+
+        const selectedDistrict = districts.find((d) => d.Id === districtId);
+        setWards(selectedDistrict?.Wards || []);
     };
+
 
     const handleWardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         setForm({ ...form, ward: e.target.value });
@@ -126,7 +137,7 @@ export default function RegisterInfo() {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
-    // 🔹 Khi chọn ảnh -> tự upload lên ImgBB
+    // 🔹 Khi chọn ảnh 
     const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -189,9 +200,7 @@ export default function RegisterInfo() {
     };
 
 
-    // 🔹 Gửi form hoàn tất đăng ký
     const handleComplete = async () => {
-
         if (
             !form.fullName ||
             !form.username ||
@@ -205,10 +214,11 @@ export default function RegisterInfo() {
 
         setLoading(true);
         try {
-            const cityName = provinces.find((p) => p.code == form.city)?.name || "";
+            // 🗺️ Ghép địa chỉ đầy đủ
+            const cityName = provinces.find((p) => p.Id == form.city)?.Name || "";
             const districtName =
-                districts.find((d) => d.code == form.district)?.name || "";
-            const wardName = wards.find((w) => w.code == form.ward)?.name || "";
+                districts.find((d) => d.Id == form.district)?.Name || "";
+            const wardName = wards.find((w) => w.Id == form.ward)?.Name || "";
 
             const address = [
                 form.detailAddress,
@@ -219,11 +229,14 @@ export default function RegisterInfo() {
             ]
                 .filter(Boolean)
                 .join(", ");
+
+            // ⚠️ Kiểm tra tuổi
             if (!validateAge(form.dateOfBirth)) {
                 toast.error("Người dùng phải đủ 18 tuổi để đăng ký!");
                 return;
             }
 
+            // 🧩 Cập nhật thông tin người dùng
             await api.patch(
                 `/users/${userId}/complete`,
                 {
@@ -232,15 +245,70 @@ export default function RegisterInfo() {
                     phoneNumber: form.phoneNumber,
                     address,
                     gender: form.gender === "male",
-                    avatarUrl: form.avatarUrl, // ✅ dùng link ảnh đã upload
+                    avatarUrl: form.avatarUrl,
                     dateOfBirth: form.dateOfBirth,
                 },
                 { withCredentials: true }
             );
 
-            toast.success("Cập nhật thông tin thành công!");
-            localStorage.removeItem("pendingEmail");
-            navigate("/login");
+            toast.success("Cập nhật thông tin thành công! Đang xử lý...");
+
+            // 🔍 Kiểm tra xem user đăng ký bằng Google hay Email
+            const savedPassword = localStorage.getItem("pendingPassword");
+
+            if (savedPassword) {
+                // 🔹 TRƯỜNG HỢP 1: Người dùng đăng ký bằng Email + Password
+                try {
+                    const loginRes = await api.post(
+                        "/auth/login",
+                        { email, password: savedPassword },
+                        { withCredentials: true }
+                    );
+
+                    useAuthStore.getState().setAccessToken(loginRes.data.data.accessToken);
+                    setUser(loginRes.data.data.user);
+
+                    const role = loginRes.data.data.user.role?.name;
+                    switch (role) {
+                        case "admin":
+                            navigate("/admin");
+                            break;
+                        case "staff":
+                            navigate("/staff");
+                            break;
+                        default:
+                            navigate("/home");
+                            break;
+                    }
+                } catch (err: any) {
+                    console.error(err);
+                    toast.error("Đăng nhập tự động thất bại! Vui lòng đăng nhập thủ công.");
+                    navigate("/login");
+                }
+            } else {
+                // 🔹 TRƯỜNG HỢP 2: Người dùng đăng ký bằng Google OAuth
+                try {
+                    const meRes = await api.get("/auth/me");
+                    setUser(meRes.data.data);
+
+                    const role = meRes.data.data.role?.name;
+                    switch (role) {
+                        case "admin":
+                            navigate("/admin");
+                            break;
+                        case "staff":
+                            navigate("/staff");
+                            break;
+                        default:
+                            navigate("/home");
+                            break;
+                    }
+                } catch (err) {
+                    console.error(err);
+                    toast.error("Không thể tải thông tin tài khoản. Vui lòng đăng nhập lại!");
+                    navigate("/login");
+                }
+            }
         } catch (err: any) {
             console.error(err);
             toast.error(err.response?.data?.message || "Không thể hoàn tất đăng ký!");
@@ -248,6 +316,7 @@ export default function RegisterInfo() {
             setLoading(false);
         }
     };
+
 
     return (
         <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-emerald-300 via-teal-400 to-cyan-500">
@@ -474,10 +543,11 @@ export default function RegisterInfo() {
                                     >
                                         <option value="">-- Chọn tỉnh/thành phố --</option>
                                         {provinces.map((p) => (
-                                            <option key={p.code} value={p.code}>
-                                                {p.name}
+                                            <option key={p.Id} value={p.Id}>
+                                                {p.Name}
                                             </option>
                                         ))}
+
                                     </select>
                                 </div>
 
@@ -494,10 +564,11 @@ export default function RegisterInfo() {
                                     >
                                         <option value="">-- Chọn quận/huyện --</option>
                                         {districts.map((d) => (
-                                            <option key={d.code} value={d.code}>
-                                                {d.name}
+                                            <option key={d.Id} value={d.Id}>
+                                                {d.Name}
                                             </option>
                                         ))}
+
                                     </select>
                                 </div>
 
@@ -514,8 +585,8 @@ export default function RegisterInfo() {
                                     >
                                         <option value="">-- Chọn xã/phường --</option>
                                         {wards.map((w) => (
-                                            <option key={w.code} value={w.code}>
-                                                {w.name}
+                                            <option key={w.Id} value={w.Id}>
+                                                {w.Name}
                                             </option>
                                         ))}
                                     </select>
