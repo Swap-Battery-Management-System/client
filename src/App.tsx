@@ -7,9 +7,6 @@ import { Route, Routes } from "react-router";
 import { Toaster } from "sonner";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
-
-
-
 import StaffLayout from "./layout/StaffLayout";
 import Landing from "./pages/Landing";
 import Layout from "./layout/layout";
@@ -23,7 +20,6 @@ import MySubcription from "./pages/MySubcription";
 import RegisterPassword from "./pages/SetPassword";
 import RegisterVehicle from "./pages/RegisterVehicle";
 import MyVehicles from "./pages/MyVehicles";
-import UpdateVehicle from "./pages/UpdateVehicle";
 
 import AdminVehicleManagement from "./pages/AdminVehicleManagement";
 import AdminUserManagement from "./pages/AdminUserManagement";
@@ -72,19 +68,8 @@ function App() {
           <Route path="register-vehicle" element={<RegisterVehicle />} />
           <Route path="my-vehicles" element={<MyVehicles />} />
           <Route path="notifications" element={<NotificationPage />} />
-
-
-          {/* <Route path="thong-tin-ca-nhan" element={<ThongTinCaNhan />} />
-          <Route path="phuong-tien-cua-toi" element={<PhuongTienCuaToi />} />
-          <Route path="cai-dat-bao-mat" element={<CaiDatBaoMat />} /> 
-                  
-          <Route path="bang-phi" element={<BangPhi />} />
-          <Route path="lich-su-thanh-toan" element={<LichSuThanhToan />} />
-          <Route path="bao-cao" element={<BaoCao />} /> 
-          <Route path="dang-xu" element={<BaoCao />}*/}
+          <Route path="my-subscription-packages" element={<MySubcription />} />
         </Route>
-        //can fix lai
-        <Route path="my-subscription-packages" element={<MySubcription />} />
         {/* === Staff Routes === */}
         <Route
           path="/staff"
@@ -102,7 +87,10 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="swap-battery-process/:bookingId" element={<BatteryProcess/>}/>
+          <Route
+            path="swap-battery-process/:bookingId"
+            element={<BatteryProcess />}
+          />
           <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="manage-booking" element={<StaffBookingManagement />} />
           {/* <Route index element={<StaffDashboard />} />
@@ -111,7 +99,14 @@ function App() {
           <Route path="report" element={<StaffReport />} />
           <Route path="safety" element={<StaffSafety />} /> */}
         </Route>
-        <Route path="/admin" element={<AdminLayout />}>
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute roles={["admin"]}>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
           <Route path="manage-users" element={<AdminUserManagement />} />
           <Route path="manage-stations" element={<AdminStationManagement />} />
           <Route path="manage-vehicles" element={<AdminVehicleManagement />} />
@@ -123,8 +118,14 @@ function App() {
               </ProtectedRoute>
             }
           />
-          <Route path="battery-types" element={<AdminBatteryTypeManagement />} />
-          <Route path="vehicle-models" element={<AdminVehicleModelManagement />} />
+          <Route
+            path="battery-types"
+            element={<AdminBatteryTypeManagement />}
+          />
+          <Route
+            path="vehicle-models"
+            element={<AdminVehicleModelManagement />}
+          />
         </Route>
       </Routes>
       <Toaster richColors position="top-center" />

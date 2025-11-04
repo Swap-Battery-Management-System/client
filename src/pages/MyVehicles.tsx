@@ -45,6 +45,12 @@ export default function MyVehicles() {
   const [editVIN, setEditVIN] = useState("");
   const [editModelId, setEditModelId] = useState<string | undefined>();
   const [editLoading, setEditLoading] = useState(false);
+  // validation states for edit modal
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [plateError, setPlateError] = useState<string | null>(null);
+  const [vinError, setVinError] = useState<string | null>(null);
+  const [modelError, setModelError] = useState<string | null>(null);
+  const [cavetError, setCavetError] = useState<string | null>(null);
 
   // Models
   const [models, setModels] = useState<{ id: string; name: string }[]>([]);
@@ -126,22 +132,22 @@ export default function MyVehicles() {
     setCavetUrl(v.validatedImage);
     setPreview(v.validatedImage);
     setEditOpen(true);
+    // clear previous errors
+    setNameError(null);
+    setPlateError(null);
+    setVinError(null);
+    setModelError(null);
+    setCavetError(null);
   };
 
   // Handle save edit
   const handleSaveEdit = async () => {
     if (!editVehicle) return;
-
-    // Check required fields for invalid vehicle
-    if (editVehicle.status.toLowerCase() === "invalid") {
-      if (!editModelId) {
-        toast.error("Vui lòng chọn model!");
-        return;
-      }
-      if (!cavetUrl) {
-        toast.error("Vui lòng tải ảnh cavet!");
-        return;
-      }
+    // Validate all fields first
+    const ok = validateAllEdit();
+    if (!ok) {
+      toast.error("Vui lòng sửa các trường bị lỗi trước khi lưu.");
+      return;
     }
 
     setEditLoading(true);
@@ -183,6 +189,8 @@ export default function MyVehicles() {
 
       const res = await axios.post("https://api.imgbb.com/1/upload", formData);
       setCavetUrl(res.data.data.url);
+      // validate cavet when uploaded
+      validateField("cavet", res.data.data.url);
       toast.success("Tải ảnh cavet thành công!");
     } catch {
       toast.error("Không thể tải ảnh cavet lên!");
@@ -191,6 +199,77 @@ export default function MyVehicles() {
       setUploading(false);
     }
   };
+
+  // Validate a single field for the edit modal
+  function validateField(name: string, value: string | undefined | null) {
+    const statusInvalid = editVehicle?.status.toLowerCase() === "invalid";
+    switch (name) {
+      case "name":
+        if (value && (value as string).length > 100)
+          setNameError("Tên xe không quá 100 ký tự");
+        else setNameError(null);
+        break;
+      case "plate":
+        if (!value || !(value as string).trim())
+          setPlateError("Vui lòng nhập biển số");
+        else setPlateError(null);
+        break;
+      case "vin":
+        if (statusInvalid) {
+          if (!value || !(value as string).trim())
+            setVinError("Vui lòng nhập số khung (VIN)");
+          else setVinError(null);
+        } else {
+          setVinError(null);
+        }
+        break;
+      case "model":
+        if (statusInvalid) {
+          if (!value) setModelError("Vui lòng chọn model");
+          else setModelError(null);
+        } else setModelError(null);
+        break;
+      case "cavet":
+        if (statusInvalid) {
+          if (!value) setCavetError("Vui lòng tải ảnh cavet");
+          else setCavetError(null);
+        } else setCavetError(null);
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Validate all edit fields before saving. Returns true when valid.
+  function validateAllEdit(): boolean {
+    let valid = true;
+    validateField("plate", editPlate);
+    if (!editPlate || !editPlate.trim()) valid = false;
+
+    const statusInvalid = editVehicle?.status.toLowerCase() === "invalid";
+    if (statusInvalid) {
+      if (!editModelId) {
+        setModelError("Vui lòng chọn model");
+        valid = false;
+      }
+      if (!cavetUrl) {
+        setCavetError("Vui lòng tải ảnh cavet");
+        valid = false;
+      }
+      if (!editVIN || !editVIN.trim()) {
+        setVinError("Vui lòng nhập số khung (VIN)");
+        valid = false;
+      }
+    }
+
+    // name length check
+    if (editName && editName.length > 100) {
+      setNameError("Tên xe không quá 100 ký tự");
+      valid = false;
+    }
+
+    return valid;
+  }
 
   // Open confirm modal
   const openConfirmModal = (v: Vehicle, action: "cancel" | "relink") => {
@@ -353,20 +432,33 @@ export default function MyVehicles() {
                   <Label className="text-[#38A3A5] font-medium">Tên xe</Label>
                   <Input
                     value={editName}
-                    onChange={(e) => setEditName(e.target.value)}
+                    onChange={(e) => {
+                      setEditName(e.target.value);
+                      validateField("name", e.target.value);
+                    }}
                     placeholder="Nhập tên xe"
                     className="mt-1"
                   />
+                  {nameError && (
+                    <p className="text-red-500 text-sm mt-1">{nameError}</p>
+                  )}
                 </div>
 
                 <div>
                   <Label className="text-[#38A3A5] font-medium">Biển số</Label>
                   <Input
                     value={editPlate}
-                    onChange={(e) => setEditPlate(e.target.value.toUpperCase())}
+                    onChange={(e) => {
+                      const v = e.target.value.toUpperCase();
+                      setEditPlate(v);
+                      validateField("plate", v);
+                    }}
                     placeholder="Nhập biển số"
                     className="mt-1"
                   />
+                  {plateError && (
+                    <p className="text-red-500 text-sm mt-1">{plateError}</p>
+                  )}
                 </div>
 
                 {editVehicle?.status.toLowerCase() === "invalid" && (
@@ -377,10 +469,16 @@ export default function MyVehicles() {
                       </Label>
                       <Input
                         value={editVIN}
-                        onChange={(e) => setEditVIN(e.target.value)}
+                        onChange={(e) => {
+                          setEditVIN(e.target.value);
+                          validateField("vin", e.target.value);
+                        }}
                         placeholder="Nhập số khung (VIN)"
-                        className="mt-1"
+                        className={"mt-1 " + (vinError ? "border-red-500" : "")}
                       />
+                      {vinError && (
+                        <p className="text-red-500 text-sm mt-1">{vinError}</p>
+                      )}
                     </div>
 
                     <div>
@@ -388,8 +486,14 @@ export default function MyVehicles() {
                         Chọn model *
                       </Label>
                       <select
-                        className="w-full border border-[#BCE7E8] rounded-md p-2 mt-1 focus:ring-[#38A3A5] focus:border-[#38A3A5] outline-none"
-                        onChange={(e) => setEditModelId(e.target.value)}
+                        className={
+                          "w-full border rounded-md p-2 mt-1 focus:ring-[#38A3A5] focus:border-[#38A3A5] outline-none " +
+                          (modelError ? "border-red-500" : "border-[#BCE7E8]")
+                        }
+                        onChange={(e) => {
+                          setEditModelId(e.target.value);
+                          validateField("model", e.target.value);
+                        }}
                         value={editModelId}
                         required
                       >
@@ -428,6 +532,12 @@ export default function MyVehicles() {
                         onChange={handleImageChange}
                         disabled={uploading}
                       />
+
+                      {cavetError && (
+                        <p className="text-red-500 text-sm mt-2">
+                          {cavetError}
+                        </p>
+                      )}
 
                       <div className="mt-4 relative w-full max-w-md h-48 border border-dashed border-[#BCE7E8] rounded-lg overflow-hidden">
                         {preview ? (

@@ -3,16 +3,15 @@ import SearchStation from "@/components/SearchStation";
 import { useEffect, useState, useRef } from "react";
 import LocationPermissionModal from "@/components/LocationPermissionModal";
 import { MdMyLocation } from "react-icons/md";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import type { Station } from "@/types/station";
 import { useStation } from "@/context/StationContext";
 import { useAuth } from "@/context/AuthContext";
 
 export default function FindStation() {
   const navigate = useNavigate();
-  const location = useLocation();
-  const keywordFromState =
-    (location.state as { keyword?: string })?.keyword || "";
+  const [params] = useSearchParams();
+  const keywordFromUrl = params.get("keyword") || "";
 
   const { user } = useAuth();
   const userId = user?.id || "guest";
@@ -35,7 +34,12 @@ export default function FindStation() {
   const [loadingCoords, setLoadingCoords] = useState(false);
   const watchIdRef = useRef<number | null>(null);
 
-  const [keyword, setKeyword] = useState(keywordFromState);
+  const [keyword, setKeyword] = useState(keywordFromUrl);
+
+  // Đồng bộ keyword với URL khi người dùng tìm mới
+  useEffect(() => {
+    setKeyword(keywordFromUrl);
+  }, [keywordFromUrl]);
 
   //Fetch stations chỉ khi chưa có
   useEffect(() => {
@@ -69,10 +73,9 @@ export default function FindStation() {
           lng: pos.coords.longitude,
         };
         setCoords(newCoords);
-        console.log("coords updated:", newCoords);
         setLoadingCoords(false);
       },
-      (err) => setLoadingCoords(false),
+      () => setLoadingCoords(false),
       { enableHighAccuracy: true, maximumAge: 10000, timeout: 10000 }
     );
 
@@ -108,14 +111,12 @@ export default function FindStation() {
     }
 
     if (coords) {
-      // async không block UI
       getStationWithDistance(coords, result).then(setFilteredStation);
     } else {
       setFilteredStation(result);
     }
   }, [keyword, coords, stations, getStationWithDistance]);
 
-  // 4️Lưu coords
   useEffect(() => {
     if (coords)
       localStorage.setItem(`userCoords_${userId}`, JSON.stringify(coords));

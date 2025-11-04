@@ -58,6 +58,7 @@ export default function Booking() {
   const [hasPendingBooking, setHasPendingBooking] = useState(false);
   const [modalIcon, setModalIcon] = useState<React.ReactNode>(null);
   const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
 
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -85,6 +86,13 @@ export default function Booking() {
     time: "",
     note: "",
   });
+  // validation state for time selection (more than 24 hours)
+  const [timeError, setTimeError] = useState<string | null>(null);
+  // other field validation states
+  const [stationError, setStationError] = useState<string | null>(null);
+  const [vehicleError, setVehicleError] = useState<string | null>(null);
+  const [dateError, setDateError] = useState<string | null>(null);
+  const [noteError, setNoteError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -164,13 +172,125 @@ export default function Booking() {
   const handleSelectChange = (name: string, value: string) => {
     const updatedForm = { ...form, [name]: value };
     setForm(updatedForm);
+    // validate this field right away
+    validateField(name, value);
   };
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const value = e.target.value;
+    setForm({ ...form, [e.target.name]: value });
+    // validate as user types/changes
+    validateField(e.target.name, value);
   };
+
+  // Validate a single field and set related error state
+  function validateField(name: string, value: string) {
+    switch (name) {
+      case "stationId":
+        if (!value) setStationError("Vui lòng chọn trạm");
+        else setStationError(null);
+        break;
+      case "vehicleId":
+        if (!value) setVehicleError("Vui lòng chọn xe");
+        else setVehicleError(null);
+        break;
+      case "date":
+        if (!value) {
+          setDateError("Vui lòng chọn ngày");
+        } else if (value < minDate || value > maxDate) {
+          setDateError("Ngày không hợp lệ");
+        } else {
+          setDateError(null);
+        }
+        break;
+      case "note":
+        if (value && value.length > 500)
+          setNoteError("Ghi chú không quá 500 ký tự");
+        else setNoteError(null);
+        break;
+      case "time":
+        // time validation handled by combined effect (date+time), but clear if empty
+        if (!value) setTimeError(null);
+        break;
+      default:
+        break;
+    }
+  }
+
+  // Validate all fields synchronously using current form values and set errors. Returns true when valid.
+  function validateAll(): boolean {
+    let valid = true;
+
+    if (!form.stationId) {
+      setStationError("Vui lòng chọn trạm");
+      valid = false;
+    } else {
+      setStationError(null);
+    }
+
+    if (!form.vehicleId) {
+      setVehicleError("Vui lòng chọn xe");
+      valid = false;
+    } else {
+      setVehicleError(null);
+    }
+
+    if (!form.date) {
+      setDateError("Vui lòng chọn ngày");
+      valid = false;
+    } else if (form.date < minDate || form.date > maxDate) {
+      setDateError("Ngày không hợp lệ");
+      valid = false;
+    } else {
+      setDateError(null);
+    }
+
+    if (!form.time) {
+      setTimeError("Vui lòng chọn giờ");
+      valid = false;
+    }
+
+    if (form.note && form.note.length > 500) {
+      setNoteError("Ghi chú không quá 500 ký tự");
+      valid = false;
+    } else {
+      setNoteError(null);
+    }
+
+    // If timeError from combined validation exists, invalidate
+    if (timeError) valid = false;
+
+    return valid;
+  }
+
+  // Validate combined date+time to ensure schedule is within 24 hours from now
+  useEffect(() => {
+    const { date, time } = form;
+    if (!date || !time) {
+      setTimeError(null);
+      return;
+    }
+
+    const schedule = new Date(`${date}T${time}:00`);
+    const now = new Date();
+    const diff = schedule.getTime() - now.getTime();
+    const maxMs = 24 * 60 * 60 * 1000;
+
+    if (isNaN(schedule.getTime())) {
+      setTimeError("Thời gian không hợp lệ");
+      return;
+    }
+
+    if (diff > maxMs) {
+      setTimeError("Thời gian chọn vượt quá 24 giờ");
+    } else if (diff < 0) {
+      setTimeError("Thời gian đã qua");
+    } else {
+      setTimeError(null);
+    }
+  }, [form.date, form.time]);
 
   //kiểm tra có pin phù hợp hay không
   const checkAvailableBattery = async () => {
@@ -199,15 +319,16 @@ export default function Booking() {
   };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    // Re-validate all fields before submit
+    const ok = validateAll();
+    if (!ok) {
+      toast.error("⚠️ Vui lòng sửa các trường bị lỗi trước khi gửi.");
+      return;
+    }
     const { stationId, vehicleId, date, time, note } = form;
 
     if (!stationId || !vehicleId || !date || !time) {
-      alert("⚠️ Vui lòng điền đầy đủ thông tin bắt buộc!");
-      return;
-    }
-
-    if (!stationId || !vehicleId || !date || !time) {
-      alert("⚠️ Vui lòng điền đầy đủ thông tin bắt buộc!");
+      toast.error("⚠️ Vui lòng điền đầy đủ thông tin bắt buộc!");
       return;
     }
 
@@ -222,6 +343,7 @@ export default function Booking() {
     console.log("booking", payload);
 
     try {
+      setSubmitting(true);
       const res = await api.post("/bookings", payload, {
         withCredentials: true,
       });
@@ -285,6 +407,8 @@ export default function Booking() {
 
       setIsSuccess(false);
       setShowModal(true);
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -338,7 +462,6 @@ export default function Booking() {
 
               <form onSubmit={handleSubmit} className="grid grid-cols-2 gap-6">
                 <div className="flex flex-col gap-4">
-
                   <div>
                     <Label className="text-[#38A3A5] mb-2 block">
                       Tên trạm
@@ -361,6 +484,12 @@ export default function Booking() {
                           ))}
                         </SelectContent>
                       </Select>
+
+                      {stationError && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {stationError}
+                        </p>
+                      )}
 
                       <Button
                         type="button"
@@ -386,7 +515,14 @@ export default function Booking() {
                         handleSelectChange("vehicleId", value)
                       }
                     >
-                      <SelectTrigger className="w-full">
+                      <SelectTrigger
+                        className={
+                          "w-full " +
+                          (vehicleError
+                            ? "border-red-500 focus:ring-red-200"
+                            : "")
+                        }
+                      >
                         <SelectValue placeholder="Chọn xe của bạn" />
                       </SelectTrigger>
                       <SelectContent>
@@ -397,6 +533,12 @@ export default function Booking() {
                         ))}
                       </SelectContent>
                     </Select>
+
+                    {vehicleError && (
+                      <p className="text-red-500 text-sm mt-1">
+                        {vehicleError}
+                      </p>
+                    )}
 
                     {hasCompatibleBattery === false && (
                       <div className="flex items-center gap-2 mt-2 text-yellow-600 text-sm">
@@ -432,7 +574,16 @@ export default function Booking() {
                         min={minDate}
                         max={maxDate}
                         onChange={handleChange}
+                        aria-invalid={Boolean(dateError)}
+                        className={
+                          dateError
+                            ? "border-red-500 focus:ring-red-200"
+                            : undefined
+                        }
                       />
+                      {dateError && (
+                        <p className="text-red-500 text-sm mt-1">{dateError}</p>
+                      )}
                     </div>
                     <div className="flex-1">
                       <Label className="text-[#38A3A5] mb-2 block">Giờ</Label>
@@ -443,7 +594,17 @@ export default function Booking() {
                         min={form.date === minDate ? minTime : "00:00"}
                         max={form.date === maxDate ? maxTime : "23:59"}
                         onChange={handleChange}
+                        aria-invalid={Boolean(timeError)}
+                        className={
+                          timeError
+                            ? "border-red-500 focus:ring-red-200"
+                            : undefined
+                        }
                       />
+                      {/* Hiển thị lỗi thời gian nếu có */}
+                      {timeError && (
+                        <p className="text-red-500 text-sm mt-1">{timeError}</p>
+                      )}
                     </div>
                   </div>
 
@@ -456,22 +617,23 @@ export default function Booking() {
                       name="note"
                       value={form.note}
                       onChange={handleChange}
-                      className="w-full p-2 border rounded"
+                      className={
+                        "w-full p-2 border rounded " +
+                        (noteError ? "border-red-500" : "")
+                      }
                       rows={4}
                       placeholder="Nhập ghi chú (nếu có)..."
                     />
+                    {noteError && (
+                      <p className="text-red-500 text-sm mt-1">{noteError}</p>
+                    )}
                   </div>
                 </div>
 
                 <div className="col-span-2 flex justify-center pt-4">
                   <Button
                     type="submit"
-                    disabled={
-                      !form.stationId ||
-                      !form.vehicleId ||
-                      !form.date ||
-                      !form.time
-                    }
+                    disabled={submitting}
                     className="bg-[#38A3A5] hover:bg-[#2C9A95] text-white px-8 py-3 shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     Đặt lịch
