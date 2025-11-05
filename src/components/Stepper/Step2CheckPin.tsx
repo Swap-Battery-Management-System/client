@@ -14,7 +14,7 @@ export function Step2CheckPin({
   onPrev: () => void;
   data:any;
 }) {
-  const initialBatteryId = data.oldBattery.id || "";
+  const initialBatteryId = data?.oldBattery?.id || "";
   const [batteryId, setBatteryId] = useState(initialBatteryId);
   const [checked, setChecked] = useState(false);
 

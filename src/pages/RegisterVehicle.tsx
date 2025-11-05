@@ -16,7 +16,6 @@ import axios from "axios";
 import { toast } from "sonner";
 import { ImageIcon, UploadCloud } from "lucide-react";
 
-
 export default function RegisterVehicle() {
   const [plate, setPlate] = useState("");
   const [models, setModels] = useState<Model[]>([]);
@@ -24,6 +23,12 @@ export default function RegisterVehicle() {
   const [vin, setVin] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
+  // validation errors
+  const [plateError, setPlateError] = useState<string | null>(null);
+  const [modelError, setModelError] = useState<string | null>(null);
+  const [vinError, setVinError] = useState<string | null>(null);
+  const [nameError, setNameError] = useState<string | null>(null);
+  const [cavetError, setCavetError] = useState<string | null>(null);
 
   // Modal state
   const [open, setOpen] = useState(false);
@@ -106,6 +111,8 @@ export default function RegisterVehicle() {
 
       const res = await axios.post("https://api.imgbb.com/1/upload", formData);
       setCavetUrl(res.data.data.url);
+      // validate cavet after upload
+      validateField("cavet", res.data.data.url);
       toast.success("Tải ảnh cavet thành công!");
 
       // Bước OCR
@@ -117,9 +124,53 @@ export default function RegisterVehicle() {
       setUploading(false);
     }
   };
+
+  // validate single field and set error messages
+  function validateField(nameField: string, value: string) {
+    switch (nameField) {
+      case "plate":
+        if (!value || !value.trim()) setPlateError("Vui lòng nhập biển số");
+        else setPlateError(null);
+        break;
+      case "model":
+        if (!value) setModelError("Vui lòng chọn model");
+        else setModelError(null);
+        break;
+      case "vin":
+        if (!value || !value.trim())
+          setVinError("Vui lòng nhập số khung (VIN)");
+        else setVinError(null);
+        break;
+      case "name":
+        if (!value || !value.trim()) setNameError("Vui lòng nhập tên xe");
+        else setNameError(null);
+        break;
+      case "cavet":
+        if (!value) setCavetError("Vui lòng tải ảnh cavet");
+        else setCavetError(null);
+        break;
+      default:
+        break;
+    }
+  }
   // Gửi form đăng ký xe
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Run inline validation so errors appear under inputs
+    validateField("plate", plate);
+    validateField("model", modelId);
+    validateField("vin", vin);
+    validateField("name", name);
+    validateField("cavet", cavetUrl);
+
+    // Validate required fields before sending. Do not disable button when fields are missing; show toast instead.
+    if (!plate || !modelId || !vin || !name || !cavetUrl) {
+      toast.error(
+        "Vui lòng điền đầy đủ thông tin bắt buộc và tải ảnh cavet trước khi gửi."
+      );
+      return;
+    }
 
     const payload = {
       licensePlates: plate.trim(),
@@ -186,7 +237,11 @@ export default function RegisterVehicle() {
         </h1>
 
         <Card className="max-w-4xl mx-auto p-8 shadow-lg border border-[#BCE7E8] bg-white/80">
-          <form onSubmit={handleSubmit} className="grid md:grid-cols-2 gap-8">
+          <form
+            onSubmit={handleSubmit}
+            noValidate
+            className="grid md:grid-cols-2 gap-8"
+          >
             {/* Cột trái - thông tin xe */}
             <div className="space-y-4">
               {/* Tên xe */}
@@ -195,9 +250,15 @@ export default function RegisterVehicle() {
                 <Input
                   placeholder="VD: Evo S..."
                   value={name}
-                  onChange={(e) => setName(e.target.value)}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    validateField("name", e.target.value);
+                  }}
                   className="border-[#BCE7E8] focus:ring-[#38A3A5] focus:border-[#38A3A5]"
                 />
+                {nameError && (
+                  <p className="text-red-500 text-sm mt-1">{nameError}</p>
+                )}
               </div>
 
               {/* Biển số xe */}
@@ -206,20 +267,34 @@ export default function RegisterVehicle() {
                 <Input
                   placeholder="Nhập biển số xe"
                   value={plate}
-                  onChange={(e) => setPlate(e.target.value.toUpperCase())}
-                  required
-                  className="border-[#BCE7E8] focus:ring-[#38A3A5] focus:border-[#38A3A5]"
+                  onChange={(e) => {
+                    const v = e.target.value.toUpperCase();
+                    setPlate(v);
+                    validateField("plate", v);
+                  }}
+                  className={
+                    "border-[#BCE7E8] focus:ring-[#38A3A5] focus:border-[#38A3A5] " +
+                    (plateError ? "border-red-500" : "")
+                  }
                 />
+                {plateError && (
+                  <p className="text-red-500 text-sm mt-1">{plateError}</p>
+                )}
               </div>
 
               {/* Model */}
               <div>
                 <Label className="text-[#38A3A5]">Chọn model *</Label>
                 <select
-                  className="w-full border border-[#BCE7E8] rounded-md p-2 mt-1 focus:ring-[#38A3A5] focus:border-[#38A3A5]"
-                  onChange={(e) => setModelId(e.target.value)}
+                  className={
+                    "w-full rounded-md p-2 mt-1 focus:ring-[#38A3A5] focus:border-[#38A3A5] outline-none " +
+                    (modelError ? "border-red-500" : "border border-[#BCE7E8]")
+                  }
+                  onChange={(e) => {
+                    setModelId(e.target.value);
+                    validateField("model", e.target.value);
+                  }}
                   value={modelId}
-                  required
                 >
                   <option value="">-- Chọn model --</option>
                   {models.map((m) => (
@@ -228,6 +303,9 @@ export default function RegisterVehicle() {
                     </option>
                   ))}
                 </select>
+                {modelError && (
+                  <p className="text-red-500 text-sm mt-1">{modelError}</p>
+                )}
               </div>
 
               {/* VIN */}
@@ -236,21 +314,30 @@ export default function RegisterVehicle() {
                 <Input
                   placeholder="Nhập số khung (VIN)"
                   value={vin}
-                  onChange={(e) => setVin(e.target.value.toUpperCase())}
-                  required
-                  className="border-[#BCE7E8] focus:ring-[#38A3A5] focus:border-[#38A3A5]"
+                  onChange={(e) => {
+                    const v = e.target.value.toUpperCase();
+                    setVin(v);
+                    validateField("vin", v);
+                  }}
+                  className={
+                    "border-[#BCE7E8] focus:ring-[#38A3A5] focus:border-[#38A3A5] " +
+                    (vinError ? "border-red-500" : "")
+                  }
                 />
+                {vinError && (
+                  <p className="text-red-500 text-sm mt-1">{vinError}</p>
+                )}
               </div>
 
               {/* Submit */}
               <div className="flex justify-center mt-6">
                 <Button
                   type="submit"
-                  disabled={!isFormValid || loading}
+                  disabled={loading}
                   className={`w-1/2 font-medium transition-all duration-300 ${
-                    isFormValid && !loading
-                      ? "bg-[#38A3A5] hover:bg-[#2C8C8E] text-white"
-                      : "bg-[#CFECEC] text-gray-500 cursor-not-allowed"
+                    loading
+                      ? "bg-[#CFECEC] text-gray-500 cursor-not-allowed"
+                      : "bg-[#38A3A5] hover:bg-[#2C8C8E] text-white"
                   }`}
                 >
                   {loading ? "Đang gửi..." : "Đăng ký xe"}
@@ -298,6 +385,10 @@ export default function RegisterVehicle() {
                         setCavetUrl("");
                         setPlate(""); // nếu muốn reset luôn biển số
                         setVin(""); // nếu muốn reset luôn VIN
+                        // update validation states
+                        validateField("cavet", "");
+                        validateField("plate", "");
+                        validateField("vin", "");
                       }}
                       className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow"
                     >
