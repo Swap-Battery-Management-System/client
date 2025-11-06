@@ -128,9 +128,11 @@ export default function AdminVehicleManagement() {
     //  Lọc xe theo từ khóa và trạng thái
     const filteredVehicles = vehicles.filter((v) => {
         const matchSearch =
-            v.licensePlates?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            v.model?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            v.VIN?.toLowerCase().includes(searchTerm.toLowerCase());
+          v.licensePlates
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase().trim()) ||
+          v.model?.name.toLowerCase().includes(searchTerm.toLowerCase().trim()) ||
+          v.VIN?.toLowerCase().includes(searchTerm.toLowerCase().trim());
 
         const matchStatus =
             filterStatus === "" || v.status === filterStatus;

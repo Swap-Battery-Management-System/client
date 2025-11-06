@@ -69,10 +69,25 @@ export default function Booking() {
   const now = new Date(Date.now());
   const in24h = new Date(now.getTime() + 24 * 60 * 60 * 1000);
   const pad = (n: number) => n.toString().padStart(2, "0");
-  const minDate = now.toISOString().split("T")[0];
-  const maxDate = in24h.toISOString().split("T")[0];
+  // Use local date strings (YYYY-MM-DD) to avoid UTC shifts from toISOString()
+  const localDateString = (d: Date) => {
+    const y = d.getFullYear();
+    const m = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    return `${y}-${m}-${day}`;
+  };
+  const minDate = localDateString(now);
+  const maxDate = localDateString(in24h);
   const minTime = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
   const maxTime = `${pad(in24h.getHours())}:${pad(in24h.getMinutes())}`;
+  // Allowed booking window (inclusive): 06:00 - 22:00
+  const ALLOWED_START = "06:00";
+  const ALLOWED_END = "22:00";
+
+  const timeStrToMinutes = (t: string) => {
+    const [hh, mm] = t.split(":").map((s) => Number(s));
+    return hh * 60 + mm;
+  };
   const location = useLocation();
   const defaultStationId = location.state?.id ?? "";
   const [hasCompatibleBattery, setHasCompatibleBattery] = useState<
@@ -199,10 +214,19 @@ export default function Booking() {
       case "date":
         if (!value) {
           setDateError("Vui lòng chọn ngày");
-        } else if (value < minDate || value > maxDate) {
-          setDateError("Ngày không hợp lệ");
         } else {
-          setDateError(null);
+          // compare as dates (local) to avoid string/utc pitfalls
+          const selected = new Date(`${value}T00:00:00`);
+          const minD = new Date(`${minDate}T00:00:00`);
+          const maxD = new Date(`${maxDate}T23:59:59`);
+          if (
+            selected.getTime() < minD.getTime() ||
+            selected.getTime() > maxD.getTime()
+          ) {
+            setDateError("Ngày không hợp lệ");
+          } else {
+            setDateError(null);
+          }
         }
         break;
       case "note":
@@ -211,8 +235,19 @@ export default function Booking() {
         else setNoteError(null);
         break;
       case "time":
-        // time validation handled by combined effect (date+time), but clear if empty
-        if (!value) setTimeError(null);
+        // Validate allowed booking window immediately when time changes
+        if (!value) {
+          setTimeError(null);
+        } else {
+          const vMin = timeStrToMinutes(value);
+          const start = timeStrToMinutes(ALLOWED_START);
+          const end = timeStrToMinutes(ALLOWED_END);
+          if (vMin < start || vMin > end) {
+            setTimeError(`Thời gian phải nằm trong khung ${ALLOWED_START}–${ALLOWED_END}`);
+          } else {
+            setTimeError(null);
+          }
+        }
         break;
       default:
         break;
@@ -240,16 +275,35 @@ export default function Booking() {
     if (!form.date) {
       setDateError("Vui lòng chọn ngày");
       valid = false;
-    } else if (form.date < minDate || form.date > maxDate) {
-      setDateError("Ngày không hợp lệ");
-      valid = false;
     } else {
-      setDateError(null);
+      const selected = new Date(`${form.date}T00:00:00`);
+      const minD = new Date(`${minDate}T00:00:00`);
+      const maxD = new Date(`${maxDate}T23:59:59`);
+      if (
+        selected.getTime() < minD.getTime() ||
+        selected.getTime() > maxD.getTime()
+      ) {
+        setDateError("Ngày không hợp lệ");
+        valid = false;
+      } else {
+        setDateError(null);
+      }
     }
 
     if (!form.time) {
       setTimeError("Vui lòng chọn giờ");
       valid = false;
+    }
+
+    // Check allowed time window
+    if (form.time) {
+      const vMin = timeStrToMinutes(form.time);
+      const start = timeStrToMinutes(ALLOWED_START);
+      const end = timeStrToMinutes(ALLOWED_END);
+      if (vMin < start || vMin > end) {
+        setTimeError(`Thời gian phải nằm trong khung ${ALLOWED_START}–${ALLOWED_END}`);
+        valid = false;
+      }
     }
 
     if (form.note && form.note.length > 500) {
@@ -288,9 +342,40 @@ export default function Booking() {
     } else if (diff < 0) {
       setTimeError("Thời gian đã qua");
     } else {
-      setTimeError(null);
+      // also ensure selected time falls inside allowed business window
+      const vMin = timeStrToMinutes(time);
+      const start = timeStrToMinutes(ALLOWED_START);
+      const end = timeStrToMinutes(ALLOWED_END);
+      if (vMin < start || vMin > end) {
+        setTimeError(`Thời gian phải nằm trong khung ${ALLOWED_START}–${ALLOWED_END}`);
+      } else {
+        setTimeError(null);
+      }
     }
   }, [form.date, form.time]);
+
+  // compute effective min/max for the time input considering now/24h and allowed window
+  const allowedStartMin = timeStrToMinutes(ALLOWED_START);
+  const allowedEndMin = timeStrToMinutes(ALLOWED_END);
+
+  const inputMinMinutes =
+    form.date === minDate
+      ? Math.max(timeStrToMinutes(minTime), allowedStartMin)
+      : allowedStartMin;
+
+  const inputMaxMinutes =
+    form.date === maxDate
+      ? Math.min(timeStrToMinutes(maxTime), allowedEndMin)
+      : allowedEndMin;
+
+  const minTimeForInputStr = `${pad(Math.floor(inputMinMinutes / 60))}:${pad(
+    inputMinMinutes % 60
+  )}`;
+  const maxTimeForInputStr = `${pad(Math.floor(inputMaxMinutes / 60))}:${pad(
+    inputMaxMinutes % 60
+  )}`;
+
+  const noValidTimeForSelectedDate = inputMinMinutes > inputMaxMinutes;
 
   //kiểm tra có pin phù hợp hay không
   const checkAvailableBattery = async () => {
@@ -591,8 +676,8 @@ export default function Booking() {
                         type="time"
                         name="time"
                         value={form.time}
-                        min={form.date === minDate ? minTime : "00:00"}
-                        max={form.date === maxDate ? maxTime : "23:59"}
+                        min={minTimeForInputStr}
+                        max={maxTimeForInputStr}
                         onChange={handleChange}
                         aria-invalid={Boolean(timeError)}
                         className={
@@ -604,6 +689,11 @@ export default function Booking() {
                       {/* Hiển thị lỗi thời gian nếu có */}
                       {timeError && (
                         <p className="text-red-500 text-sm mt-1">{timeError}</p>
+                      )}
+                      {noValidTimeForSelectedDate && (
+                        <p className="text-red-500 text-sm mt-1">
+                          Không có khung giờ hợp lệ cho ngày đã chọn.
+                        </p>
                       )}
                     </div>
                   </div>

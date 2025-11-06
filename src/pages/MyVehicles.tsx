@@ -45,6 +45,7 @@ export default function MyVehicles() {
   const [editVIN, setEditVIN] = useState("");
   const [editModelId, setEditModelId] = useState<string | undefined>();
   const [editLoading, setEditLoading] = useState(false);
+  const [resubmitMode, setResubmitMode] = useState(false);
   // validation states for edit modal
   const [nameError, setNameError] = useState<string | null>(null);
   const [plateError, setPlateError] = useState<string | null>(null);
@@ -122,8 +123,9 @@ export default function MyVehicles() {
       ? vehicles
       : vehicles.filter((v) => v.status.toLowerCase() === filterStatus);
 
-  // Open edit modal
-  const openEditModal = (v: Vehicle) => {
+  // Open edit modal. If resubmit=true, allow editing all fields and submit will create a new vehicle
+  const openEditModal = (v: Vehicle, resubmit = false) => {
+    setResubmitMode(resubmit);
     setEditVehicle(v);
     setEditName(v.name || "");
     setEditPlate(v.licensePlates || "");
@@ -138,39 +140,105 @@ export default function MyVehicles() {
     setVinError(null);
     setModelError(null);
     setCavetError(null);
+    // run initial validation to show existing issues inline
+    validateField("plate", v.licensePlates || "");
+    validateField("vin", v.VIN || "");
+    validateField("model", v.model?.id || "");
+    validateField("name", v.name || "");
+    validateField("cavet", v.validatedImage || "");
   };
 
-  // Handle save edit
-  const handleSaveEdit = async () => {
+  // Handle normal update (active vehicle only)
+  const handleUpdateVehicle = async () => {
     if (!editVehicle) return;
-    // Validate all fields first
-    const ok = validateAllEdit();
-    if (!ok) {
+
+    const statusActive = editVehicle.status.toLowerCase() === "active";
+    if (!statusActive) {
+      toast.error("Chỉ xe đang duyệt mới có thể cập nhật thông tin.");
+      return;
+    }
+
+    // Validate name
+    if (!validateAllEdit()) {
       toast.error("Vui lòng sửa các trường bị lỗi trước khi lưu.");
       return;
     }
 
     setEditLoading(true);
     try {
-      await api.patch(
-        `/vehicles/${editVehicle.id}`,
-        {
-          name: editName.trim(),
-          licensePlates: editPlate.trim(),
-          VIN: editVIN.trim(),
-          modelId: editModelId,
-          validatedImage: cavetUrl,
-        },
-        { withCredentials: true }
-      );
-
+      const payload = { name: editName.trim() };
+      await api.patch(`/vehicles/${editVehicle.id}`, payload, {
+        withCredentials: true,
+      });
       toast.success("Cập nhật thông tin xe thành công");
       setEditOpen(false);
       fetchVehicles();
-    } catch {
+    } catch (err) {
+      console.error(err);
       toast.error("Cập nhật thất bại");
     } finally {
       setEditLoading(false);
+    }
+  };
+
+  // Handle resubmit (for invalid vehicles)
+  const handleResubmitVehicle = async () => {
+    if (!editVehicle) return;
+
+    const statusInvalid = editVehicle.status.toLowerCase() === "invalid";
+    if (!statusInvalid && !resubmitMode) {
+      toast.error("Chỉ xe bị từ chối mới có thể nộp lại đơn.");
+      return;
+    }
+
+    // Validate all fields
+    if (!validateAllEdit()) {
+      toast.error("Vui lòng sửa các trường bị lỗi trước khi gửi lại.");
+      return;
+    }
+
+    setEditLoading(true);
+    try {
+      const payload = {
+        name: editName.trim(),
+        licensePlates: editPlate.trim(),
+        VIN: editVIN.trim(),
+        modelId: editModelId,
+        validatedImage: cavetUrl,
+      };
+      await api.post(`/vehicles`, payload, { withCredentials: true });
+      toast.success("Gửi lại yêu đăng ký xe thành công");
+      setEditOpen(false);
+      setResubmitMode(false);
+      fetchVehicles();
+    } catch (err: any) {
+      console.error(err);
+      const status = err.response?.status;
+
+      if (status === 400) {
+        toast.error("Xe này đã được đăng ký trước đó.");
+      } else if (status === 401) {
+        toast.error(
+          "Phiên đăng nhập của bạn đã hết hạn. Vui lòng đăng nhập lại."
+        );
+      } else if (status === 404) {
+        toast.error("Không tìm thấy thông tin cần thiết. Vui lòng thử lại sau.");
+      } else {
+        toast.error(
+          "Đã xảy ra lỗi trong quá trình đăng ký. Vui lòng thử lại sau ít phút."
+        );
+      }
+    } finally {
+      setEditLoading(false);
+    }
+  };
+
+  // General save handler
+  const handleSaveEdit = () => {
+    if (resubmitMode) {
+      handleResubmitVehicle();
+    } else {
+      handleUpdateVehicle();
     }
   };
 
@@ -181,19 +249,35 @@ export default function MyVehicles() {
 
     setPreview(URL.createObjectURL(file));
     setUploading(true);
-
     try {
-      const formData = new FormData();
-      formData.append("key", "4a4efdffaf66aa2a958ea43ace6f49c1");
-      formData.append("image", file);
+      toast.info("Đang tải ảnh lên cloud...");
 
-      const res = await axios.post("https://api.imgbb.com/1/upload", formData);
-      setCavetUrl(res.data.data.url);
+      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+      const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+      const formData = new FormData();
+      formData.append("file", file);
+      if (uploadPreset) formData.append("upload_preset", uploadPreset);
+      formData.append("folder", "swapnet_cavets");
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await res.json();
+      if (!data.secure_url) throw new Error("Upload thất bại");
+
+      setCavetUrl(data.secure_url);
       // validate cavet when uploaded
-      validateField("cavet", res.data.data.url);
+      validateField("cavet", data.secure_url);
       toast.success("Tải ảnh cavet thành công!");
-    } catch {
-      toast.error("Không thể tải ảnh cavet lên!");
+    } catch (err) {
+      console.error("Upload error:", err);
+      toast.error("Không thể tải ảnh cavet lên cloud!");
       setCavetUrl(undefined);
     } finally {
       setUploading(false);
@@ -201,52 +285,87 @@ export default function MyVehicles() {
   };
 
   // Validate a single field for the edit modal
-  function validateField(name: string, value: string | undefined | null) {
-    const statusInvalid = editVehicle?.status.toLowerCase() === "invalid";
-    switch (name) {
-      case "name":
-        if (value && (value as string).length > 100)
-          setNameError("Tên xe không quá 100 ký tự");
-        else setNameError(null);
-        break;
-      case "plate":
-        if (!value || !(value as string).trim())
-          setPlateError("Vui lòng nhập biển số");
-        else setPlateError(null);
-        break;
-      case "vin":
-        if (statusInvalid) {
-          if (!value || !(value as string).trim())
-            setVinError("Vui lòng nhập số khung (VIN)");
-          else setVinError(null);
-        } else {
-          setVinError(null);
-        }
-        break;
-      case "model":
-        if (statusInvalid) {
-          if (!value) setModelError("Vui lòng chọn model");
-          else setModelError(null);
-        } else setModelError(null);
-        break;
-      case "cavet":
-        if (statusInvalid) {
-          if (!value) setCavetError("Vui lòng tải ảnh cavet");
-          else setCavetError(null);
-        } else setCavetError(null);
-        break;
-      default:
-        break;
-    }
-  }
+ function validateField(name: string, value: string | undefined | null) {
+   const statusInvalid = editVehicle?.status.toLowerCase() === "invalid";
+   const statusActive = editVehicle?.status.toLowerCase() === "active";
+
+   switch (name) {
+     case "name":
+       if (value && value.length > 100)
+         setNameError("Tên xe không quá 100 ký tự");
+       else setNameError(null);
+       break;
+
+     case "plate":
+       if (statusActive) {
+         // khi xe active, plate không edit, không báo lỗi
+         setPlateError(null);
+       } else {
+         if (!value || !value.trim()) setPlateError("Vui lòng nhập biển số");
+         else if (!/^[A-Z0-9 .-]+$/.test(value.trim()))
+           setPlateError("Biển số không hợp lệ (không chứa ký tự đặc biệt)");
+         else setPlateError(null);
+       }
+       break;
+
+     case "vin":
+       if (statusInvalid || resubmitMode) {
+         if (!value || !value.trim())
+           setVinError("Vui lòng nhập số khung (VIN)");
+         else if (!/^[A-HJ-NPR-Z0-9]{17}$/.test(value.trim()))
+           setVinError(
+             "VIN không hợp lệ (17 ký tự chữ hoa và số, không chứa I/O/Q)"
+           );
+         else setVinError(null);
+       } else {
+         setVinError(null);
+       }
+       break;
+
+     case "model":
+       if (statusInvalid || resubmitMode) {
+         if (!value) setModelError("Vui lòng chọn model");
+         else setModelError(null);
+       } else {
+         setModelError(null);
+       }
+       break;
+
+     case "cavet":
+       if (statusInvalid || resubmitMode) {
+         if (!value) setCavetError("Vui lòng tải ảnh cavet");
+         else setCavetError(null);
+       } else {
+         setCavetError(null);
+       }
+       break;
+
+     default:
+       break;
+   }
+ }
 
   // Validate all edit fields before saving. Returns true when valid.
   function validateAllEdit(): boolean {
     let valid = true;
+    const statusInvalid =
+      editVehicle?.status.toLowerCase() === "invalid" && !resubmitMode;
+    const statusActive =
+      editVehicle?.status.toLowerCase() === "active" && !resubmitMode;
+
+    // If active, only name can be edited
+    if (statusActive) {
+      if (editName && editName.length > 100) {
+        setNameError("Tên xe không quá 100 ký tự");
+        valid = false;
+      }
+      return valid;
+    }
+
+    // Otherwise validate plate and other fields as before
     validateField("plate", editPlate);
     if (!editPlate || !editPlate.trim()) valid = false;
 
-    const statusInvalid = editVehicle?.status.toLowerCase() === "invalid";
     if (statusInvalid) {
       if (!editModelId) {
         setModelError("Vui lòng chọn model");
@@ -327,7 +446,6 @@ export default function MyVehicles() {
             { label: "Đang chờ duyệt", value: "pending" },
             { label: "Đã duyệt", value: "active" },
             { label: "Từ chối", value: "invalid" },
-            { label: "Đã hủy", value: "inactive" },
           ].map((btn) => (
             <Button
               key={btn.value}
@@ -353,7 +471,7 @@ export default function MyVehicles() {
             Không có xe nào trong trạng thái này.
           </div>
         ) : (
-          <div className="grid gap-6 justify-start grid-cols-[repeat(auto-fit,minmax(280px,450px))]">
+          <div className="grid gap-6 justify-center grid-cols-[repeat(auto-fit,minmax(280px,450px))]">
             {filteredVehicles.map((v) => {
               const s = renderStatus(v.status);
               return (
@@ -376,22 +494,25 @@ export default function MyVehicles() {
 
                   {/* Buttons */}
                   <div className="flex justify-between items-center gap-2 mt-4 border-t border-[#DFF6F6] pt-3">
-                    <Button
-                      variant="outline"
-                      onClick={() => openEditModal(v)}
-                      className="flex-1 text-[#38A3A5] border-[#38A3A5] hover:bg-[#38A3A5] hover:text-white transition-all"
-                    >
-                      Cập nhật
-                    </Button>
+                    {v.status.toLowerCase() !== "pending" &&
+                      v.status.toLowerCase() !== "invalid" && (
+                        <Button
+                          variant="outline"
+                          onClick={() => openEditModal(v)}
+                          className="flex-1 text-[#38A3A5] border-[#38A3A5] hover:bg-[#38A3A5] hover:text-white transition-all"
+                        >
+                          Cập nhật
+                        </Button>
+                      )}
                     {v.status.toLowerCase() !== "inactive" && (
                       <>
                         {v.status.toLowerCase() === "invalid" && (
                           <Button
                             variant="outline"
-                            onClick={() => openConfirmModal(v, "relink")}
+                            onClick={() => openEditModal(v, true)}
                             className="flex-1 text-[#F59E0B] border-[#F59E0B] hover:bg-[#F59E0B] hover:text-white transition-all"
                           >
-                            Liên kết lại
+                            Đăng ký lại
                           </Button>
                         )}
                         <Button
@@ -411,12 +532,20 @@ export default function MyVehicles() {
         )}
 
         {/* Edit Modal */}
-        <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <Dialog
+          open={editOpen}
+          onOpenChange={(open) => {
+            setEditOpen(open);
+            if (!open) setResubmitMode(false);
+          }}
+        >
           <DialogContent className="w-full max-w-7xl bg-white rounded-2xl shadow-xl border border-[#BCE7E8] p-6">
             <div className="overflow-y-auto max-h-[80vh]">
               <DialogHeader>
                 <DialogTitle className="text-xl font-semibold text-[#38A3A5]">
-                  Cập nhật thông tin xe
+                  {resubmitMode
+                    ? "Nộp lại đơn đăng ký xe"
+                    : "Cập nhật thông tin xe"}
                 </DialogTitle>
                 <DialogDescription className="text-gray-500">
                   Vui lòng kiểm tra kỹ trước khi lưu thay đổi.
@@ -427,7 +556,6 @@ export default function MyVehicles() {
                 <h3 className="text-[#38A3A5] font-semibold">
                   Thông tin cơ bản
                 </h3>
-
                 <div>
                   <Label className="text-[#38A3A5] font-medium">Tên xe</Label>
                   <Input
@@ -438,30 +566,42 @@ export default function MyVehicles() {
                     }}
                     placeholder="Nhập tên xe"
                     className="mt-1"
+                    disabled={
+                      !resubmitMode &&
+                      editVehicle?.status.toLowerCase() === "pending"
+                    }
                   />
                   {nameError && (
                     <p className="text-red-500 text-sm mt-1">{nameError}</p>
                   )}
                 </div>
-
-                <div>
-                  <Label className="text-[#38A3A5] font-medium">Biển số</Label>
-                  <Input
-                    value={editPlate}
-                    onChange={(e) => {
-                      const v = e.target.value.toUpperCase();
-                      setEditPlate(v);
-                      validateField("plate", v);
-                    }}
-                    placeholder="Nhập biển số"
-                    className="mt-1"
-                  />
-                  {plateError && (
-                    <p className="text-red-500 text-sm mt-1">{plateError}</p>
-                  )}
-                </div>
-
-                {editVehicle?.status.toLowerCase() === "invalid" && (
+                {(editVehicle?.status.toLowerCase() !== "active" ||
+                  resubmitMode) && (
+                  <div>
+                    <Label className="text-[#38A3A5] font-medium">
+                      Biển số
+                    </Label>
+                    <Input
+                      value={editPlate}
+                      onChange={(e) => {
+                        const v = e.target.value.toUpperCase();
+                        setEditPlate(v);
+                        validateField("plate", v);
+                      }}
+                      disabled={
+                        !resubmitMode &&
+                        editVehicle?.status.toLowerCase() === "pending"
+                      }
+                      placeholder="Nhập biển số"
+                      className="mt-1"
+                    />
+                    {plateError && (
+                      <p className="text-red-500 text-sm mt-1">{plateError}</p>
+                    )}
+                  </div>
+                )}{" "}
+                {(editVehicle?.status.toLowerCase() === "invalid" ||
+                  resubmitMode) && (
                   <>
                     <div>
                       <Label className="text-[#38A3A5] font-medium">
@@ -470,11 +610,16 @@ export default function MyVehicles() {
                       <Input
                         value={editVIN}
                         onChange={(e) => {
-                          setEditVIN(e.target.value);
-                          validateField("vin", e.target.value);
+                          const v = e.target.value.toUpperCase();
+                          setEditVIN(v);
+                          validateField("vin", v);
                         }}
                         placeholder="Nhập số khung (VIN)"
                         className={"mt-1 " + (vinError ? "border-red-500" : "")}
+                        disabled={
+                          !resubmitMode &&
+                          editVehicle?.status.toLowerCase() === "pending"
+                        }
                       />
                       {vinError && (
                         <p className="text-red-500 text-sm mt-1">{vinError}</p>
@@ -496,6 +641,10 @@ export default function MyVehicles() {
                         }}
                         value={editModelId}
                         required
+                        disabled={
+                          !resubmitMode &&
+                          editVehicle?.status.toLowerCase() === "pending"
+                        }
                       >
                         <option value="">-- Chọn model --</option>
                         {loadingModels ? (
@@ -508,6 +657,11 @@ export default function MyVehicles() {
                           ))
                         )}
                       </select>
+                      {modelError && (
+                        <p className="text-red-500 text-sm mt-1">
+                          {modelError}
+                        </p>
+                      )}
                     </div>
 
                     {/* Ảnh cavet mới */}
@@ -530,7 +684,11 @@ export default function MyVehicles() {
                         accept="image/*"
                         className="hidden"
                         onChange={handleImageChange}
-                        disabled={uploading}
+                        disabled={
+                          uploading ||
+                          (!resubmitMode &&
+                            editVehicle?.status.toLowerCase() === "pending")
+                        }
                       />
 
                       {cavetError && (
@@ -552,8 +710,7 @@ export default function MyVehicles() {
                               onClick={() => {
                                 setPreview(undefined);
                                 setCavetUrl(undefined);
-                                setEditPlate("");
-                                setEditVIN("");
+                                validateField("cavet", undefined);
                               }}
                               className="absolute top-1 right-1 bg-red-600 hover:bg-red-700 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs font-bold shadow"
                             >
@@ -567,12 +724,17 @@ export default function MyVehicles() {
                           </div>
                         )}
                       </div>
+                      {uploading && (
+                        <p className="text-sm text-gray-600 mt-2">
+                          Đang tải ảnh lên cloud... Vui lòng chờ.
+                        </p>
+                      )}
                     </div>
                   </>
                 )}
               </div>
 
-              <DialogFooter className="mt-6 flex justify-end gap-3">
+              <DialogFooter className="mt-6 flex justify-start gap-3">
                 <Button
                   variant="outline"
                   onClick={() => setEditOpen(false)}
@@ -582,10 +744,22 @@ export default function MyVehicles() {
                 </Button>
                 <Button
                   onClick={handleSaveEdit}
-                  disabled={editLoading || uploading}
+                  disabled={
+                    editLoading ||
+                    uploading ||
+                    (!resubmitMode &&
+                      editVehicle?.status.toLowerCase() === "pending")
+                  }
                   className="bg-[#38A3A5] hover:bg-[#2E8788] text-white"
                 >
-                  {editLoading || uploading ? "Đang lưu..." : "Lưu thay đổi"}
+                  {editLoading || uploading
+                    ? "Đang lưu..."
+                    : !resubmitMode &&
+                      editVehicle?.status.toLowerCase() === "pending"
+                    ? "Không thể chỉnh"
+                    : resubmitMode
+                    ? "Đăng ký lại"
+                    : "Lưu thay đổi"}
                 </Button>
               </DialogFooter>
             </div>
@@ -599,12 +773,12 @@ export default function MyVehicles() {
               <DialogTitle className="text-[#38A3A5] text-lg font-semibold">
                 {confirmAction === "cancel"
                   ? "Xác nhận hủy liên kết"
-                  : "Xác nhận gửi lại yêu cầu liên kết"}
+                  : "Xác nhận gửi lại yêu cầu đăng ký xe"}
               </DialogTitle>
               <DialogDescription className="text-gray-600">
                 {confirmAction === "cancel"
                   ? "Bạn có chắc muốn hủy liên kết phương tiện này?"
-                  : "Bạn có muốn gửi lại yêu cầu liên kết để admin duyệt?"}
+                  : "Bạn có muốn gửi lại yêu cầu đăng ký xe để admin duyệt?"}
               </DialogDescription>
             </DialogHeader>
             <DialogFooter className="mt-4 flex justify-end gap-3">
