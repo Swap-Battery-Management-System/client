@@ -71,7 +71,7 @@ export default function AdminLayout() {
     },
     {
       name: "Gói thuê bao & Bảng phí",
-      path: "plans-fees",
+      path: "manage-subscription",
       icon: <FileText size={18} />,
     },
 
