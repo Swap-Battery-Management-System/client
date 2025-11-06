@@ -94,6 +94,8 @@ export default function StaffBookingManagement() {
     const [batteriesMap, setBatteriesMap] = useState<Map<string, string>>(new Map());
     const [vehiclesMap, setVehiclesMap] = useState<Map<string, Vehicle>>(new Map());
     const [loading, setLoading] = useState(true);
+    const [startDate, setStartDate] = useState("");
+    const [endDate, setEndDate] = useState("");
 
     const [searchCode, setSearchCode] = useState("");
     const [filterStatus, setFilterStatus] = useState<Booking["status"] | "all">("all");
@@ -104,7 +106,7 @@ export default function StaffBookingManagement() {
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const navigate=useNavigate();
+    const navigate = useNavigate();
 
     const handleStatusClick = (status: Booking["status"]) => {
         setFilterStatus(prev => (prev === status ? "all" : status));
@@ -222,7 +224,15 @@ export default function StaffBookingManagement() {
         const matchesSearch =
             codeNormalized.includes(search) || userEmail.includes(search);
         const matchesStatus = filterStatus === "all" || b.status === filterStatus;
-        return matchesSearch && matchesStatus;
+
+        const bookingDate = new Date(b.scheduleTime);
+        const afterStart =
+            !startDate || bookingDate >= new Date(startDate + "T00:00:00");
+        const beforeEnd =
+            !endDate || bookingDate <= new Date(endDate + "T23:59:59");
+        const matchesDate = afterStart && beforeEnd;
+
+        return matchesSearch && matchesStatus && matchesDate;
     });
 
     const handleCheckin = async (bookingId: string) => {
@@ -232,7 +242,7 @@ export default function StaffBookingManagement() {
     return (
         <div className="p-8 bg-[#E9F8F8] min-h-screen">
             <h1 className="text-4xl text-center font-bold mb-10 text-[#2C8C8E]">
-                Quản Lý Booking Tại Trạm
+                Quản Lý Booking Tại {station?.name ? `${station.name}` : ""}
             </h1>
 
             {loading && <p className="text-center text-gray-500">Đang tải...</p>}
@@ -291,9 +301,7 @@ export default function StaffBookingManagement() {
 
                         <select
                             value={filterStatus}
-                            onChange={e =>
-                                setFilterStatus(e.target.value as Booking["status"] | "all")
-                            }
+                            onChange={e => setFilterStatus(e.target.value as Booking["status"] | "all")}
                             className="border border-gray-300 rounded p-2 text-sm"
                         >
                             <option value="all">Tất cả trạng thái</option>
@@ -304,10 +312,29 @@ export default function StaffBookingManagement() {
                             ))}
                         </select>
 
+                        {/* 🔹 Bộ lọc ngày */}
+                        <div className="flex items-center gap-2 text-sm">
+                            <label>Từ:</label>
+                            <input
+                                type="date"
+                                value={startDate}
+                                onChange={e => setStartDate(e.target.value)}
+                                className="border rounded p-1"
+                            />
+                            <label>Đến:</label>
+                            <input
+                                type="date"
+                                value={endDate}
+                                onChange={e => setEndDate(e.target.value)}
+                                className="border rounded p-1"
+                            />
+                        </div>
+
                         <span className="ml-auto font-semibold text-sm">
                             Số lượng: {filteredBookings.length}
                         </span>
                     </div>
+
 
                     {/* 🔹 Bảng danh sách booking */}
                     <div className="overflow-x-auto rounded-lg shadow">
@@ -334,7 +361,7 @@ export default function StaffBookingManagement() {
                                             <td className="py-3 px-4">{usersMap.get(b.userId) || "—"}</td>
                                             <td className="py-3 px-4">{vehicle?.licensePlates || "—"}</td>
                                             <td className="py-3 px-4">
-                                                {new Date(b.scheduleTime).toLocaleString("vi-VN")}
+                                                {new Date(b.scheduleTime).toISOString().replace("T", " ").replace(".000Z", "")}
                                             </td>
                                             <td className={`py-3 px-4 font-semibold ${getStatusClass(b.status)}`}>
                                                 {getStatusText(b.status)}
@@ -401,9 +428,7 @@ export default function StaffBookingManagement() {
                                     <p>
                                         <strong>Thời gian:</strong>{" "}
                                         {selectedBooking.scheduleTime
-                                            ? new Date(selectedBooking.scheduleTime).toLocaleString(
-                                                "vi-VN"
-                                            )
+                                            ? new Date(selectedBooking.scheduleTime).toISOString().replace("T", " ").replace(".000Z", "")
                                             : "Chưa có"}
                                     </p>
                                     <p>
