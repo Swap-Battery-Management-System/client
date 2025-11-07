@@ -41,7 +41,7 @@ interface Vehicle {
     id: string;
     licensePlates: string;
     VIN: string;
-    status: "pending" | "active" | "invalid";
+    status: "pending" | "active" | "invalid" | "inactive";
     modelId?: string;
     model?: Model;
     userId?: string;
@@ -183,19 +183,23 @@ export default function AdminVehicleManagement() {
         }
     };
 
-    // Cập nhật trạng thái + lý do xe
+    // Cập nhật trạng thái
     const handleChangeStatus = async (
         id: string,
-        newStatus: "pending" | "active" | "invalid",
+        newStatus: Vehicle["status"],
         reason?: string
     ) => {
-        if (!id) return toast.error("ID xe không hợp lệ!");
+        const vehicle = vehicles.find(v => v.id === id);
+        if (!vehicle) return toast.error("Không tìm thấy xe!");
+        if (vehicle.status === "inactive") {
+            return toast.error("Xe đã ngừng hoạt động, không thể thay đổi trạng thái!");
+        }
 
         try {
             console.log("Updating vehicle:", id, "to status:", newStatus, "reason:", reason);
             const res = await api.patch(
                 `/vehicles/${id}`,
-                { status: newStatus, reason }, // 👈 Gửi cả lý do
+                { status: newStatus, reason },
                 { withCredentials: true }
             );
 
@@ -337,7 +341,9 @@ export default function AdminVehicleManagement() {
                                                         ? "bg-green-100 text-green-700"
                                                         : v.status === "pending"
                                                             ? "bg-yellow-100 text-yellow-700"
-                                                            : "bg-red-100 text-red-700"
+                                                            : v.status === "invalid"
+                                                                ? "bg-red-100 text-red-700"
+                                                                : "bg-gray-200 text-gray-600"
                                                     }
                                            `}
                                             >
@@ -345,7 +351,9 @@ export default function AdminVehicleManagement() {
                                                     ? "Đã duyệt"
                                                     : v.status === "pending"
                                                         ? "Đang chờ duyệt"
-                                                        : "Từ chối"}
+                                                        : v.status === "invalid"
+                                                            ? "Từ chối"
+                                                            : "Ngừng hoạt động"}
                                             </span>
                                         </td>
 
@@ -434,56 +442,58 @@ export default function AdminVehicleManagement() {
                                 <div className="flex flex-col items-center mt-6 space-y-3">
                                     <Label className="text-[#2F8F9D]">Trạng thái:</Label>
 
-                                    <Select
-                                        value={selectedVehicle.status}
-                                        onValueChange={(value: "pending" | "active" | "invalid") => {
-                                            setSelectedVehicle((prev) =>
-                                                prev ? { ...prev, status: value } : prev
-                                            );
-                                        }}
-                                    >
-                                        <SelectTrigger className="w-[200px] text-center">
-                                            <SelectValue />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            {/* Nếu đang pending -> hiển thị đủ 3 trạng thái */}
-                                            {selectedVehicle.status === "pending" ? (
-                                                <>
-                                                    <SelectItem value="pending" className="text-yellow-600">
-                                                        Đang chờ duyệt
-                                                    </SelectItem>
-                                                    <SelectItem value="active" className="text-green-600">
-                                                        Duyệt
-                                                    </SelectItem>
-                                                    <SelectItem value="invalid" className="text-red-600">
-                                                        Từ chối
-                                                    </SelectItem>
-                                                </>
-                                            ) : selectedVehicle.status === "active" ? (
-                                                // Nếu đang active -> chỉ được chuyển sang invalid
-                                                <>
-                                                    <SelectItem value="active" className="text-green-600">
-                                                        Đã duyệt
-                                                    </SelectItem>
-                                                    <SelectItem value="invalid" className="text-red-600">
-                                                        Từ chối
-                                                    </SelectItem>
-                                                </>
-                                            ) : (
-                                                // Nếu đang invalid -> chỉ được chuyển sang active
-                                                <>
-                                                    <SelectItem value="invalid" className="text-red-600">
-                                                        Từ chối
-                                                    </SelectItem>
-                                                    <SelectItem value="active" className="text-green-600">
-                                                        Duyệt lại
-                                                    </SelectItem>
-                                                </>
-                                            )}
-                                        </SelectContent>
-                                    </Select>
+                                    {selectedVehicle.status === "inactive" ? (
+                                        <p className="text-gray-500 font-medium italic">
+                                            Xe đang ở trạng thái “Ngừng hoạt động” — admin không thể thay đổi.
+                                        </p>
+                                    ) : (
+                                        <Select
+                                            value={selectedVehicle.status}
+                                            onValueChange={(value: "pending" | "active" | "invalid") => {
+                                                setSelectedVehicle((prev) =>
+                                                    prev ? { ...prev, status: value } : prev
+                                                );
+                                            }}
+                                        >
+                                            <SelectTrigger className="w-[200px] text-center">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {selectedVehicle.status === "pending" ? (
+                                                    <>
+                                                        <SelectItem value="pending" className="text-yellow-600">
+                                                            Đang chờ duyệt
+                                                        </SelectItem>
+                                                        <SelectItem value="active" className="text-green-600">
+                                                            Duyệt
+                                                        </SelectItem>
+                                                        <SelectItem value="invalid" className="text-red-600">
+                                                            Từ chối
+                                                        </SelectItem>
+                                                    </>
+                                                ) : selectedVehicle.status === "active" ? (
+                                                    <>
+                                                        <SelectItem value="active" className="text-green-600">
+                                                            Đã duyệt
+                                                        </SelectItem>
+                                                        <SelectItem value="invalid" className="text-red-600">
+                                                            Từ chối
+                                                        </SelectItem>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <SelectItem value="invalid" className="text-red-600">
+                                                            Từ chối
+                                                        </SelectItem>
+                                                        <SelectItem value="active" className="text-green-600">
+                                                            Duyệt lại
+                                                        </SelectItem>
+                                                    </>
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
 
-                                    {/* Nếu chọn Từ chối thì hiện ô nhập lý do */}
                                     {selectedVehicle.status === "invalid" && (
                                         <div className="mt-3 w-full max-w-sm">
                                             <Label className="text-[#2F8F9D]">Lý do từ chối:</Label>
@@ -501,6 +511,7 @@ export default function AdminVehicleManagement() {
                                         </div>
                                     )}
                                 </div>
+
 
                                 {/* Nút hành động */}
                                 <div className="flex justify-end mt-6 gap-3">
