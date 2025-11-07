@@ -21,9 +21,8 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
 
 
   const handleLogout = async () => {
-    logout(() =>
-      navigate("/", { replace: true })
-    ); // truyền callback redirect
+    await logout();
+    // truyền callback redirect
   };
 
   const notifications = [
