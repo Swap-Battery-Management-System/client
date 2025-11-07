@@ -70,8 +70,13 @@ export default function AdminLayout() {
       icon: <CreditCard size={18} />,
     },
     {
-      name: "Gói thuê bao & Bảng phí",
+      name: "Gói thuê bao",
       path: "manage-subscription",
+      icon: <FileText size={18} />,
+    },
+    {
+      name: "Bảng phí",
+      path: "damage-fee",
       icon: <FileText size={18} />,
     },
 
