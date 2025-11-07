@@ -21,9 +21,9 @@ interface DamageFee {
     id: string;
     name: string;
     severity: string;
-    amount: number;
+    amount: number | string;
     unit: string;
-    status: number; // 1 = active, 0 = inactive
+    status: boolean;
     type: string;
     code: string;
     variant: string;
@@ -42,7 +42,7 @@ export default function AdminDamageFeeManagement() {
         severity: "",
         amount: "",
         unit: "VND",
-        status: 1, // 1 = Active, 0 = Inactive
+        status: true,
         type: "",
         code: "",
         variant: "",
@@ -95,7 +95,7 @@ export default function AdminDamageFeeManagement() {
             severity: "",
             amount: "",
             unit: "VND",
-            status: 1,
+            status: true,
             type: "",
             code: "",
             variant: "",
@@ -103,7 +103,7 @@ export default function AdminDamageFeeManagement() {
         setOpen(false);
     };
 
-    // 🔹 Submit (Thêm hoặc sửa)
+    // 🔹 Submit form
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -115,7 +115,7 @@ export default function AdminDamageFeeManagement() {
         const payload = {
             ...form,
             amount: parseFloat(form.amount),
-            status: form.status === 1 ? true : false,
+            status: !!form.status, // ✅ đảm bảo boolean
         };
 
         try {
@@ -125,12 +125,12 @@ export default function AdminDamageFeeManagement() {
                     return;
                 }
                 const res = await api.patch(`/damage-fees/${editItem.id}`, payload);
-                console.log("✅ PATCH thành công:", res.data);
                 toast.success("Cập nhật thành công!");
+                console.log("✅ PATCH thành công:", res.data);
             } else {
                 const res = await api.post("/damage-fees", payload);
-                console.log("✅ POST thành công:", res.data);
                 toast.success("Thêm mới thành công!");
+                console.log("✅ POST thành công:", res.data);
             }
 
             fetchFees();
@@ -162,7 +162,7 @@ export default function AdminDamageFeeManagement() {
             severity: item.severity,
             amount: item.amount.toString(),
             unit: item.unit,
-            status: item.status, // 1 hoặc 0
+            status: !!item.status, // ✅ boolean
             type: item.type,
             code: item.code,
             variant: item.variant,
@@ -289,22 +289,30 @@ export default function AdminDamageFeeManagement() {
                                 <Label>Trạng thái</Label>
                                 <select
                                     className="w-full border rounded-md p-2"
-                                    value={form.status.toString()}
-                                    onChange={(e) => setForm({ ...form, status: Number(e.target.value) })}
+                                    value={form.status ? "true" : "false"}
+                                    onChange={(e) =>
+                                        setForm({ ...form, status: e.target.value === "true" })
+                                    }
                                 >
-                                    <option value="1">Kích hoạt</option>
-                                    <option value="0">Vô hiệu hóa</option>
+                                    <option value="true">Kích hoạt</option>
+                                    <option value="false">Vô hiệu hóa</option>
                                 </select>
                             </div>
 
                             <DialogFooter>
-                                <Button type="submit" className="bg-[#38A3A5] hover:bg-[#2d8a8b] text-white w-full">
+                                <Button
+                                    type="submit"
+                                    className="bg-[#38A3A5] hover:bg-[#2d8a8b] text-white w-full"
+                                >
                                     {editItem ? "Lưu thay đổi" : "Xác nhận thêm"}
                                 </Button>
                             </DialogFooter>
                         </form>
                     </DialogContent>
                 </Dialog>
+                <span className="ml-auto font-semibold text-sm">
+                    Số lượng: {filtered.length}
+                </span>
             </div>
 
             <Card className="p-4 shadow-md overflow-x-auto">
@@ -337,16 +345,18 @@ export default function AdminDamageFeeManagement() {
                             </tr>
                         ) : (
                             filtered.map((f, i) => (
-                                <tr key={`${f.id}-${i}`} className="hover:bg-[#f5fffe] border-b">
+                                <tr key={f.id} className="hover:bg-[#f5fffe] border-b">
                                     <td className="border p-2 text-center">{i + 1}</td>
                                     <td className="border p-2 text-center">{f.name}</td>
                                     <td className="border p-2 text-center">{f.severity}</td>
-                                    <td className="border p-2 text-center">{f.amount.toLocaleString()} ₫</td>
+                                    <td className="border p-2 text-center">
+                                        {Number(f.amount).toLocaleString()} ₫
+                                    </td>
                                     <td className="border p-2 text-center">{f.type}</td>
                                     <td className="border p-2 text-center font-mono">{f.code}</td>
                                     <td className="border p-2 text-center">{f.variant}</td>
                                     <td className="border p-2 text-center">
-                                        {f.status === 1 ? "Active" : "Inactive"}
+                                        {f.status ? "Active" : "Inactive"}
                                     </td>
                                     <td className="border p-2 text-center space-x-2">
                                         <Button size="sm" variant="outline" onClick={() => handleEdit(f)}>
