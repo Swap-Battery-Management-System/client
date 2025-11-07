@@ -1,52 +1,25 @@
 import { useLocation, useNavigate } from "react-router-dom";
-import { Input } from "@/components/ui/input";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Label } from "@/components/ui/label";
-import { useEffect, useState } from "react";
-import api from "@/lib/api";
+import { useState } from "react";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
-import axios from "axios";
-import { UploadCloud } from "lucide-react";
+import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthStore } from "@/stores/authStores";
+import { UserForm } from "@/components/user";
+import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 
 export default function RegisterInfo() {
-    const { setUser } = useAuth();
+    const { user, setUser } = useAuth();
     const navigate = useNavigate();
     const location = useLocation();
-    const email = location.state?.email || localStorage.getItem("pendingEmail");
-    // 🔹 Kiểm tra username
-    const [usernameStatus, setUsernameStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
-    const [checkTimer, setCheckTimer] = useState<ReturnType<typeof setTimeout> | null>(null);
 
-    const checkAvailability = async (username: string) => {
-        if (!username) return;
-        setUsernameStatus("checking");
-
-        try {
-            const res = await api.post("/auth/check", { username });
-            if (res.status === 204) {
-                setUsernameStatus("available");
-            } else {
-                setUsernameStatus("taken");
-            }
-        } catch (err: any) {
-            if ([400, 404].includes(err.response?.status)) {
-                setUsernameStatus("available");
-            } else {
-                setUsernameStatus("taken");
-            }
-        }
-    };
-
-
-    const { user } = useAuth();
-    const userId = user?.id;
-    //  const userId = location.state?.userId || localStorage.getItem("pendingUserId");
+    const pendingEmail = location.state?.email || localStorage.getItem("pendingEmail");
+    const savedUserId = localStorage.getItem("pendingUserId");
+    const userId = user?.id || savedUserId;
 
     const [form, setForm] = useState({
-        fullName: "",
+        fullname: "",
         username: "",
         phoneNumber: "",
         gender: "",
@@ -56,566 +29,167 @@ export default function RegisterInfo() {
         district: "",
         ward: "",
         detailAddress: "",
-        avatar: null as File | null,
-        avatarUrl: "", // ✅ thêm để lưu link ảnh upload
+        avatarUrl: "",
     });
-    const validateUsername = (username: string) => {
-        if (!username.trim()) return "Tên đăng nhập không được để trống.";
-        if (username.length < 5 || username.length > 20)
-            return "Tên đăng nhập phải từ 5–20 ký tự.";
-        if (!/^[A-Za-z]/.test(username))
-            return "Ký tự đầu tiên phải là chữ cái.";
-        if (!/^[A-Za-z0-9._]+$/.test(username))
-            return "Chỉ được chứa chữ cái, số, dấu gạch dưới (_) hoặc dấu chấm (.)";
-        if (/\s/.test(username))
-            return "Không được chứa khoảng trắng.";
-        return "";
-    };
 
-    const [preview, setPreview] = useState<string | null>(null);
+    const [usernameError, setUsernameError] = useState("");
+    const [usernameStatus, setUsernameStatus] = useState<
+        "idle" | "checking" | "available" | "taken"
+    >("idle");
+    const [ageError, setAgeError] = useState("");
     const [loading, setLoading] = useState(false);
-    const [uploading, setUploading] = useState(false);
-    const [provinces, setProvinces] = useState<any[]>([]);
-    const [districts, setDistricts] = useState<any[]>([]);
-    const [wards, setWards] = useState<any[]>([]);
 
-    // 🔹 Lấy danh sách tỉnh
-    // 🔹 Lấy danh sách tỉnh/thành từ GitHub JSON (không lỗi SSL)
-    useEffect(() => {
-        const fetchProvinces = async () => {
-            try {
-                const res = await axios.get(
-                    "https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json"
-                );
-                setProvinces(res.data);
-            } catch (error) {
-                console.error(error);
-                toast.error("Không thể tải danh sách tỉnh/thành!");
-            }
-        };
-        fetchProvinces();
-    }, []);
+    const validateAge = (dateStr: string) => {
+        if (!dateStr) return true;
+        const dob = new Date(dateStr);
+        const now = new Date();
+        let age = now.getFullYear() - dob.getFullYear();
+        const monthDiff = now.getMonth() - dob.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) age--;
+        return age >= 18;
+    };
 
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setForm((prev) => ({ ...prev, [name]: value }));
+    };
 
-    const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const cityId = e.target.value;
-        setForm({ ...form, city: cityId, district: "", ward: "" });
+    const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        handleChange(e);
+        setAgeError(validateAge(e.target.value) ? "" : "Phải đủ 18 tuổi!");
+    };
 
-        if (!cityId) {
-            setDistricts([]);
-            setWards([]);
+    const handleUsernameChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const value = e.target.value.trim();
+        setForm((prev) => ({ ...prev, username: value }));
+
+        if (!/^[A-Za-z][A-Za-z0-9._]{4,19}$/.test(value)) {
+            setUsernameError("Tên đăng nhập không hợp lệ!");
+            setUsernameStatus("idle");
             return;
         }
 
-        const selectedCity = provinces.find((p) => p.Id === cityId);
-        setDistricts(selectedCity?.Districts || []);
-        setWards([]);
-    };
-
-
-    const handleDistrictChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const districtId = e.target.value;
-        setForm({ ...form, district: districtId, ward: "" });
-
-        if (!districtId) {
-            setWards([]);
-            return;
-        }
-
-        const selectedDistrict = districts.find((d) => d.Id === districtId);
-        setWards(selectedDistrict?.Wards || []);
-    };
-
-
-    const handleWardChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setForm({ ...form, ward: e.target.value });
-    };
-
-    const handleChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-    ) => {
-        setForm({ ...form, [e.target.name]: e.target.value });
-    };
-
-    // 🔹 Khi chọn ảnh 
-    const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        setPreview(URL.createObjectURL(file));
-        setUploading(true);
-        toast.info("Đang tải ảnh lên...");
+        setUsernameError("");
+        setUsernameStatus("checking");
 
         try {
-            const formData = new FormData();
-            formData.append("key", "4a4efdffaf66aa2a958ea43ace6f49c1");
-            formData.append("image", file);
-
-            const res = await axios.post("https://api.imgbb.com/1/upload", formData);
-            const uploadedUrl = res.data.data.url;
-
-            setForm({ ...form, avatar: file, avatarUrl: uploadedUrl });
-            toast.success("Ảnh đã tải lên thành công!");
-        } catch (err) {
-            console.error(err);
-            toast.error("Không thể tải ảnh lên!");
-        } finally {
-            setUploading(false);
+            const res = await api.post("/auth/check", { username: value });
+            setUsernameStatus(res.status === 204 ? "available" : "taken");
+        } catch {
+            setUsernameStatus("available");
         }
     };
-    const [usernameError, setUsernameError] = useState<string>("");
-    const [ageError, setAgeError] = useState<string>("");
-    const validateAge = (dateString: string) => {
-        const birthDate = new Date(dateString);
-        const today = new Date();
-        const age = today.getFullYear() - birthDate.getFullYear();
-        const monthDiff = today.getMonth() - birthDate.getMonth();
-        const dayDiff = today.getDate() - birthDate.getDate();
 
-        // Nếu tháng/ngày hiện tại chưa qua sinh nhật → trừ 1 tuổi
-        const realAge = monthDiff < 0 || (monthDiff === 0 && dayDiff < 0) ? age - 1 : age;
-        return realAge >= 18;
-    };
-    const handleUsernameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const value = e.target.value;
-        setForm({ ...form, username: value });
+    const handleSubmit = async () => {
+        if (!form.fullname || !form.username || !form.phoneNumber || !form.gender || !form.dateOfBirth)
+            return toast.error("Vui lòng nhập đủ thông tin!");
 
-        // Kiểm tra hợp lệ tại client
-        const validationMessage = validateUsername(value);
-        setUsernameError(validationMessage);
+        if (!validateAge(form.dateOfBirth))
+            return toast.error("Phải đủ 18 tuổi!");
 
-        // Nếu có lỗi local thì không cần gọi API
-        if (validationMessage) {
-            setUsernameStatus("idle");
-            if (checkTimer) clearTimeout(checkTimer);
+        if (!userId) {
+            toast.error("Không tìm thấy thông tin người dùng!");
             return;
         }
-
-        // Nếu hợp lệ thì debounce check API
-        if (checkTimer) clearTimeout(checkTimer);
-        const timer = setTimeout(() => {
-            checkAvailability(value);
-        }, 500);
-        setCheckTimer(timer);
-    };
-
-
-    const handleComplete = async () => {
-        if (
-            !form.fullName ||
-            !form.username ||
-            !form.phoneNumber ||
-            !form.gender ||
-            !form.dateOfBirth
-        )
-            return toast.error("Vui lòng nhập đầy đủ thông tin!");
-
-        if (!userId) return toast.error("Không tìm thấy ID người dùng!");
 
         setLoading(true);
-        try {
-            // 🗺️ Ghép địa chỉ đầy đủ
-            const cityName = provinces.find((p) => p.Id == form.city)?.Name || "";
-            const districtName =
-                districts.find((d) => d.Id == form.district)?.Name || "";
-            const wardName = wards.find((w) => w.Id == form.ward)?.Name || "";
 
-            const address = [
-                form.detailAddress,
-                wardName,
-                districtName,
-                cityName,
-                form.country,
-            ]
+        try {
+            const address = [form.detailAddress, form.ward, form.district, form.city, form.country]
                 .filter(Boolean)
                 .join(", ");
 
-            // ⚠️ Kiểm tra tuổi
-            if (!validateAge(form.dateOfBirth)) {
-                toast.error("Người dùng phải đủ 18 tuổi để đăng ký!");
+            await api.patch(`/users/${userId}/complete`, {
+                fullName: form.fullname,
+                username: form.username,
+                phoneNumber: form.phoneNumber,
+                gender: form.gender === "male",
+                dateOfBirth: form.dateOfBirth,
+                avatarUrl: form.avatarUrl,
+                address,
+            });
+
+            toast.success("Hoàn tất đăng ký thành công! 🎉");
+
+            const pendingPassword = localStorage.getItem("pendingPassword");
+            const token = useAuthStore.getState().accessToken;
+
+            if (pendingEmail && pendingPassword) {
+                // Đăng ký bằng email
+                const res = await api.post("/auth/login", {
+                    email: pendingEmail,
+                    password: pendingPassword,
+                });
+                useAuthStore.getState().setAccessToken(res.data.data.accessToken);
+                setUser(res.data.data.user);
+            } else if (token) {
+                // Đăng ký bằng Google
+                const res = await api.get("/auth/me");
+                setUser(res.data.data);
+            } else {
+                toast.warning("Không tìm thấy token hoặc thông tin đăng nhập!");
+                navigate("/login");
                 return;
             }
 
-            // 🧩 Cập nhật thông tin người dùng
-            await api.patch(
-                `/users/${userId}/complete`,
-                {
-                    fullName: form.fullName,
-                    username: form.username,
-                    phoneNumber: form.phoneNumber,
-                    address,
-                    gender: form.gender === "male",
-                    avatarUrl: form.avatarUrl,
-                    dateOfBirth: form.dateOfBirth,
-                },
-                { withCredentials: true }
-            );
-
-            toast.success("Cập nhật thông tin thành công! Đang xử lý...");
-
-            // 🔍 Kiểm tra xem user đăng ký bằng Google hay Email
-            const savedPassword = localStorage.getItem("pendingPassword");
-
-            if (savedPassword) {
-                // 🔹 TRƯỜNG HỢP 1: Người dùng đăng ký bằng Email + Password
-                try {
-                    const loginRes = await api.post(
-                        "/auth/login",
-                        { email, password: savedPassword },
-                        { withCredentials: true }
-                    );
-
-                    useAuthStore.getState().setAccessToken(loginRes.data.data.accessToken);
-                    setUser(loginRes.data.data.user);
-
-                    const role = loginRes.data.data.user.role?.name;
-                    switch (role) {
-                        case "admin":
-                            navigate("/admin");
-                            break;
-                        case "staff":
-                            navigate("/staff");
-                            break;
-                        default:
-                            navigate("/home");
-                            break;
-                    }
-                } catch (err: any) {
-                    console.error(err);
-                    toast.error("Đăng nhập tự động thất bại! Vui lòng đăng nhập thủ công.");
-                    navigate("/login");
-                }
-            } else {
-                // 🔹 TRƯỜNG HỢP 2: Người dùng đăng ký bằng Google OAuth
-                try {
-                    const meRes = await api.get("/auth/me");
-                    setUser(meRes.data.data);
-
-                    const role = meRes.data.data.role?.name;
-                    switch (role) {
-                        case "admin":
-                            navigate("/admin");
-                            break;
-                        case "staff":
-                            navigate("/staff");
-                            break;
-                        default:
-                            navigate("/home");
-                            break;
-                    }
-                } catch (err) {
-                    console.error(err);
-                    toast.error("Không thể tải thông tin tài khoản. Vui lòng đăng nhập lại!");
-                    navigate("/login");
-                }
-            }
+            localStorage.removeItem("pendingEmail");
+            localStorage.removeItem("pendingPassword");
+            localStorage.removeItem("pendingUserId");
+            navigate("/home");
         } catch (err: any) {
-            console.error(err);
+            console.error("❌ Lỗi khi hoàn tất đăng ký:", err);
             toast.error(err.response?.data?.message || "Không thể hoàn tất đăng ký!");
         } finally {
             setLoading(false);
         }
     };
 
-
     return (
-        <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-emerald-300 via-teal-400 to-cyan-500">
-            <Card className="w-[900px] p-8 rounded-2xl shadow-xl bg-white flex flex-col md:flex-row gap-8">
-                {/* ==== LEFT: ẢNH ==== */}
-                <div className="flex flex-col items-center justify-center w-full md:w-1/3 border-r border-gray-200 pr-4">
-                    <h3 className="text-lg font-semibold mb-3 text-[#38A3A5]">
-                        Ảnh đại diện
-                    </h3>
-                    <div className="relative w-40 h-40">
-                        <img
-                            src={
-                                preview ||
-                                form.avatarUrl ||
-                                "https://cdn-icons-png.flaticon.com/512/847/847969.png"
-                            }
-                            alt="Avatar"
-                            className="w-40 h-40 rounded-xl object-cover border-2 border-emerald-400 shadow-sm"
+        <div className="flex justify-center items-center min-h-screen bg-[#F9FAFB] py-12 px-4">
+            <motion.div
+                initial={{ opacity: 0, y: 40 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6 }}
+                className="w-full max-w-3xl"
+            >
+                <Card className="p-8 shadow-lg rounded-2xl border border-gray-200 bg-white">
+                    <div className="flex flex-col items-center mb-6">
+                        <div className="text-3xl font-semibold text-[#38A3A5]">Hoàn tất đăng ký</div>
+                        <p className="text-gray-500 text-sm mt-1">
+                            Điền thông tin cá nhân để bắt đầu sử dụng SwapNet
+                        </p>
+                    </div>
+
+                    <div className="border-t pt-6">
+                        <UserForm
+                            form={form}
+                            setForm={setForm}
+                            handleChange={handleChange}
+                            handleUsernameChange={handleUsernameChange}
+                            validateAge={validateAge}
+                            handleDateChange={handleDateChange}
+                            usernameError={usernameError}
+                            usernameStatus={usernameStatus}
+                            ageError={ageError}
+                            otpVerified={true}
+                            onSubmit={handleSubmit}
+                            loading={loading}
+                            uploading={false}
+                            mode="register"
                         />
-                        {uploading && (
-                            <div className="absolute inset-0 bg-white/70 flex items-center justify-center text-[#38A3A5] font-medium text-sm rounded-xl">
-                                Đang tải...
-                            </div>
-                        )}
                     </div>
 
-                    <label
-                        htmlFor="avatar-upload"
-                        className="flex items-center gap-2 mt-4 bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-2 px-4 rounded-lg cursor-pointer transition"
-                    >
-                        <UploadCloud size={18} />
-                        Chọn ảnh
-                    </label>
-                    <input
-                        id="avatar-upload"
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        onChange={handleImageChange}
-                        disabled={uploading}
-                    />
-                </div>
-
-                {/* ==== RIGHT: FORM ==== */}
-                <div className="flex-1 space-y-3">
-                    <h2 className="text-2xl font-bold text-[#38A3A5] mb-1 text-center md:text-left">
-                        Thông tin cá nhân
-                    </h2>
-                    <p className="text-gray-600 text-sm mb-4 text-center md:text-left">
-                        Vui lòng nhập đầy đủ thông tin để kích hoạt tài khoản.
-                    </p>
-
-                    {/* ==== FORM FIELDS ==== */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
-                            <Label className="mb-1.5 block">
-                                Họ và tên <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                                name="fullName"
-                                value={form.fullName}
-                                placeholder="VD: Nguyễn Văn A"
-                                onChange={handleChange}
-                            />
-                        </div>
-
-                        <div>
-                            <Label className="mb-1.5 block">
-                                Tên đăng nhập <span className="text-red-500">*</span>
-                            </Label>
-                            <div className="relative">
-                                <Input
-                                    name="username"
-                                    value={form.username}
-                                    placeholder="VD: driver001"
-                                    onChange={handleUsernameChange}
-                                    className="pr-10"
-                                />
-
-                                {/* Vòng tròn xoay khi đang kiểm tra */}
-                                {usernameStatus === "checking" && (
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 animate-spin text-gray-400">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
-                                                d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 018 8" />
-                                        </svg>
-                                    </div>
-                                )}
-
-                                {/* Tick xanh nếu khả dụng */}
-                                {usernameStatus === "available" && (
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-500">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                                        </svg>
-                                    </div>
-                                )}
-
-                                {/* X đỏ nếu trùng */}
-                                {usernameStatus === "taken" && (
-                                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-500">
-                                        <svg xmlns="http://www.w3.org/2000/svg" className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </div>
-                                )}
-                            </div>
-
-                            {/* Hiển thị thông báo hợp lệ / lỗi của username */}
-                            {usernameError && (
-                                <p className="text-sm text-red-500 mt-1">{usernameError}</p>
-                            )}
-
-                            {!usernameError && usernameStatus === "taken" && (
-                                <p className="text-sm text-red-500 mt-1">Tên đăng nhập đã tồn tại.</p>
-                            )}
-
-                            {!usernameError && usernameStatus === "available" && (
-                                <p className="text-sm text-green-600 mt-1">Tên đăng nhập khả dụng.</p>
-                            )}
-
-
-                        </div>
-
-                        <div>
-                            <Label className="mb-1.5 block">
-                                Số điện thoại <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                                name="phoneNumber"
-                                value={form.phoneNumber}
-                                placeholder="VD: 0901234567"
-                                onChange={handleChange}
-                            />
-                        </div>
-
-                        <div className="flex flex-col">
-                            <Label className="mb-1.5 block">
-                                Giới tính <span className="text-red-500">*</span>
-                            </Label>
-                            <div className="flex items-center gap-4 mt-1">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="gender"
-                                        value="male"
-                                        checked={form.gender === "male"}
-                                        onChange={handleChange}
-                                        className="accent-emerald-500 w-4 h-4"
-                                    />
-                                    Nam
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        name="gender"
-                                        value="female"
-                                        onChange={handleChange}
-                                        className="accent-emerald-500 w-4 h-4"
-                                    />
-                                    Nữ
-                                </label>
-                            </div>
-                        </div>
-
-                        <div>
-                            <Label className="mb-1.5 block">
-                                Ngày sinh <span className="text-red-500">*</span>
-                            </Label>
-                            <Input
-                                type="date"
-                                name="dateOfBirth"
-                                value={form.dateOfBirth}
-                                onChange={(e) => {
-                                    handleChange(e);
-                                    const value = e.target.value;
-                                    if (!value) return setAgeError("");
-                                    if (!validateAge(value)) {
-                                        setAgeError("Người dùng phải từ 18 tuổi trở lên.");
-                                    } else {
-                                        setAgeError("");
-                                    }
-                                }}
-                            />
-                            {ageError && <p className="text-sm text-red-500 mt-1">{ageError}</p>}
-
-                        </div>
-
-                        {/* === Địa chỉ === */}
-                        <div className="col-span-2 mt-2">
-                            <h3 className="text-base font-semibold text-[#38A3A5] mb-2">
-                                Địa chỉ cư trú:
-                            </h3>
-
-                            <div className="mb-3">
-                                <Label className="mb-1.5 block">Quốc gia:</Label>
-                                <select
-                                    name="country"
-                                    value={form.country}
-                                    onChange={(e) => setForm({ ...form, country: e.target.value })}
-                                    className="w-full border rounded-md p-2"
-                                >
-                                    <option value="Việt Nam">Việt Nam</option>
-                                    <option value="Khác">Khác</option>
-                                </select>
-                                {form.country !== "Việt Nam" && (
-                                    <p className="text-sm text-red-600 mt-1">
-                                        ⚠️ Ứng dụng này hiện tại chỉ hỗ trợ người cư trú tại Việt Nam.
-                                    </p>
-                                )}
-                            </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                <div>
-                                    <Label className="mb-1.5 block">
-                                        Tỉnh / Thành phố <span className="text-red-500">*</span>
-                                    </Label>
-                                    <select
-                                        name="city"
-                                        value={form.city}
-                                        onChange={handleCityChange}
-                                        className="w-full border rounded-md p-2"
-                                        disabled={form.country !== "Việt Nam"}
-                                    >
-                                        <option value="">-- Chọn tỉnh/thành phố --</option>
-                                        {provinces.map((p) => (
-                                            <option key={p.Id} value={p.Id}>
-                                                {p.Name}
-                                            </option>
-                                        ))}
-
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <Label className="mb-1.5 block">
-                                        Quận / Huyện <span className="text-red-500">*</span>
-                                    </Label>
-                                    <select
-                                        name="district"
-                                        value={form.district}
-                                        onChange={handleDistrictChange}
-                                        className="w-full border rounded-md p-2"
-                                        disabled={!form.city || form.country !== "Việt Nam"}
-                                    >
-                                        <option value="">-- Chọn quận/huyện --</option>
-                                        {districts.map((d) => (
-                                            <option key={d.Id} value={d.Id}>
-                                                {d.Name}
-                                            </option>
-                                        ))}
-
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <Label className="mb-1.5 block">
-                                        Xã / Phường <span className="text-red-500">*</span>
-                                    </Label>
-                                    <select
-                                        name="ward"
-                                        value={form.ward}
-                                        onChange={handleWardChange}
-                                        className="w-full border rounded-md p-2"
-                                        disabled={!form.district || form.country !== "Việt Nam"}
-                                    >
-                                        <option value="">-- Chọn xã/phường --</option>
-                                        {wards.map((w) => (
-                                            <option key={w.Id} value={w.Id}>
-                                                {w.Name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <Label className="mb-1.5 block">
-                                        Địa chỉ cụ thể <span className="text-red-500">*</span>
-                                    </Label>
-                                    <Input
-                                        name="detailAddress"
-                                        value={form.detailAddress}
-                                        placeholder="VD: 12 Nguyễn Văn Linh, Sky Garden 3"
-                                        onChange={handleChange}
-                                    />
-                                </div>
-                            </div>
-                        </div>
+                    <div className="mt-8 flex justify-center">
+                        <Button
+                            onClick={handleSubmit}
+                            disabled={loading}
+                            className="w-1/2 py-3 text-lg rounded-xl bg-[#57CC99] hover:bg-[#38A3A5] text-white font-semibold transition-all duration-200"
+                        >
+                            {loading ? "Đang lưu..." : "Lưu thay đổi"}
+                        </Button>
                     </div>
-
-                    <Button
-                        className="mt-6 w-full bg-[#57CC99] text-white hover:bg-[#38A3A5]"
-                        onClick={handleComplete}
-                        disabled={loading || uploading}
-                    >
-                        {loading ? "Đang xử lý..." : "Lưu hồ sơ"}
-                    </Button>
-                </div>
-            </Card>
+                </Card>
+            </motion.div>
         </div>
     );
 }

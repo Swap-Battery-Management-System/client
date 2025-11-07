@@ -94,7 +94,7 @@ export default function UpdateUserInfo({ onSuccess }: { onSuccess?: () => void }
     // 🔹 Lấy danh sách tỉnh/thành
     useEffect(() => {
         axios
-            .get("http://provinces.open-api.vn/api/p/")
+            .get("https://provinces.open-api.vn/api/p/")
             .then((res) => setProvinces(res.data))
             .catch(() => toast.error("Không thể tải danh sách tỉnh/thành!"));
     }, []);
@@ -145,7 +145,7 @@ export default function UpdateUserInfo({ onSuccess }: { onSuccess?: () => void }
                     if (cityObj) {
                         setForm((prev) => ({ ...prev, city: cityObj.code }));
                         const disRes = await axios.get(
-                            `http://provinces.open-api.vn/api/p/${cityObj.code}?depth=2`
+                            `https://provinces.open-api.vn/api/p/${cityObj.code}?depth=2`
                         );
                         setDistricts(disRes.data.districts);
                         const distObj = disRes.data.districts.find((d: any) =>
@@ -154,7 +154,7 @@ export default function UpdateUserInfo({ onSuccess }: { onSuccess?: () => void }
                         if (distObj) {
                             setForm((prev) => ({ ...prev, district: distObj.code }));
                             const wardRes = await axios.get(
-                                `http://provinces.open-api.vn/api/d/${distObj.code}?depth=2`
+                                `https://provinces.open-api.vn/api/d/${distObj.code}?depth=2`
                             );
                             setWards(wardRes.data.wards);
                             const wardObj = wardRes.data.wards.find((w: any) =>
@@ -232,7 +232,7 @@ export default function UpdateUserInfo({ onSuccess }: { onSuccess?: () => void }
         setWards([]);
         if (!provinceCode) return;
         try {
-            const res = await axios.get(`http://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
+            const res = await axios.get(`https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`);
             setDistricts(res.data.districts || []);
         } catch {
             toast.error("Không thể tải danh sách quận/huyện!");
@@ -245,7 +245,7 @@ export default function UpdateUserInfo({ onSuccess }: { onSuccess?: () => void }
         setForm({ ...form, district: districtCode, ward: "" });
         if (!districtCode) return;
         try {
-            const res = await axios.get(`http://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
+            const res = await axios.get(`https://provinces.open-api.vn/api/d/${districtCode}?depth=2`);
             setWards(res.data.wards || []);
         } catch {
             toast.error("Không thể tải danh sách xã/phường!");

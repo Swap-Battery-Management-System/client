@@ -13,6 +13,7 @@ import {
   LogOut,
   List,
   Box,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import logo from "/png.png";
@@ -82,10 +83,11 @@ export default function AdminLayout() {
       icon: <ShieldCheck size={18} />,
     },
     {
-      name: "Trung tâm cảnh báo",
-      path: "alerts",
-      icon: <Bell size={18} />,
+      name: "Trung tâm hỗ trợ",
+      path: "support-tickets",
+      icon: <MessageSquare size={18} />,
     },
+
   ];
 
   const footerLinks = [

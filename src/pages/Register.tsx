@@ -9,8 +9,12 @@ import api from "@/lib/api";
 import { GoogleLogin } from "@react-oauth/google";
 import { NavLink } from "react-router-dom";
 import logo from "/svg.svg";
+import { useAuthStore } from "@/stores/authStores";
+import { useAuth } from "@/context/AuthContext";
 
 export default function Register() {
+  const { setUser } = useAuth();
+
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -74,14 +78,32 @@ export default function Register() {
     try {
       const credential = credentialResponse.credential;
       if (!credential) return;
-      const res = await api.post("/auth/google", { credential });
-      toast.success(res.data.message || "Đăng ký / đăng nhập Google thành công!");
-      navigate("/register/info");
-    } catch {
-      toast.error("Đăng ký bằng Google thất bại!");
+
+      const res = await api.post("/auth/google", { credential }, { withCredentials: true });
+      useAuthStore.getState().setAccessToken(res.data.data.accessToken);
+
+      const user = res.data.data.user;
+      setUser(user);
+      console.log("🟢 Google Register response:", res.data);
+
+      // Nếu user mới (chưa hoàn tất thông tin)
+      if (res.status === 201 || user.status === "pending") {
+        toast.success("Tài khoản Google mới được tạo, vui lòng hoàn tất thông tin!");
+        navigate("/register/info");
+        return;
+      }
+
+      toast.success("Đăng nhập Google thành công!");
+      const role = user.role?.name || "driver";
+
+      if (role === "admin") navigate("/admin");
+      else if (role === "staff") navigate("/staff");
+      else navigate("/home");
+    } catch (err: any) {
+      console.error("❌ Lỗi khi đăng ký Google:", err);
+      toast.error(err.response?.data?.message || "Không thể đăng ký bằng Google!");
     }
   };
-
   return (
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-emerald-300 via-teal-400 to-cyan-500">
       <Card className="w-[420px] rounded-2xl shadow-lg bg-white p-8">

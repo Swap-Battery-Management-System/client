@@ -49,7 +49,7 @@ export default function SetPassword() {
 
             localStorage.setItem("pendingEmail", email);
             localStorage.setItem("pendingUserId", user.id);
-
+            localStorage.setItem("pendingPassword", password)
             toast.success("Tạo tài khoản thành công! Vui lòng nhập thông tin cá nhân.");
             navigate("/register/info", { state: { email, userId: user.id } });
 

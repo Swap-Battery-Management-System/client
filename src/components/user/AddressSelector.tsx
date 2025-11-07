@@ -8,31 +8,53 @@ export default function AddressSelector({ form, setForm }: any) {
     const [districts, setDistricts] = useState<any[]>([]);
     const [wards, setWards] = useState<any[]>([]);
 
-    // Lấy danh sách tỉnh/thành
+    // 🗺️ Lấy danh sách tỉnh/thành
     useEffect(() => {
         axios
-            .get("https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json")
+            .get(
+                "https://raw.githubusercontent.com/kenzouno1/DiaGioiHanhChinhVN/master/data.json"
+            )
             .then((res) => setProvinces(res.data))
             .catch(() => toast.error("Không thể tải danh sách tỉnh/thành!"));
     }, []);
 
-    // Khi form.city có sẵn (load từ API user) → tự load quận/huyện
-    useEffect(() => {
-        if (form.city && provinces.length > 0) {
-            const selectedCity = provinces.find((p) => p.Id === form.city);
-            setDistricts(selectedCity?.Districts || []);
-        }
-    }, [form.city, provinces]);
+    // 🏙️ Khi chọn Tỉnh / Thành phố
+    const handleCityChange = (e: any) => {
+        const id = e.target.value;
+        const selected = provinces.find((p) => p.Id === id);
+        setDistricts(selected?.Districts || []);
+        setWards([]);
+        setForm({
+            ...form,
+            city: selected?.Name || "",
+            district: "",
+            ward: "",
+        });
+    };
 
-    // Khi form.district có sẵn (load từ API user) → tự load xã/phường
-    useEffect(() => {
-        if (form.district && districts.length > 0) {
-            const selectedDistrict = districts.find((d) => d.Id === form.district);
-            setWards(selectedDistrict?.Wards || []);
-        }
-    }, [form.district, districts]);
+    // 🏘️ Khi chọn Quận / Huyện
+    const handleDistrictChange = (e: any) => {
+        const id = e.target.value;
+        const selected = districts.find((d) => d.Id === id);
+        setWards(selected?.Wards || []);
+        setForm({
+            ...form,
+            district: selected?.Name || "",
+            ward: "",
+        });
+    };
 
-    // Khi đổi quốc gia
+    // 🏡 Khi chọn Xã / Phường
+    const handleWardChange = (e: any) => {
+        const id = e.target.value;
+        const selected = wards.find((w) => w.Id === id);
+        setForm({
+            ...form,
+            ward: selected?.Name || "",
+        });
+    };
+
+    // 🌏 Khi đổi quốc gia
     const handleCountryChange = (e: any) => {
         const country = e.target.value;
         setForm({
@@ -43,34 +65,15 @@ export default function AddressSelector({ form, setForm }: any) {
             ward: "",
             detailAddress: "",
         });
-
         if (country !== "Việt Nam") {
             toast.error("Ứng dụng chỉ dành cho người dùng tại Việt Nam 🇻🇳");
         }
-    };
-
-    // Khi chọn tỉnh
-    const handleCityChange = (e: any) => {
-        const id = e.target.value;
-        const selected = provinces.find((p) => p.Id === id);
-        setDistricts(selected?.Districts || []);
-        setWards([]);
-        setForm({ ...form, city: id, district: "", ward: "" });
-    };
-
-    // Khi chọn quận
-    const handleDistrictChange = (e: any) => {
-        const id = e.target.value;
-        const selected = districts.find((d) => d.Id === id);
-        setWards(selected?.Wards || []);
-        setForm({ ...form, district: id, ward: "" });
     };
 
     const isVietnam = form.country === "Việt Nam";
 
     return (
         <div className="pt-4 border-t border-emerald-100 mt-4">
-            {/* Tiêu đề */}
             <h3 className="text-base font-semibold text-[#38A3A5] flex items-center gap-1 mb-4">
                 Địa chỉ cư trú <span className="text-red-500">*</span>
             </h3>
@@ -97,10 +100,10 @@ export default function AddressSelector({ form, setForm }: any) {
                         Tỉnh / Thành phố <span className="text-red-500">*</span>
                     </Label>
                     <select
-                        value={form.city}
+                        value={provinces.find((p) => p.Name === form.city)?.Id || ""}
                         onChange={handleCityChange}
-                        className="w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
                         disabled={!isVietnam}
+                        className="w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
                     >
                         <option value="">-- Chọn tỉnh/thành phố --</option>
                         {provinces.map((p) => (
@@ -117,10 +120,10 @@ export default function AddressSelector({ form, setForm }: any) {
                         Quận / Huyện <span className="text-red-500">*</span>
                     </Label>
                     <select
-                        value={form.district}
+                        value={districts.find((d) => d.Name === form.district)?.Id || ""}
                         onChange={handleDistrictChange}
-                        className="w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
                         disabled={!form.city || !isVietnam}
+                        className="w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
                     >
                         <option value="">-- Chọn quận/huyện --</option>
                         {districts.map((d) => (
@@ -137,10 +140,10 @@ export default function AddressSelector({ form, setForm }: any) {
                         Xã / Phường <span className="text-red-500">*</span>
                     </Label>
                     <select
-                        value={form.ward}
-                        onChange={(e) => setForm({ ...form, ward: e.target.value })}
-                        className="w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                        value={wards.find((w) => w.Name === form.ward)?.Id || ""}
+                        onChange={handleWardChange}
                         disabled={!form.district || !isVietnam}
+                        className="w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
                     >
                         <option value="">-- Chọn xã/phường --</option>
                         {wards.map((w) => (
@@ -159,9 +162,7 @@ export default function AddressSelector({ form, setForm }: any) {
                     <input
                         name="detailAddress"
                         value={form.detailAddress}
-                        onChange={(e) =>
-                            setForm({ ...form, detailAddress: e.target.value })
-                        }
+                        onChange={(e) => setForm({ ...form, detailAddress: e.target.value })}
                         placeholder="VD: 12 Nguyễn Văn Linh"
                         className="w-full border rounded-md p-2 focus:outline-none focus:ring-2 focus:ring-emerald-400"
                         disabled={!isVietnam}

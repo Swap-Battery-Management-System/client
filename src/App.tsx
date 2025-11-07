@@ -34,6 +34,8 @@ import ResetPassword from "./pages/ResetPassword";
 import BatteryProcess from "./pages/BatteryProcess";
 import AdminVehicleModelManagement from "./pages/ManageModels";
 import NotificationPage from "./pages/NotificationPage";
+import SupportTicketForm from "./pages/SupportTicketForm";
+import AdminSupportTickets from "./pages/AdminSupportTickets";
 
 function App() {
   return (
@@ -69,6 +71,8 @@ function App() {
           <Route path="my-vehicles" element={<MyVehicles />} />
           <Route path="notifications" element={<NotificationPage />} />
           <Route path="my-subscription-packages" element={<MySubcription />} />
+          <Route path="support" element={<SupportTicketForm />} />
+
         </Route>
         {/* === Staff Routes === */}
         <Route
@@ -110,6 +114,7 @@ function App() {
           <Route path="manage-users" element={<AdminUserManagement />} />
           <Route path="manage-stations" element={<AdminStationManagement />} />
           <Route path="manage-vehicles" element={<AdminVehicleManagement />} />
+          <Route path="support-tickets" element={<AdminSupportTickets />} />
           <Route
             path="manage-battery"
             element={
@@ -127,6 +132,7 @@ function App() {
             element={<AdminVehicleModelManagement />}
           />
         </Route>
+
       </Routes>
       <Toaster richColors position="top-center" />
     </>
