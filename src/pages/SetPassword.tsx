@@ -6,11 +6,14 @@ import { Card } from "@/components/ui/card";
 import { Lock, Eye, EyeOff } from "lucide-react";
 import api from "@/lib/api";
 import { toast } from "sonner";
+import { useAuthStore } from "@/stores/authStores";
+import { useAuth } from "@/context/AuthContext";
 
 export default function SetPassword() {
     const navigate = useNavigate();
     const location = useLocation();
     const email = location.state?.email;
+    const { setUser } = useAuth();
     const [password, setPassword] = useState("");
     const [confirm, setConfirm] = useState("");
     const [loading, setLoading] = useState(false);
@@ -31,7 +34,14 @@ export default function SetPassword() {
             const res = await api.post("/auth/register", { email, password });
             console.log("✅ Register response:", res.data);
 
+            if (res.data?.data?.accessToken) {
+                useAuthStore.getState().setAccessToken(res.data.data.accessToken);
+            }
             const user = res.data?.data?.user;
+            if (user) {
+                setUser(user);
+            }
+
             if (!user || !user.id) {
                 toast.error("Không nhận được ID người dùng từ backend!");
                 return;
@@ -39,9 +49,10 @@ export default function SetPassword() {
 
             localStorage.setItem("pendingEmail", email);
             localStorage.setItem("pendingUserId", user.id);
-
+            localStorage.setItem("pendingPassword", password)
             toast.success("Tạo tài khoản thành công! Vui lòng nhập thông tin cá nhân.");
             navigate("/register/info", { state: { email, userId: user.id } });
+
         } catch (err: any) {
             console.error("Register error:", err);
             toast.error(err.response?.data?.message || "Không thể tạo tài khoản!");

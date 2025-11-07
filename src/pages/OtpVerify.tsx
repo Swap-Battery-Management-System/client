@@ -27,6 +27,7 @@ export default function OtpVerify() {
         try {
             await api.post("/auth/verify-otp", { email, otp: code });
             toast.success("OTP xác thực thành công!");
+            localStorage.setItem("pendingEmail", email);
             navigate("/register/password", { state: { email } });
         } catch {
             toast.error("OTP sai hoặc đã hết hạn!");
