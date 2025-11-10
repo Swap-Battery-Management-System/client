@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { io, Socket } from "socket.io-client";
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "https://api.swapnet.io.vn";
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
 
 export function useNotificationSocket(userId: string, onMessage: (data: any) => void) {
     useEffect(() => {

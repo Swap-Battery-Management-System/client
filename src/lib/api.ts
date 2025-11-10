@@ -24,6 +24,7 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
+     console.log("INTERCEPTOR ERROR:", error.response?.status, error.config.url);
     const originalRequest = error.config;
  // Nếu request có header skip-auth-refresh → bỏ qua
     if (originalRequest.headers["skip-auth-refresh"]) {

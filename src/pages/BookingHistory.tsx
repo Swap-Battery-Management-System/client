@@ -431,9 +431,7 @@ export default function BookingHistory() {
               <p>
                 <strong>Thời gian:</strong>{" "}
                 {selectedBooking.scheduleTime
-                  ? new Date(selectedBooking.scheduleTime).toLocaleString(
-                      "vi-VN"
-                    )
+                  ? selectedBooking.scheduleTime.replace("T", " ").replace(".000Z", "")
                   : "Chưa có"}
               </p>
               <p>

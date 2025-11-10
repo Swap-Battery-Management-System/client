@@ -27,11 +27,10 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const { logout } = useAuth();
   const navigate = useNavigate();
 
-  const handleLogout = async () => {
-    logout(() => {
-      navigate("/", { replace: true });
-    })
-  }
+  const handleLogout = () => {
+    logout();
+  };
+
   return (
     <>
       {/* Sidebar chính */}

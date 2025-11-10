@@ -27,6 +27,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const fetchUser = async () => {
         try {
           const res = await api.get("/auth/me", { withCredentials: true });
+          console.log("AuthProvider fetchUser", res.data);
           setUser(res.data.data.user);
         } catch {
           await logout();
@@ -40,7 +41,9 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, [accessToken]);
 
   return (
-    <AuthContext.Provider value={{ user, loading, logout, initialized, setUser }}>
+    <AuthContext.Provider
+      value={{ user, loading, logout, initialized, setUser }}
+    >
       {children}
     </AuthContext.Provider>
   );

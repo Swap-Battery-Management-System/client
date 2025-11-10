@@ -11,7 +11,6 @@ import {
 } from "lucide-react";
 import { Footer } from "../components/Footer";
 import { useNavigate } from "react-router-dom";
-import { ProtectedRoute } from "../components/ProtectedRoute";
 import logo from "/png.png";
 import { NavLink } from "react-router-dom";
 function App() {

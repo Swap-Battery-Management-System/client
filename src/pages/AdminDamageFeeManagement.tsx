@@ -53,6 +53,7 @@ export default function AdminDamageFeeManagement() {
         try {
             setLoading(true);
             const res = await api.get("/damage-fees");
+            console.log("Fetched damage fees:", res.data);
             const list = Array.isArray(res.data?.data) ? res.data.data : [];
             setFees(list);
             setFiltered(list);

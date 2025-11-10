@@ -89,6 +89,7 @@ export default function Login() {
       console.log(user.role.name);
       setTimeout(() => redirectByRole(user.role.name), 2000);
     } catch (err: any) {
+      console.error("Lỗi đăng nhập:", err);
       setType("error");
       if (err.response) {
         setMessage(
@@ -184,6 +185,7 @@ export default function Login() {
               name: "password",
               type: "password",
               placeholder: "••••••••",
+              autocomplete: "current-password",
               icon: (
                 <Lock
                   className="absolute left-3 top-3 text-[#38A3A5]"

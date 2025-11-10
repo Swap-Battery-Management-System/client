@@ -1,4 +1,4 @@
-import { StrictMode } from "react";
+
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./App.css";
@@ -9,7 +9,7 @@ import { StationProvider } from "./context/StationContext.tsx";
 const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 createRoot(document.getElementById("root")!).render(
-  <StrictMode>
+
     <GoogleOAuthProvider clientId={clientId}>
       <BrowserRouter>
         <AuthProvider>
@@ -19,5 +19,5 @@ createRoot(document.getElementById("root")!).render(
         </AuthProvider>
       </BrowserRouter>
     </GoogleOAuthProvider>
-  </StrictMode>
+
 );

@@ -3,7 +3,8 @@ import { Button } from "../ui/button";
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
 import { useParams } from "react-router-dom";
-import { Calendar, User, Car, Battery, Recycle, MapPin } from "lucide-react"; // ⬅️ icon từ lucide-react
+import { Calendar, User, Car, Battery, Recycle, MapPin } from "lucide-react"; // icon từ lucide-react
+import { toast } from "sonner";
 
 interface Booking {
   id: string;
@@ -136,7 +137,8 @@ export function Step1CheckIn({
         onUpdate("booking", bookingData);
         onUpdate("vehicle", vehicleData);
         onUpdate("user", userData);
-        onUpdate("Newbattery", batteryData);
+        onUpdate("newBattery", batteryData);
+        onUpdate("newBatteryType", resBatteryType.data.data.batteryType);
         onUpdate("station", stationData);
       } catch (err) {
         console.error("Không thể load dữ liệu đầy đủ", err);
@@ -149,12 +151,44 @@ export function Step1CheckIn({
     fetchAllData();
   }, [bookingId]);
 
-  const handleCheckin = () => {
-    if (!booking) {
-      alert("Không tìm thấy checkin!");
+  const handleCheckin = async () => {
+    if (!booking || !station || !vehicle || !user) {
+      toast.error("Thiếu dữ liệu để check-in!");
       return;
     }
-    onNext();
+
+    try {
+      setSubmitting(true);
+
+      const res = await api.post(
+        `/stations/${station.id}/checkin`,
+        {
+          userId: user.id,
+          isWalkin: false,
+          bookingId: booking.id,
+          vehicleId: vehicle.id,
+        },
+        { withCredentials: true }
+      );
+
+      const swapSession = res.data?.data?.swapSession;
+
+      if (swapSession?.id) {
+        onUpdate("swapSessionId", swapSession.id);
+        toast.success(" Check-in thành công!");
+        onNext();
+      } else {
+        toast.error("Không thể lấy mã phiên hoán đổi (swapSessionId).");
+      }
+    } catch (error: any) {
+      console.error("Lỗi check-in:", error);
+      const message =
+        error.response?.data?.message ||
+        "Không thể thực hiện check-in. Vui lòng thử lại!";
+      toast.error(`❌ ${message}`);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const formattedDate = booking?.scheduleTime

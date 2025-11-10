@@ -14,10 +14,10 @@ export default function BatteryProcess() {
     booking: null,
     user: null,
     vehicle: null,
-    battery: null,
+    newBattery: null,
+    newBatteyType:null,
     station: null,
     checkPinResult: null,
-    installedBattery: null,
     payment: null,
   });
 
@@ -40,7 +40,7 @@ export default function BatteryProcess() {
   return (
       <div className="p-6">
         {/* Thanh stepper */}
-        <Stepper currentStep={currentStep} steps={steps} />
+        <Stepper currentStep={currentStep} steps={steps} onNext={goToNext} onPrev={goToPrev}/>
 
         <div className="mt-6">
           {currentStep === 0 && (
@@ -66,7 +66,7 @@ export default function BatteryProcess() {
               onNext={goToNext}
               onPrev={goToPrev}
               // onUpdate={handleUpdateData}
-              // data={processData}
+              data={processData}
               // disabled={currentStep > 2}
             />
           )}
