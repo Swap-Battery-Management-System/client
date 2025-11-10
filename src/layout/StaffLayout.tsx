@@ -14,8 +14,10 @@ import logo from "/png.png";
 export default function StaffLayout() {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
-  const handleLogout = async () => {
-    await logout();
+  const handleLogout = () => {
+    logout(() => {
+      navigate("/");
+    })
   };
   const links = [
     {
