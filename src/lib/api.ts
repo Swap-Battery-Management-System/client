@@ -1,9 +1,8 @@
-// lib/api.ts
 import axios from "axios";
 import { useAuthStore } from "../stores/authStores";
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  baseURL: import.meta.env.VITE_API_URL as string,
   withCredentials: true,
   headers: { "Content-Type": "application/json" },
 });
@@ -16,27 +15,20 @@ const processQueue = (error: any, token: string | null = null) => {
   failedQueue = [];
 };
 
-// Request interceptor: gắn token
 api.interceptors.request.use((config) => {
   const token = useAuthStore.getState().accessToken;
-  if (token && config.headers) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
+  if (token && config.headers) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
-// Response interceptor: handle 401 & refresh token
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
-     console.log("INTERCEPTOR ERROR:", error.response?.status, error.config.url);
     const originalRequest = error.config;
-
-    // Skip refresh nếu header có skip-auth-refresh
+ // Nếu request có header skip-auth-refresh → bỏ qua
     if (originalRequest.headers["skip-auth-refresh"]) {
       return Promise.reject(error);
     }
-
     if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
 
@@ -52,7 +44,7 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       try {
-        await useAuthStore.getState().refreshTokenFn();
+        await useAuthStore.getState().refreshToken();
         const newToken = useAuthStore.getState().accessToken;
 
         processQueue(null, newToken);

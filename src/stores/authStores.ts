@@ -1,42 +1,45 @@
-// stores/authStores.ts
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import api from "@/lib/api";
+import type { User } from "@/types/user";
 
 interface AuthState {
   accessToken: string | null;
-  refreshToken: string | null;
+  user: User | null;
+  initialized: boolean;
   setAccessToken: (token: string | null) => void;
-  setRefreshToken: (token: string | null) => void;
-  refreshTokenFn: () => Promise<void>;
+  setUser: (user: User | null) => void;
+  setInitialized: (init: boolean) => void;
+  refreshToken: () => Promise<void>;
   logout: () => Promise<void>;
 }
 
-export const useAuthStore = create(
-  persist<AuthState>(
-    (set, get) => ({
-      accessToken: null,
-      refreshToken: null,
-      setAccessToken: (token) => set({ accessToken: token }),
-      setRefreshToken: (token) => set({ refreshToken: token }),
-      refreshTokenFn: async () => {
-        try {
-          const res = await fetch(`${import.meta.env.VITE_API_URL}/auth/refresh`, {
-            method: "POST",
-            credentials: "include",
-          });
-          if (!res.ok) throw new Error("Refresh failed");
-          const data = await res.json();
-          set({ accessToken: data.accessToken });
-        } catch (err) {
-          await get().logout();
-          throw err;
-        }
-      },
-      logout: async () => {
-        set({ accessToken: null, refreshToken: null });
-        window.location.href = "/"; 
-      },
-    }),
-    { name: "auth-storage" } // persist key
-  )
-);
+export const useAuthStore = create<AuthState>((set, get) => ({
+  accessToken: null,
+  user: null,
+  initialized: false,
+  setAccessToken: (token) => set({ accessToken: token }),
+  setUser: (user) => set({ user }),
+  setInitialized: (init) => set({ initialized: init }),
+
+ refreshToken: async () => {
+  try {
+    const res = await api.get("/auth/refresh", { withCredentials: true });
+    set({ accessToken: res.data.data.accessToken, initialized: true });
+    return res.data.data.accessToken;
+  } catch {
+    set({ accessToken: null, initialized: true });
+    throw new Error("Refresh token failed");
+  }
+},
+
+  logout: async () => {
+    try {
+      await api.get("/auth/logout", {
+        withCredentials: true,
+        headers: { "skip-auth-refresh": "true" },
+      });
+    } catch {}
+    set({ accessToken: null, user: null });
+    // window.location.href = "/"; 
+  },
+}));
