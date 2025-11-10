@@ -36,6 +36,7 @@ import AdminVehicleModelManagement from "./pages/ManageModels";
 import NotificationPage from "./pages/NotificationPage";
 import SupportTicketForm from "./pages/SupportTicketForm";
 import AdminSupportTickets from "./pages/AdminSupportTickets";
+import SupportHistoryPage from "./pages/SupportHistoryPage";
 
 function App() {
   return (
@@ -72,7 +73,7 @@ function App() {
           <Route path="notifications" element={<NotificationPage />} />
           <Route path="my-subscription-packages" element={<MySubcription />} />
           <Route path="support" element={<SupportTicketForm />} />
-
+          <Route path="support-history" element={<SupportHistoryPage />} />
         </Route>
         {/* === Staff Routes === */}
         <Route
