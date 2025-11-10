@@ -61,7 +61,7 @@ export default function BatteryManagement() {
     try {
       const res = await api.get("/batteries", { withCredentials: true });
       setBatteries(res.data.data);
-      console.log("battery",res.data);
+      console.log("battery", res.data);
     } catch (err) {
       console.error("Lỗi lấy danh sách pin:", err);
     }
@@ -536,17 +536,16 @@ export default function BatteryManagement() {
                 !newBattery.manufacturedAt
               }
               onClick={() => handleAddBattery()}
-              className={`px-4 py-1 rounded text-sm text-white transition ${
-                !newBattery.code ||
+              className={`px-4 py-1 rounded text-sm text-white transition ${!newBattery.code ||
                 !newBattery.batteryTypeId ||
                 !newBattery.stationId ||
                 newBattery.currentCapacity === undefined ||
                 newBattery.cycleCount === undefined ||
                 newBattery.soc === undefined ||
                 !newBattery.manufacturedAt
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-[#38A3A5] hover:bg-[#2C7A7B]"
-              }`}
+                ? "bg-gray-400 cursor-not-allowed"
+                : "bg-[#38A3A5] hover:bg-[#2C7A7B]"
+                }`}
             >
               Lưu pin mới
             </button>
@@ -774,8 +773,8 @@ export default function BatteryManagement() {
                       value={
                         editingBattery.manufacturedAt
                           ? new Date(
-                              editingBattery.manufacturedAt
-                            ).toLocaleString("vi-VN")
+                            editingBattery.manufacturedAt
+                          ).toLocaleString("vi-VN")
                           : "Chưa có"
                       }
                       onChange={(e) =>
