@@ -74,9 +74,10 @@ export default function Login() {
       : { username: form.identifier.trim(), password: form.password };
 
     try {
-       const res=await api.post("/auth/login", payload, {
-        withCredentials: true,
-      });
+       const res = await api.post("/auth/login", payload, {
+         withCredentials: true,
+         headers: { "skip-auth-refresh": "true" },
+       });
       useAuthStore.getState().setAccessToken(res.data.data.accessToken);
       const userData = await api.get("auth/me", { withCredentials: true });
       
@@ -99,6 +100,7 @@ export default function Login() {
         setMessage("⚠️ Không thể kết nối đến máy chủ.");
       }
     } finally {
+      console.log("finally");
       setLoading(false);
     }
   };

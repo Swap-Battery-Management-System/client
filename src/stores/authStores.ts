@@ -28,6 +28,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     return res.data.data.accessToken;
   } catch {
     set({ accessToken: null, initialized: true });
+    await get().logout();
     throw new Error("Refresh token failed");
   }
 },

@@ -24,7 +24,12 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (res) => res,
   async (error) => {
-    const originalRequest = error.config;
+     console.log("Interceptor caught error:", error); 
+    const originalRequest = error?.config;
+      if (!originalRequest) {
+      // Nếu không có config (network error, CORS fail...), reject luôn
+      return Promise.reject(error);
+    }
  // Nếu request có header skip-auth-refresh → bỏ qua
     if (originalRequest.headers["skip-auth-refresh"]) {
       return Promise.reject(error);

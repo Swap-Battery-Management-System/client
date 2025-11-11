@@ -1,25 +1,28 @@
 // src/pages/WalkinSwap.tsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import api from "@/lib/api";
 
-// Interfaces
 interface Vehicle {
   id: string;
-  licensePlates: string;
+  licensePlate: string;
   VIN: string;
-  model: { id: string; name: string };
+  model: { id: string; name: string; batteryTypeId: string };
   batteryTypeId: string;
+  status?: string; // thêm status
+
 }
 
 interface User {
   id: string;
   fullName: string;
+  username: string;
   email: string;
   phoneNumber: string;
   address: string;
-  vehicles: Vehicle[];
+  vehicles?: Vehicle[];
 }
 
 interface Station {
@@ -34,7 +37,7 @@ interface Battery {
   cycleCount: number;
   soc: number;
   batteryTypeId: string;
-  status: "available" | "unavailable";
+  status: string;
 }
 
 interface Step1WalkinCheckInProps {
@@ -47,121 +50,125 @@ export default function WalkinSwap({
   onUpdate,
 }: Step1WalkinCheckInProps) {
   const [step, setStep] = useState<1 | 2>(1);
-  const [emailInput, setEmailInput] = useState("");
-  const [licenseInput, setLicenseInput] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [user, setUser] = useState<User | null>(null);
-  const [vehicle, setVehicle] = useState<Vehicle | null>(null);
-  const [station, setStation] = useState<Station | null>(null);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [stations, setStations] = useState<Station[]>([]);
+  const [selectedVehicleId, setSelectedVehicleId] = useState("");
+  const [selectedStationId, setSelectedStationId] = useState("");
   const [batteryStatus, setBatteryStatus] = useState<
     "checking" | "ok" | "none" | null
   >(null);
 
-  // Mock data
-  //TODO: 
-  const mockUser: User = {
-    id: "u123",
-    fullName: "Nguyễn Văn A",
-    email: "a.nguyen@example.com",
-    phoneNumber: "0123456789",
-    address: "123 Đường ABC, Q1, TP.HCM",
-    vehicles: [
-      {
-        id: "v001",
-        licensePlates: "59A-123.45",
-        VIN: "VIN123456",
-        model: { id: "m001", name: "VinFast Klara" },
-        batteryTypeId: "bt001",
-      },
-    ],
-  };
+  // Load stations khi mount
+  useEffect(() => {
+    const fetchStations = async () => {
+      try {
+        const res = await api.get("/stations", { withCredentials: true });
+        const data = res.data?.data?.stations;
 
-  const mockStation: Station = { id: "s001", name: "Trạm 1" };
+        const list: Station[] = Array.isArray(data) ? data : data ? [data] : [];
+        setStations(list);
 
-  const mockBatteries: Battery[] = [
-    {
-      id: "b001",
-      code: "BAT123",
-      currentCapacity: 1200,
-      cycleCount: 5,
-      soc: 90,
-      batteryTypeId: "bt001",
-      status: "available",
-    },
-    {
-      id: "b002",
-      code: "BAT124",
-      currentCapacity: 1000,
-      cycleCount: 10,
-      soc: 50,
-      batteryTypeId: "bt002",
-      status: "available",
-    },
-  ];
+        if (list.length === 1) setSelectedStationId(list[0].id);
+      } catch (err) {
+        console.error("Lỗi khi lấy danh sách trạm:", err);
+        toast.error("Không thể tải danh sách trạm!");
+      }
+    };
+    fetchStations();
+  }, []);
 
-  // Step 1: tìm user
-  const handleSearchUser = () => {
-    if (!emailInput.trim()) return;
-    if (emailInput.toLowerCase() === "a.nguyen@example.com") {
-      setUser(mockUser);
-      setStation(mockStation);
-      setStep(2);
-      toast.success("Tìm thấy user. Tiếp tục nhập biển số xe.");
-    } else {
-      toast.error("Không tìm thấy người dùng!");
-      setUser(null);
+  // Step 1: Tìm user
+  const handleSearchUser = async () => {
+    const keyword = searchInput.trim();
+    if (!keyword) return toast.error("Vui lòng nhập thông tin tìm kiếm!");
+
+    try {
+      const res = await api.get("/users/search", {
+        params: { keyword },
+        withCredentials: true,
+      });
+
+      const data = res.data?.data?.users;
+      const foundUser: User = Array.isArray(data) ? data[0] : data;
+      console.log("foundUser", res.data);
+      if (foundUser) {
+        // Chỉ lấy xe active
+       
+        const activeVehicles = (foundUser.vehicles ?? []).filter(
+          (v) => v.status === "active"
+        );
+        setUser(foundUser);
+        setVehicles(activeVehicles);
+
+        // Nếu chỉ có 1 xe, auto chọn
+        if (activeVehicles.length === 1) {
+          setSelectedVehicleId(activeVehicles[0].id);
+        }
+
+        setStep(2);
+        toast.success("Tìm thấy người dùng ✅");
+        onUpdate("user", foundUser);
+      } else {
+        setUser(null);
+        setVehicles([]);
+        toast.error("Không tìm thấy người dùng!");
+      }
+    } catch (err) {
+      console.error("Lỗi tìm user:", err);
+      toast.error("Có lỗi xảy ra khi tìm người dùng!");
     }
   };
 
-  // Step 2: xác thực xe & pin
-  const handleCheckVehicle = () => {
-    if (!licenseInput.trim() || !user) return;
+  // Step 2: Kiểm tra xe & pin
+  const handleCheckVehicle = async () => {
+    if (!user || !selectedVehicleId) return toast.error("Vui lòng chọn xe!");
+    if (!selectedStationId) return toast.error("Vui lòng chọn trạm!");
 
-    const foundVehicle = user.vehicles.find(
-      (v) => v.licensePlates === licenseInput.trim()
-    );
-    if (!foundVehicle) {
-      toast.error("Xe không thuộc quyền sở hữu của user!");
-      setVehicle(null);
-      setBatteryStatus(null);
-      return;
-    }
+    const vehicle = vehicles.find((v) => v.id === selectedVehicleId);
+    if (!vehicle) return toast.error("Xe không hợp lệ!");
 
-    setVehicle(foundVehicle);
+    try {
+      const res = await api.get(`/batteries/station/${selectedStationId}`, {
+        withCredentials: true,
+      });
+      console.log("battery",res);
+      const batteries: Battery[] = res.data?.data?.batteries ?? [];
 
-    // Kiểm tra pin phù hợp
-    const compatibleBattery = mockBatteries.find(
-      (b) =>
-        b.batteryTypeId === foundVehicle.batteryTypeId &&
-        b.status === "available"
-    );
+      const compatible = batteries.some(
+        (b) =>
+          b.batteryTypeId === vehicle.model.batteryTypeId && b.status === "available"
+      );
 
-    if (compatibleBattery) {
-      setBatteryStatus("ok");
-      onUpdate("newBattery", compatibleBattery);
-      toast.success("Có pin phù hợp tại trạm ✅");
-    } else {
+      if (compatible) {
+        setBatteryStatus("ok");
+        toast.success("Có pin phù hợp tại trạm ✅");
+      } else {
+        setBatteryStatus("none");
+        toast.error("Không có pin phù hợp ❌");
+      }
+
+      onUpdate("vehicle", vehicle);
+      const station = stations.find((s) => s.id === selectedStationId);
+      onUpdate("station", station);
+    } catch (err) {
+      console.error("Lỗi khi kiểm tra pin:", err);
       setBatteryStatus("none");
-      toast.error("Không có pin phù hợp ❌");
+      toast.error("Không thể kiểm tra pin!");
     }
-
-    // Cập nhật thông tin
-    onUpdate("user", user);
-    onUpdate("vehicle", foundVehicle);
-    onUpdate("station", mockStation);
   };
 
-  // Tạo swap session
+  // Step 3: Tạo swap session
   const handleNext = () => {
-    if (!user || !vehicle || !station || batteryStatus !== "ok") {
-      toast.error("Vui lòng hoàn tất check-in trước khi tiếp tục!");
-      return;
+    if (!user || !selectedVehicleId || batteryStatus !== "ok") {
+      return toast.error("Vui lòng hoàn tất check-in trước khi tiếp tục!");
     }
-
     const swapSession = {
       id: "swap001",
       userId: user.id,
-      vehicleId: vehicle.id,
-      stationId: station.id,
+      vehicleId: selectedVehicleId,
+      stationId: selectedStationId,
       isWalkin: true,
     };
     onUpdate("swapSession", swapSession);
@@ -172,61 +179,96 @@ export default function WalkinSwap({
   return (
     <Card className="w-full max-w-2xl p-6 shadow-md mx-auto">
       <CardContent className="space-y-4">
-        <h2 className="text-2xl font-bold text-center">Check-in Walk-in</h2>
+        <h2 className="text-2xl font-bold text-center text-[#38A3A5]">
+          Check-in Walk-in
+        </h2>
 
+        {/* Step 1: Tìm user */}
         {step === 1 && (
           <div className="flex gap-2">
             <input
               type="text"
-              placeholder="Nhập email của khách hàng"
-              value={emailInput}
-              onChange={(e) => setEmailInput(e.target.value)}
+              placeholder="Nhập email / username / số điện thoại"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
               className="flex-1 border p-2 rounded"
             />
-            <Button onClick={handleSearchUser}>Tìm user</Button>
+            <Button
+              className="bg-[#38A3A5] hover:bg-[#2D8688] text-white"
+              onClick={handleSearchUser}
+            >
+              Tìm user
+            </Button>
           </div>
         )}
 
+        {/* Step 2: Hiển thị thông tin user và chọn xe */}
         {step === 2 && user && (
           <>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="Nhập biển số xe"
-                value={licenseInput}
-                onChange={(e) => setLicenseInput(e.target.value)}
-                className="flex-1 border p-2 rounded"
-              />
-              <Button onClick={handleCheckVehicle}>Kiểm tra xe & pin</Button>
+            <div className="bg-gray-50 p-4 rounded space-y-2 border border-[#38A3A5]/20">
+              <p>
+                <strong>Họ tên:</strong> {user.fullName}
+              </p>
+              <p>
+                <strong>Username:</strong> {user.username}
+              </p>
+              <p>
+                <strong>Email:</strong> {user.email}
+              </p>
+              <p>
+                <strong>Số điện thoại:</strong> {user.phoneNumber}
+              </p>
+              <p>
+                <strong>Địa chỉ:</strong> {user.address}
+              </p>
             </div>
 
-            {vehicle && (
-              <div className="mt-4 space-y-2">
-                <p>
-                  <strong>Khách hàng:</strong> {user.fullName} | {user.email}
-                </p>
-                <p>
-                  <strong>Xe:</strong> {vehicle.model.name} |{" "}
-                  {vehicle.licensePlates}
-                </p>
-                <p>
-                  <strong>Trạng thái pin:</strong>{" "}
-                  {batteryStatus === "ok"
-                    ? "Có pin phù hợp tại trạm ✅"
-                    : batteryStatus === "none"
-                    ? "Không có pin phù hợp ❌"
-                    : "Đang kiểm tra..."}
-                </p>
-                <p>
-                  <strong>Trạm:</strong> {station?.name}
-                </p>
-
-                {batteryStatus === "ok" && (
-                  <Button onClick={handleNext} className="w-full mt-4">
-                    Tạo Swap Session & Tiếp tục
-                  </Button>
+            <div className="flex gap-2 mt-3">
+              <select
+                className="flex-1 border p-2 rounded"
+                value={selectedVehicleId}
+                onChange={(e) => setSelectedVehicleId(e.target.value)}
+              >
+                <option value="">-- Chọn xe của khách hàng --</option>
+                {vehicles.length > 0 ? (
+                  vehicles.map((v) => (
+                    <option key={v.id} value={v.id}>
+                      {v.model.name} | {v.licensePlate}
+                    </option>
+                  ))
+                ) : (
+                  <option value="" disabled>
+                    Không có xe active
+                  </option>
                 )}
-              </div>
+              </select>
+              <Button
+                className="bg-[#38A3A5] hover:bg-[#2D8688] text-white"
+                onClick={handleCheckVehicle}
+              >
+                Kiểm tra pin
+              </Button>
+            </div>
+
+            {batteryStatus && (
+              <p
+                className={`mt-3 font-semibold ${
+                  batteryStatus === "ok" ? "text-green-600" : "text-red-600"
+                }`}
+              >
+                {batteryStatus === "ok"
+                  ? "Có pin phù hợp tại trạm ✅"
+                  : "Không có pin phù hợp ❌"}
+              </p>
+            )}
+
+            {batteryStatus === "ok" && (
+              <Button
+                className="w-full mt-4 bg-[#38A3A5] hover:bg-[#2D8688] text-white"
+                onClick={handleNext}
+              >
+                Tạo Swap Session & Tiếp tục
+              </Button>
             )}
           </>
         )}

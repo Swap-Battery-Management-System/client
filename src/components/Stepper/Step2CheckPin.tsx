@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 
 export function Step2CheckPin({ onNext, onPrev, data }: any) {
-  const [batteryCode, setBatteryCode] = useState(data?.oldBattery?.code || "");
+  const [batteryCode, setBatteryCode] = useState(data?.oldBatteryCode || "");
   const [loading, setLoading] = useState(false);
   const [battery, setBattery] = useState<any>(null);
   const [internalDamage, setInternalDamage] = useState<any[]>([]);
@@ -15,6 +15,7 @@ export function Step2CheckPin({ onNext, onPrev, data }: any) {
   const [selectedExternal, setSelectedExternal] = useState<string[]>([]);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const attemptCount = useRef(0);
+  const vehicle = data?.vehicle || {};
 
   // Lấy danh sách external damage khi component mount
   useEffect(() => {
@@ -31,7 +32,6 @@ export function Step2CheckPin({ onNext, onPrev, data }: any) {
     fetchExternalDamage();
   }, []);
 
-  // Hàm dừng polling
   const stopPolling = () => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -40,7 +40,6 @@ export function Step2CheckPin({ onNext, onPrev, data }: any) {
     setLoading(false);
   };
 
-  // Hàm gọi API kiểm tra pin
   const fetchBattery = async () => {
     if (!batteryCode.trim()) return;
     if (!data?.swapSessionId) {
@@ -48,7 +47,6 @@ export function Step2CheckPin({ onNext, onPrev, data }: any) {
       stopPolling();
       return;
     }
-    console.log("Checking battery with code:", batteryCode, data?.swapSessionId);
 
     try {
       const res = await api.post(
@@ -56,16 +54,12 @@ export function Step2CheckPin({ onNext, onPrev, data }: any) {
         { batteryCode },
         { withCredentials: true }
       );
-console.log("Check battery response:", res.data);
+
       const responseData = res.data.data;
       if (responseData?.batteryData) {
         setBattery(responseData.batteryData);
-        setInternalDamage(
-          responseData.damageFees?.filter(
-            (d: any) => d.type === "internal_force"
-          ) || []
-        );
-        toast.success(`Pin ${responseData.battery.code} đã có dữ liệu!`);
+        setInternalDamage(responseData.damageFees);
+        toast.success(`Pin ${responseData.batteryData.code} đã có dữ liệu!`);
         stopPolling();
       } else {
         attemptCount.current += 1;
@@ -84,7 +78,6 @@ console.log("Check battery response:", res.data);
     }
   };
 
-  // Hàm bắt đầu polling
   const startPolling = () => {
     if (!batteryCode.trim()) return toast.error("Nhập mã pin cần kiểm tra!");
     if (intervalRef.current) return toast.info("Đang kiểm tra pin...");
@@ -93,11 +86,10 @@ console.log("Check battery response:", res.data);
 
     attemptCount.current = 0;
     setLoading(true);
-    fetchBattery(); // Gọi ngay lần đầu
-    intervalRef.current = setInterval(fetchBattery, 10000); // gọi lại sau mỗi 10s
+    fetchBattery();
+    intervalRef.current = setInterval(fetchBattery, 10000);
   };
 
-  // Dọn dẹp khi unmount
   useEffect(() => {
     return () => stopPolling();
   }, []);
@@ -124,20 +116,51 @@ console.log("Check battery response:", res.data);
             Kiểm tra thông số pin
           </h2>
 
-          {/* Nhập mã pin */}
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="batteryId" className="text-gray-700 font-medium">
-                Nhập mã pin cần kiểm tra
-              </Label>
-              <Input
-                id="batteryId"
-                placeholder="VD: LION041"
-                value={batteryCode}
-                onChange={(e) => setBatteryCode(e.target.value)}
-                disabled={loading}
-              />
+          {/* Hiển thị thông tin xe người dùng */}
+          {vehicle && (
+            <div className="bg-[#F8FCFC] p-4 rounded-xl border border-[#38A3A5]/20 shadow-sm">
+              <h3 className="text-lg font-semibold text-[#2D8688] mb-2">
+                Thông tin xe người dùng
+              </h3>
+              <p>Tên xe: {vehicle.name || "Không có dữ liệu"}</p>
+              <p>Loại xe: {vehicle.model.name || "Không có dữ liệu"}</p>
+              <p>Biển số: {vehicle.licensePlates || "Không có dữ liệu"}</p>
+              {vehicle.image && (
+                <img
+                  src={vehicle.image}
+                  alt="Vehicle"
+                  className="mt-3 rounded-lg border w-48"
+                />
+              )}
             </div>
+          )}
+
+          {/* Nếu chưa có mã pin thì cho nhập thủ công */}
+          <div className="space-y-4">
+            {batteryCode ? (
+              <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+                <p className="text-green-700 font-medium">
+                  Mã pin: {batteryCode}
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label
+                  htmlFor="batteryId"
+                  className="text-gray-700 font-medium"
+                >
+                  Người dùng chưa từng đổi pin trước đây. Vui lòng nhập mã pin
+                  để kiểm tra:
+                </Label>
+                <Input
+                  id="batteryId"
+                  placeholder="VD: LION041"
+                  value={batteryCode}
+                  onChange={(e) => setBatteryCode(e.target.value)}
+                  disabled={loading}
+                />
+              </div>
+            )}
 
             <div className="flex justify-center mt-4 gap-3">
               <Button
@@ -174,12 +197,12 @@ console.log("Check battery response:", res.data);
                 Kết quả pin
               </h3>
               <p>Mã pin: {battery.code}</p>
-              <p>SOC: {battery.soc}%</p>
+              <p>Loại pin: {battery.batteryType}</p>
               <p>Dung lượng: {battery.currentCapacity} Wh</p>
               <p>Cycle count: {battery.cycleCount}</p>
               <p>Voltage: {battery.voltage}</p>
               <p>Nhiệt độ: {battery.temperature} °C</p>
-              <p>Trạng thái: {battery.status}</p>
+              <p>Ngày sản xuất: {battery.manufacturedAt.split("T")[0]}</p>
 
               {internalDamage.length > 0 && (
                 <div className="mt-4">

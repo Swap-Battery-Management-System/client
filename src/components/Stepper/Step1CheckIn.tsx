@@ -126,7 +126,7 @@ export function Step1CheckIn({
           );
           const oldB = resOldBattery.data.data.battery;
           setOldBattery(oldB);
-          onUpdate("oldBattery", oldB);
+          onUpdate("oldBatteryCode", oldB.code);
           const resOldType = await api.get(
             `/battery-types/${oldB.batteryTypeId}`,
             { withCredentials: true }
