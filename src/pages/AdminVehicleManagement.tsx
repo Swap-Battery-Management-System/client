@@ -201,7 +201,7 @@ export default function AdminVehicleManagement() {
             console.log("Updating vehicle:", id, "to status:", newStatus, "reason:", reason);
             const res = await api.patch(
                 `/vehicles/${id}`,
-                { status: newStatus, reason },
+                { status: newStatus, reason }, // 👈 Gửi cả lý do
                 { withCredentials: true }
             );
 

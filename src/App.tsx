@@ -41,6 +41,8 @@ import SupportTicketForm from "./pages/SupportTicketForm";
 import AdminSupportTickets from "./pages/AdminSupportTickets";
 import WalkinSwap from "./pages/WalkinSwap";
 
+import SupportHistoryPage from "./pages/SupportHistoryPage";
+import CreateInvoice from "./pages/CreateInvoice";
 function App() {
   return (
     <>
@@ -53,6 +55,7 @@ function App() {
         <Route path="/register/verify" element={<OtpVerify />} />
         <Route path="/register/info" element={<RegisterInfo />} />
         <Route path="/register/password" element={<RegisterPassword />} />
+        <Route path="/create-invoice" element={<CreateInvoice />} />
         {/* Layout người dùng */}
         <Route
           path="/home"
@@ -76,6 +79,7 @@ function App() {
           <Route path="notifications" element={<NotificationPage />} />
           <Route path="my-subscription-packages" element={<MySubcription />} />
           <Route path="support" element={<SupportTicketForm />} />
+          <Route path="support-history" element={<SupportHistoryPage />} />
         </Route>
         {/* === Staff Routes === */}
         <Route

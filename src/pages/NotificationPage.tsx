@@ -15,7 +15,14 @@ import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 import { io, Socket } from "socket.io-client";
 import { useAuthStore } from "@/stores/authStores";
-
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
+import { CheckCircle, Trash2 } from "lucide-react";
 interface Notification {
   notification_id: string;
   message: string;
@@ -26,7 +33,7 @@ interface Notification {
 
 export default function NotificationPage() {
   const { user } = useAuth();
-  const token = useAuthStore((state) => state.accessToken); // ✅ hook nằm ở top-level
+  const token = useAuthStore((state) => state.accessToken); // hook nằm ở top-level
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState("All");
@@ -42,8 +49,12 @@ export default function NotificationPage() {
     Alert: <AlertCircle className="w-5 h-5 text-rose-500" />,
     Payment: <CreditCard className="w-5 h-5 text-amber-500" />,
   };
+  const [selected, setSelected] = useState<Notification | null>(null);
+  const [detail, setDetail] = useState<any>(null);
+  const [open, setOpen] = useState(false);
 
-  // 🟢 Nhận thông báo realtime
+
+  // Nhận thông báo realtime
   const handleNewNotification = useCallback((data: any) => {
     console.log("📩 Nhận thông báo mới từ socket:", data);
     const newItem: Notification = {
@@ -56,7 +67,7 @@ export default function NotificationPage() {
     setNotifications((prev) => [newItem, ...prev]);
   }, []);
 
-  // ⚡ Kết nối socket
+  // Kết nối socket
   useEffect(() => {
     if (!user?.id) {
       console.log("⏳ Chưa có user, chưa connect socket...");
@@ -105,9 +116,9 @@ export default function NotificationPage() {
         console.log("📡 Gọi API /notifications?userId=" + user.id);
         const res = await api.get(`/notifications?userId=${user.id}`);
 
-        // ✅ Đúng cấu trúc của BE SwapNet
+        // Đúng cấu trúc của BE SwapNet
         const raw = res?.data?.data?.notifications || [];
-        console.log("✅ API trả về:", raw);
+        console.log("API trả về:", raw);
 
         if (Array.isArray(raw)) {
           const formatted = raw
@@ -116,9 +127,12 @@ export default function NotificationPage() {
               message: n.message,
               type: n.type || "Alert",
               created_date: n.createdAt || n.created_date,
-              status: n.status || "Unread",
+              // Đồng bộ trạng thái đọc từ BE
+              status:
+                n.isRead === true || n.status === "Read"
+                  ? "Read"
+                  : "Unread",
             }))
-            // 🕒 Sắp xếp giảm dần theo thời gian (mới nhất trước)
             .sort(
               (a, b) =>
                 new Date(b.created_date).getTime() -
@@ -142,7 +156,7 @@ export default function NotificationPage() {
   }, [user]);
 
 
-  // 🔸 Đánh dấu tất cả là đã đọc
+  // Đánh dấu tất cả là đã đọc
   const markAllRead = async () => {
     try {
       console.log("📨 PATCH /notifications/read-all cho user:", user?.id);
@@ -154,7 +168,7 @@ export default function NotificationPage() {
     }
   };
 
-  // 🔍 Lọc danh sách
+  //  Lọc danh sách
   const filtered =
     filter === "All"
       ? notifications
@@ -162,7 +176,7 @@ export default function NotificationPage() {
         ? notifications.filter((n) => n.status === "Unread")
         : notifications.filter((n) => n.status === "Read");
 
-  // 🕓 Loading
+  //  Loading
   if (loading) {
     return (
       <div className="flex justify-center items-center h-80">
@@ -170,8 +184,38 @@ export default function NotificationPage() {
       </div>
     );
   }
+  const handleViewDetail = async (id: string) => {
+    try {
+      // Gọi API chi tiết
+      const res = await api.get(`/notifications/${id}`);
+      const detailData = res.data?.data?.notification;
+      setDetail(detailData);
+      setOpen(true);
 
-  // 🧱 UI
+
+      await api.patch(`/notifications/${id}/read`);
+      setNotifications(prev =>
+        prev.map(n =>
+          n.notification_id === id ? { ...n, status: "Read" } : n
+        )
+      );
+    } catch (err) {
+      console.error("❌ Lỗi khi lấy chi tiết thông báo:", err);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    if (!confirm("Bạn có chắc muốn xóa thông báo này?")) return;
+    try {
+      await api.delete(`/notifications/${id}`);
+      setNotifications(prev => prev.filter(n => n.notification_id !== id));
+      setOpen(false);
+    } catch (err) {
+      console.error("❌ Lỗi khi xóa thông báo:", err);
+    }
+  };
+
+  // UI
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
       <div className="flex items-center justify-between mb-6">
@@ -221,6 +265,7 @@ export default function NotificationPage() {
           {filtered.map((n) => (
             <div
               key={n.notification_id}
+              onClick={() => handleViewDetail(n.notification_id)}
               className={cn(
                 "flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-[1px]",
                 n.status === "Unread"
@@ -248,6 +293,61 @@ export default function NotificationPage() {
           ))}
         </div>
       )}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-md rounded-2xl shadow-2xl border border-emerald-100 bg-white/95 backdrop-blur-sm">
+          <DialogHeader className="space-y-1">
+            <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-gray-800">
+              <Bell className="w-5 h-5 text-emerald-500" />
+              {detail?.title || "Chi tiết thông báo"}
+            </DialogTitle>
+
+            <DialogDescription className="text-xs text-gray-500 flex items-center justify-between">
+              <span>{new Date(detail?.createdAt).toLocaleString("vi-VN")}</span>
+              {detail?.type && (
+                <span className="px-2 py-[2px] rounded-full bg-emerald-100 text-emerald-600 text-[11px] font-medium">
+                  {detail.type}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="py-3">
+            <p className="whitespace-pre-line text-gray-700 leading-relaxed text-sm">
+              {detail?.message || "Không có nội dung chi tiết."}
+            </p>
+          </div>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+            <Button
+              variant="outline"
+              onClick={() => handleDelete(detail?.id)}
+              className="border-rose-300 text-rose-600 hover:bg-rose-50 hover:border-rose-400 flex items-center gap-2 transition"
+            >
+              <Trash2 className="w-4 h-4" /> Xóa
+            </Button>
+
+            <Button
+              onClick={() => {
+                if (detail?.id)
+                  api.patch(`/notifications/${detail.id}/read`).then(() => {
+                    setNotifications(prev =>
+                      prev.map(n =>
+                        n.notification_id === detail.id
+                          ? { ...n, status: "Read" }
+                          : n
+                      )
+                    );
+                  });
+                setOpen(false);
+              }}
+              className="bg-gradient-to-r from-cyan-500 to-emerald-500 text-white hover:from-cyan-600 hover:to-emerald-600 flex items-center gap-2 shadow-md transition"
+            >
+              <CheckCircle className="w-4 h-4" /> Đã đọc
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
     </div>
   );
 }
