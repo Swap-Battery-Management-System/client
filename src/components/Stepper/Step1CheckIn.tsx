@@ -171,14 +171,15 @@ export function Step1CheckIn({
         { withCredentials: true }
       );
 
+      console.log("checkin res:", res.data);
       const swapSession = res.data?.data?.swapSession;
 
       if (swapSession?.id) {
-        onUpdate("swapSessionId", swapSession.id);
+        onUpdate("swapSession", swapSession);
         toast.success(" Check-in thành công!");
         onNext();
       } else {
-        toast.error("Không thể lấy mã phiên hoán đổi (swapSessionId).");
+        toast.error("Không thể lấy mã phiên hoán đổi (swapSession).");
       }
     } catch (error: any) {
       console.error("Lỗi check-in:", error);

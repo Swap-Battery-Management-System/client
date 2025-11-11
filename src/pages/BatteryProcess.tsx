@@ -20,6 +20,7 @@ export default function BatteryProcess() {
     station: null,
     checkPinResult: null,
     payment: null,
+    swapSession: null,
   });
 
   // Hàm cập nhật data từ các step con

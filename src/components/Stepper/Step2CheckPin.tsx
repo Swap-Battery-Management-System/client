@@ -16,6 +16,7 @@ export function Step2CheckPin({ onNext, onPrev, data }: any) {
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const attemptCount = useRef(0);
   const vehicle = data?.vehicle || {};
+  const swapSession = data?.swapSession || {};
 
   // Lấy danh sách external damage khi component mount
   useEffect(() => {
@@ -42,7 +43,7 @@ export function Step2CheckPin({ onNext, onPrev, data }: any) {
 
   const fetchBattery = async () => {
     if (!batteryCode.trim()) return;
-    if (!data?.swapSessionId) {
+    if (swapSession?.id === undefined) {
       toast.error("Thiếu thông tin phiên đổi pin (swapSessionId)!");
       stopPolling();
       return;
@@ -50,7 +51,7 @@ export function Step2CheckPin({ onNext, onPrev, data }: any) {
 
     try {
       const res = await api.post(
-        `/swap-sessions/${data.swapSessionId}/check-battery`,
+        `/swap-sessions/${swapSession.id}/check-battery`,
         { batteryCode },
         { withCredentials: true }
       );

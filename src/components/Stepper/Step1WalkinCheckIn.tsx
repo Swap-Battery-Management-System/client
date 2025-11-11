@@ -7,7 +7,7 @@ import api from "@/lib/api";
 
 interface Vehicle {
   id: string;
-  licensePlate: string;
+  licensePlates: string;
   VIN: string;
   model: { id: string; name: string; batteryTypeId: string };
   batteryTypeId: string;
@@ -233,7 +233,7 @@ export default function WalkinSwap({
                 {vehicles.length > 0 ? (
                   vehicles.map((v) => (
                     <option key={v.id} value={v.id}>
-                      {v.model.name} | {v.licensePlate}
+                      {v.model.name} | {v.licensePlates}
                     </option>
                   ))
                 ) : (
