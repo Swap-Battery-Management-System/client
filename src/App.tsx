@@ -27,6 +27,7 @@ import AdminStationManagement from "./pages/AdminStationManagement";
 import AdminBatteryTypeManagement from "./pages/AdminBatteryTypeManagement";
 import AdminSubscriptionManagement from "./pages/AdminSubscriptionManagement";
 import AdminDamageFeeManagement from "./pages/AdminDamageFeeManagement";
+import AdminDashboard from "./pages/AdminDashboard";
 
 import BatteryManagement from "./pages/BatteryManagement";
 import StaffBookingManagement from "./pages/StaffBookingManagement";
@@ -115,6 +116,8 @@ function App() {
             element={<AdminSubscriptionManagement />}
           />
           <Route path="damage-fee" element={<AdminDamageFeeManagement />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
+
 
           <Route path="support-tickets" element={<AdminSupportTickets />} />
           <Route path="manage-battery" element={<BatteryManagement />} />
