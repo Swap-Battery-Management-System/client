@@ -39,7 +39,7 @@ import NotificationPage from "./pages/NotificationPage";
 import SupportTicketForm from "./pages/SupportTicketForm";
 import AdminSupportTickets from "./pages/AdminSupportTickets";
 import SupportHistoryPage from "./pages/SupportHistoryPage";
-
+import CreateInvoice from "./pages/CreateInvoice";
 function App() {
   return (
     <>
@@ -52,6 +52,7 @@ function App() {
         <Route path="/register/verify" element={<OtpVerify />} />
         <Route path="/register/info" element={<RegisterInfo />} />
         <Route path="/register/password" element={<RegisterPassword />} />
+        <Route path="/create-invoice" element={<CreateInvoice />} />
         {/* Layout người dùng */}
         <Route
           path="/home"
