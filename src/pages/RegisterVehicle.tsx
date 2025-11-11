@@ -104,22 +104,39 @@ export default function RegisterVehicle() {
     setUploading(true);
 
     try {
-      // Upload ảnh lên ImgBB nếu cần lưu cloud
-      const formData = new FormData();
-      formData.append("key", "4a4efdffaf66aa2a958ea43ace6f49c1");
-      formData.append("image", file);
+      // Upload ảnh lên Cloudinary
+      toast.info("Đang tải ảnh lên cloud...");
 
-      const res = await axios.post("https://api.imgbb.com/1/upload", formData);
-      setCavetUrl(res.data.data.url);
+      const cloudName = import.meta.env.VITE_CLOUDINARY_CLOUD_NAME;
+      const uploadPreset = import.meta.env.VITE_CLOUDINARY_UPLOAD_PRESET;
+
+      const formData = new FormData();
+      formData.append("file", file);
+      if (uploadPreset) formData.append("upload_preset", uploadPreset);
+      // optional folder
+      formData.append("folder", "swapnet_cavets");
+
+      const res = await fetch(
+        `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+
+      const data = await res.json();
+      if (!data.secure_url) throw new Error("Upload thất bại");
+
+      setCavetUrl(data.secure_url);
       // validate cavet after upload
-      validateField("cavet", res.data.data.url);
+      validateField("cavet", data.secure_url);
       toast.success("Tải ảnh cavet thành công!");
 
-      // Bước OCR
+      // Bước OCR (nếu cần)
       // await handleOCR(file);
     } catch (err) {
       console.error(err);
-      toast.error("Không thể tải ảnh cavet lên!");
+      toast.error("Không thể tải ảnh cavet lên cloud!");
     } finally {
       setUploading(false);
     }
@@ -129,7 +146,10 @@ export default function RegisterVehicle() {
   function validateField(nameField: string, value: string) {
     switch (nameField) {
       case "plate":
+        // allow letters, digits, spaces, dot and dash
         if (!value || !value.trim()) setPlateError("Vui lòng nhập biển số");
+        else if (!/^[A-Z0-9 .-]+$/.test(value.trim()))
+          setPlateError("Biển số không hợp lệ (không chứa ký tự đặc biệt)");
         else setPlateError(null);
         break;
       case "model":
@@ -137,13 +157,18 @@ export default function RegisterVehicle() {
         else setModelError(null);
         break;
       case "vin":
+        // VIN must be 17 characters, letters (excluding I,O,Q) and digits
         if (!value || !value.trim())
           setVinError("Vui lòng nhập số khung (VIN)");
+        else if (!/^[A-HJ-NPR-Z0-9]{17}$/.test(value.trim()))
+          setVinError(
+            "VIN không hợp lệ (17 ký tự chữ hoa và số, không chứa I/O/Q)"
+          );
         else setVinError(null);
         break;
       case "name":
-        if (!value || !value.trim()) setNameError("Vui lòng nhập tên xe");
-        else setNameError(null);
+        // No required validation for name; if user leaves it empty we'll default it on submit
+        setNameError(null);
         break;
       case "cavet":
         if (!value) setCavetError("Vui lòng tải ảnh cavet");
@@ -161,22 +186,30 @@ export default function RegisterVehicle() {
     validateField("plate", plate);
     validateField("model", modelId);
     validateField("vin", vin);
-    validateField("name", name);
     validateField("cavet", cavetUrl);
 
     // Validate required fields before sending. Do not disable button when fields are missing; show toast instead.
-    if (!plate || !modelId || !vin || !name || !cavetUrl) {
+    if (!plate || !modelId || !vin || !cavetUrl) {
       toast.error(
         "Vui lòng điền đầy đủ thông tin bắt buộc và tải ảnh cavet trước khi gửi."
       );
       return;
     }
 
+    // If user didn't provide a name, default to "{model name} {licensePlate}"
+    let finalName = name.trim();
+    if (!finalName) {
+      const model = models.find((m) => m.id === modelId);
+      const modelName = (model?.name || "Xe").trim();
+      finalName = `${modelName} (${plate.trim()})`;
+      setName(finalName);
+    }
+
     const payload = {
       licensePlates: plate.trim(),
       VIN: vin.trim(),
       modelId,
-      name: name.trim(),
+      name: finalName,
       validatedImage: cavetUrl,
     };
 
@@ -206,7 +239,7 @@ export default function RegisterVehicle() {
 
       if (status === 400) {
         setMessage(
-          "Thông tin không hợp lệ hoặc xe này đã được đăng ký trước đó."
+          "Xe này đã được đăng ký trước đó."
         );
       } else if (status === 401) {
         setMessage(
@@ -227,7 +260,7 @@ export default function RegisterVehicle() {
     }
   };
 
-  const isFormValid = plate && modelId && vin && name && cavetUrl;
+  const isFormValid = plate && modelId && vin && cavetUrl;
 
   return (
     <div className="flex h-screen bg-[#E9F8F8]">
@@ -402,6 +435,14 @@ export default function RegisterVehicle() {
                   </div>
                 )}
               </div>
+              {uploading && (
+                <p className="text-sm text-gray-600 mt-2">
+                  Đang tải ảnh lên cloud... Vui lòng chờ.
+                </p>
+              )}
+              {cavetError && (
+                <p className="text-red-500 text-sm mt-2">{cavetError}</p>
+              )}
             </div>
           </form>
         </Card>
