@@ -22,29 +22,52 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
 
+interface BatteryType {
+    id: string;
+    name: string;
+    designCapacity?: string;
+    price?: string;
+}
+
+interface Model {
+    id: string;
+    name: string;
+    brand?: string;
+    batteryTypeId?: string;
+    batteryType?: BatteryType;
+}
+
 interface Vehicle {
     id: string;
     licensePlates: string;
-    name: string;
     VIN: string;
-    status: string;
-    model?: {
-        id: string;
-        name: string;
-        batteryType?: {
-            name: string;
-            designCapacity?: string;
-        };
-    };
-    user?: {
-        id: string;
-        fullName: string;
-        email: string;
+    status: "pending" | "active" | "invalid" | "inactive";
+    modelId?: string;
+    model?: Model;
+    userId?: string;
+    user?: User;
+    validatedImage?: string;
+    reason?: string;
+}
+
+interface User {
+    id: string;
+    fullName: string;
+    email: string;
+}
+
+interface VehicleResponse {
+    status: "success" | "error";
+    code: number;
+    data: {
+        vehicles: Vehicle[];
     };
 }
 
+
 export default function AdminVehicleManagement() {
     const { user } = useAuth();
+    const [users, setUsers] = useState<User[]>([]);
     const [vehicles, setVehicles] = useState<Vehicle[]>([]);
     const [selectedVehicle, setSelectedVehicle] = useState<Vehicle | null>(null);
     const [batteryTypes, setBatteryTypes] = useState<{ id: string; name: string }[]>([]);
@@ -56,71 +79,65 @@ export default function AdminVehicleManagement() {
     const [filterBattery, setFilterBattery] = useState("");
     const [filterModel, setFilterModel] = useState("");
 
-    // Lấy toàn bộ danh sách xe trong hệ thống
-    const fetchAllVehicles = async () => {
+    // Fetch tất cả dữ liệu cần thiết
+    const fetchData = async () => {
         try {
             setLoading(true);
 
-            const res = await api.get("/vehicles", {
-                withCredentials: true
+            // Fetch users và vehicles song song
+            const [usersRes, vehiclesRes, batteryRes, modelsRes] = await Promise.all([
+                api.get("/users", { withCredentials: true }),
+                api.get("/vehicles", { withCredentials: true }),
+                api.get("/battery-types", { withCredentials: true }),
+                api.get("/models", { withCredentials: true }),
+            ]);
+
+            const usersData: User[] = usersRes?.data?.data?.users || [];
+            const vehiclesData: Vehicle[] = vehiclesRes?.data?.data?.vehicles || [];
+            const batteryData: BatteryType[] = batteryRes?.data?.data?.batteryTypes || [];
+            const modelsData: Model[] = modelsRes?.data?.data || [];
+
+            console.log("Users:", usersData);
+            console.log("Vehicles:", vehiclesData);
+            console.log("Battery types:", batteryData);
+            console.log("Models:", modelsData);
+
+            // Gán user và model vào vehicle
+            const vehiclesWithUser = vehiclesData.map((v) => {
+                const vehicleModel = v.modelId ? modelsData.find((m) => m.id === v.modelId) : undefined;
+                const batteryType = vehicleModel?.batteryTypeId
+                    ? batteryData.find((b) => b.id === vehicleModel.batteryTypeId)
+                    : undefined;
+
+                const vehicleWithDetails = {
+                    ...v,
+                    user: usersData.find((u) => u.id === v.userId),
+                    model: vehicleModel ? { ...vehicleModel, batteryType } : undefined,
+                };
+
+                console.log("Processed vehicle:", vehicleWithDetails);
+                return vehicleWithDetails;
             });
 
-            const data =
-                res?.data?.data?.vehicles ||
-                res?.data?.vehicles ||
-                res?.data?.data ||
-                [];
-
-                console.log("vehicle",res.data);
-            if (!Array.isArray(data)) {
-                throw new Error("Phản hồi không hợp lệ.");
-            }
-
-            setVehicles(data);
+            setUsers(usersData);
+            setVehicles(vehiclesWithUser);
+            setBatteryTypes(batteryData);
+            setModels(modelsData);
         } catch (err) {
-            console.error("Lỗi khi lấy danh sách xe:", err);
+            console.error("Lỗi khi lấy dữ liệu:", err);
+            toast.error("Lấy dữ liệu thất bại!");
         } finally {
             setLoading(false);
         }
     };
 
-    // Lấy danh sách loại pin
-    const fetchBatteryTypes = async () => {
-        try {
-            const res = await api.get("/battery-types", { withCredentials: true });
-            const types = res.data?.data?.batteryTypes || [];
-            setBatteryTypes(types);
-        } catch (err) {
-            console.error("Lỗi khi lấy danh sách pin:", err);
-        }
-    };
-
-    const fetchModels = async () => {
-        try {
-            const res = await api.get("/models", { withCredentials: true });
-            const data = res.data?.data || [];
-            setModels(data);
-        } catch (err) {
-            console.error("Lỗi khi lấy danh sách model:", err);
-        }
-    };
-
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                setLoading(true);
-                await Promise.all([fetchAllVehicles(), fetchBatteryTypes(), fetchModels()]);
-            } catch (err) {
-                console.error("Lỗi khi lấy dữ liệu:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
         fetchData();
     }, []);
 
     //  Mở modal xem chi tiết xe
     const handleViewDetails = (vehicles: Vehicle) => {
+        console.log("Viewing vehicle:", vehicles);
         setSelectedVehicle(vehicles);
         setOpen(true);
     };
@@ -128,9 +145,11 @@ export default function AdminVehicleManagement() {
     //  Lọc xe theo từ khóa và trạng thái
     const filteredVehicles = vehicles.filter((v) => {
         const matchSearch =
-            v.licensePlates?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            v.model?.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            v.VIN?.toLowerCase().includes(searchTerm.toLowerCase());
+          v.licensePlates
+            ?.toLowerCase()
+            .includes(searchTerm.toLowerCase().trim()) ||
+          v.model?.name.toLowerCase().includes(searchTerm.toLowerCase().trim()) ||
+          v.VIN?.toLowerCase().includes(searchTerm.toLowerCase().trim());
 
         const matchStatus =
             filterStatus === "" || v.status === filterStatus;
@@ -144,28 +163,69 @@ export default function AdminVehicleManagement() {
         return matchSearch && matchStatus && matchBattery && matchModel;
     });
 
-    // Cập nhật trạng thái xe
-    const handleChangeStatus = async (id: string, newStatus: string) => {
+    //  Xóa xe
+    const handleDeleteVehicle = async (id: string) => {
+        if (!id) return toast.error("ID xe không hợp lệ!");
+
+        // Hỏi xác nhận trước khi xóa
+        if (!confirm("Bạn có chắc chắn muốn xóa xe này không?")) return;
+
         try {
-            await api.patch(
+            const res = await api.delete(`/vehicles/${id}`, { withCredentials: true });
+
+            if (res.data?.status === "success") {
+                setVehicles((prev) => prev.filter((v) => v.id !== id));
+                toast.success("Đã xóa xe thành công!");
+            } else {
+                toast.error("Xóa xe thất bại!");
+            }
+        } catch (err: any) {
+            console.error(err.response?.data || err);
+            toast.error(err.response?.data?.message || "Không thể xóa xe!");
+        }
+    };
+
+    // Cập nhật trạng thái
+    const handleChangeStatus = async (
+        id: string,
+        newStatus: Vehicle["status"],
+        reason?: string
+    ) => {
+        const vehicle = vehicles.find(v => v.id === id);
+        if (!vehicle) return toast.error("Không tìm thấy xe!");
+        if (vehicle.status === "inactive") {
+            return toast.error("Xe đã ngừng hoạt động, không thể thay đổi trạng thái!");
+        }
+
+        try {
+            console.log("Updating vehicle:", id, "to status:", newStatus, "reason:", reason);
+            const res = await api.patch(
                 `/vehicles/${id}`,
-                { status: newStatus },
+                { status: newStatus, reason }, // 👈 Gửi cả lý do
                 { withCredentials: true }
             );
 
-            // Cập nhật local state ngay lập tức
-            setVehicles(prev =>
-                prev.map(v =>
-                    v.id === id ? { ...v, status: newStatus } : v
-                )
-            );
-
-            toast.success(`Đã cập nhật trạng thái xe thành "${newStatus}"`);
-        } catch (err) {
-            console.error("Lỗi khi cập nhật trạng thái:", err);
-            toast.error("Không thể cập nhật trạng thái!");
+            if (res.data?.status === "success") {
+                setVehicles(prev =>
+                    prev.map(v =>
+                        v.id === id ? { ...v, status: newStatus, reason } : v
+                    )
+                );
+                toast.success(
+                    newStatus === "invalid"
+                        ? "Xe đã bị từ chối!"
+                        : `Đã cập nhật trạng thái xe thành "${newStatus}"`
+                );
+            } else {
+                toast.error("Cập nhật thất bại!");
+            }
+        } catch (err: any) {
+            console.error(err.response?.data || err);
+            toast.error(err.response?.data?.message || "Không thể cập nhật trạng thái!");
         }
     };
+
+
 
 
 
@@ -275,82 +335,30 @@ export default function AdminVehicleManagement() {
                                             {v.model?.batteryType?.name || "Không rõ"}
                                         </td>
 
-                                        <td className="border border-[#CDE8E5] px-3 py-2 ">
-                                            <Select
-                                                value={v.status}
-                                                onValueChange={(value) => handleChangeStatus(v.id, value)}
+                                        <td className="border border-[#CDE8E5] px-3 py-2 text-center">
+                                            <span
+                                                className={`
+                                                inline-block px-3 py-1 rounded-full font-medium text-sm
+                                                ${v.status === "active"
+                                                        ? "bg-green-100 text-green-700"
+                                                        : v.status === "pending"
+                                                            ? "bg-yellow-100 text-yellow-700"
+                                                            : v.status === "invalid"
+                                                                ? "bg-red-100 text-red-700"
+                                                                : "bg-gray-200 text-gray-600"
+                                                    }
+                                           `}
                                             >
-                                                <SelectTrigger className="w-[150px] mx-auto">
-                                                    <span
-                                                        className={`font-medium ${v.status === "active"
-                                                            ? "text-green-600"
-                                                            : v.status === "pending"
-                                                                ? "text-yellow-600"
-                                                                : v.status === "inactive"
-                                                                    ? "text-red-600"
-                                                                    : "text-gray-600"
-                                                            }`}
-                                                    >
-                                                        {v.status === "active"
-                                                            ? "Đã duyệt"
-                                                            : v.status === "pending"
-                                                                ? "Đang chờ duyệt"
-                                                                : v.status === "invalid"
-                                                                    ? "Từ chối"
-                                                                    : "Không rõ"}
-                                                    </span>
-                                                </SelectTrigger>
-
-                                                <SelectContent>
-                                                    <SelectItem value="pending" className="text-yellow-600">
-                                                        Đang chờ duyệt
-                                                    </SelectItem>
-                                                    <SelectItem value="active" className="text-green-600">
-                                                        Đã duyệt
-                                                    </SelectItem>
-                                                    <SelectItem value="invalid" className="text-red-600">
-                                                        Từ chối
-                                                    </SelectItem>
-                                                </SelectContent><SelectContent>
-                                                    {v.status === "pending" && (
-                                                        <>
-                                                            <SelectItem value="pending" className="text-yellow-600">
-                                                                Đang chờ duyệt
-                                                            </SelectItem>
-                                                            <SelectItem value="active" className="text-green-600">
-                                                                Đã duyệt
-                                                            </SelectItem>
-                                                            <SelectItem value="invalid" className="text-red-600">
-                                                                Từ chối
-                                                            </SelectItem>
-                                                        </>
-                                                    )}
-
-                                                    {v.status === "active" && (
-                                                        <>
-                                                            <SelectItem value="active" className="text-green-600">
-                                                                Đã duyệt
-                                                            </SelectItem>
-                                                            <SelectItem value="invalid" className="text-red-600">
-                                                                Từ chối
-                                                            </SelectItem>
-                                                        </>
-                                                    )}
-
-                                                    {v.status === "inactive" && (
-                                                        <>
-                                                            <SelectItem value="active" className="text-green-600">
-                                                                Đã duyệt
-                                                            </SelectItem>
-                                                            <SelectItem value="invalid" className="text-red-600">
-                                                                Từ chối
-                                                            </SelectItem>
-                                                        </>
-                                                    )}
-                                                </SelectContent>
-
-                                            </Select>
+                                                {v.status === "active"
+                                                    ? "Đã duyệt"
+                                                    : v.status === "pending"
+                                                        ? "Đang chờ duyệt"
+                                                        : v.status === "invalid"
+                                                            ? "Từ chối"
+                                                            : "Ngừng hoạt động"}
+                                            </span>
                                         </td>
+
                                         <td className="border border-[#CDE8E5] px-3 py-2">
                                             <div className="flex justify-center gap-2">
                                                 <Button
@@ -358,6 +366,12 @@ export default function AdminVehicleManagement() {
                                                     onClick={() => handleViewDetails(v)}
                                                 >
                                                     Xem chi tiết
+                                                </Button>
+                                                <Button
+                                                    className="bg-red-500 hover:bg-red-600 text-white"
+                                                    onClick={() => handleDeleteVehicle(v.id)}
+                                                >
+                                                    Xóa
                                                 </Button>
                                             </div>
                                         </td>
@@ -367,9 +381,9 @@ export default function AdminVehicleManagement() {
                         </table>
                     </div>
                 )}
-                {/*  Modal xem chi tiết */}
+                {/* Modal xem chi tiết */}
                 <Dialog open={open} onOpenChange={setOpen}>
-                    <DialogContent className="max-w-md bg-white rounded-2xl">
+                    <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto bg-white rounded-2xl p-6 shadow-lg">
                         <DialogHeader>
                             <DialogTitle className="text-[#2F8F9D] text-lg">
                                 Chi tiết xe
@@ -380,46 +394,168 @@ export default function AdminVehicleManagement() {
                         </DialogHeader>
 
                         {selectedVehicle && (
-                            <div className="space-y-3 mt-3">
-                                <div>
-                                    <Label className="text-[#2F8F9D]">Biển số:</Label>
-                                    <p>{selectedVehicle.licensePlates}</p>
+                            <>
+                                <div className="flex justify-center mt-4">
+                                    {selectedVehicle.validatedImage ? (
+                                        <img
+                                            src={selectedVehicle.validatedImage}
+                                            alt="Validated Vehicle"
+                                            className="w-full max-w-lg rounded-xl shadow-lg border border-gray-200"
+                                        />
+                                    ) : (
+                                        <p className="text-gray-500 italic">Chưa có ảnh xác thực</p>
+                                    )}
                                 </div>
-                                <div>
-                                    <Label className="text-[#2F8F9D]">Model:</Label>
-                                    <p>{selectedVehicle.model?.name || "Không rõ"}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-[#2F8F9D]">Số khung (VIN):</Label>
-                                    <p>{selectedVehicle.VIN}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-[#2F8F9D]">Loại Battery:</Label>
-                                    <p>{selectedVehicle.model?.batteryType?.name || "Không rõ"}</p>
-                                </div>
-                                <div>
-                                    <Label className="text-[#2F8F9D]">Trạng thái:</Label>
-                                    <p>
-                                        {selectedVehicle.status === "pending"
-                                            ? "Đang chờ duyệt"
-                                            : selectedVehicle.status === "active"
-                                                ? "Đã duyệt"
-                                                : "Từ chối"}
-                                    </p>
-                                </div>
-                            </div>
-                        )}
+                                <div className="mt-4 flex flex-col md:flex-row gap-6">
+                                    {/* Cột trái: Thông tin người dùng */}
+                                    <div className="flex-1 space-y-3">
+                                        <div>
+                                            <Label className="text-[#2F8F9D]">Người đăng ký:</Label>
+                                            <p>{selectedVehicle.user?.fullName || "Chưa rõ"}</p>
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#2F8F9D]">Email:</Label>
+                                            <p>{selectedVehicle.user?.email || "Chưa rõ"}</p>
+                                        </div>
+                                    </div>
 
-                        <div className="flex justify-end mt-6">
-                            <Button
-                                onClick={() => setOpen(false)}
-                                className="bg-[#2F8F9D] hover:bg-[#267D89] text-white"
-                            >
-                                Đóng
-                            </Button>
-                        </div>
+                                    {/* Cột phải: Thông tin xe */}
+                                    <div className="flex-1 space-y-3">
+                                        <div>
+                                            <Label className="text-[#2F8F9D]">Biển số:</Label>
+                                            <p>{selectedVehicle.licensePlates}</p>
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#2F8F9D]">Model:</Label>
+                                            <p>{selectedVehicle.model?.name || "Không rõ"}</p>
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#2F8F9D]">Số khung (VIN):</Label>
+                                            <p>{selectedVehicle.VIN}</p>
+                                        </div>
+                                        <div>
+                                            <Label className="text-[#2F8F9D]">Loại Battery:</Label>
+                                            <p>{selectedVehicle.model?.batteryType?.name || "Không rõ"}</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Chọn trạng thái và nhập lý do */}
+                                <div className="flex flex-col items-center mt-6 space-y-3">
+                                    <Label className="text-[#2F8F9D]">Trạng thái:</Label>
+
+                                    {selectedVehicle.status === "inactive" ? (
+                                        <p className="text-gray-500 font-medium italic">
+                                            Xe đang ở trạng thái “Ngừng hoạt động” — admin không thể thay đổi.
+                                        </p>
+                                    ) : (
+                                        <Select
+                                            value={selectedVehicle.status}
+                                            onValueChange={(value: "pending" | "active" | "invalid") => {
+                                                setSelectedVehicle((prev) =>
+                                                    prev ? { ...prev, status: value } : prev
+                                                );
+                                            }}
+                                        >
+                                            <SelectTrigger className="w-[200px] text-center">
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                {selectedVehicle.status === "pending" ? (
+                                                    <>
+                                                        <SelectItem value="pending" className="text-yellow-600">
+                                                            Đang chờ duyệt
+                                                        </SelectItem>
+                                                        <SelectItem value="active" className="text-green-600">
+                                                            Duyệt
+                                                        </SelectItem>
+                                                        <SelectItem value="invalid" className="text-red-600">
+                                                            Từ chối
+                                                        </SelectItem>
+                                                    </>
+                                                ) : selectedVehicle.status === "active" ? (
+                                                    <>
+                                                        <SelectItem value="active" className="text-green-600">
+                                                            Đã duyệt
+                                                        </SelectItem>
+                                                        <SelectItem value="invalid" className="text-red-600">
+                                                            Từ chối
+                                                        </SelectItem>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <SelectItem value="invalid" className="text-red-600">
+                                                            Từ chối
+                                                        </SelectItem>
+                                                        <SelectItem value="active" className="text-green-600">
+                                                            Duyệt lại
+                                                        </SelectItem>
+                                                    </>
+                                                )}
+                                            </SelectContent>
+                                        </Select>
+                                    )}
+
+                                    {selectedVehicle.status === "invalid" && (
+                                        <div className="mt-3 w-full max-w-sm">
+                                            <Label className="text-[#2F8F9D]">Lý do từ chối:</Label>
+                                            <textarea
+                                                className="mt-2 w-full border rounded-md p-2 text-sm focus:ring-2 focus:ring-[#2F8F9D] focus:outline-none"
+                                                rows={3}
+                                                placeholder="Nhập lý do từ chối..."
+                                                value={selectedVehicle.reason || ""}
+                                                onChange={(e) =>
+                                                    setSelectedVehicle((prev) =>
+                                                        prev ? { ...prev, reason: e.target.value } : prev
+                                                    )
+                                                }
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
+
+                                {/* Nút hành động */}
+                                <div className="flex justify-end mt-6 gap-3">
+                                    <Button
+                                        className="bg-gray-400 hover:bg-gray-500 text-white"
+                                        onClick={() => setOpen(false)}
+                                    >
+                                        Đóng
+                                    </Button>
+
+                                    <Button
+                                        className="bg-[#2F8F9D] hover:bg-[#267D89] text-white"
+                                        onClick={async () => {
+                                            if (!selectedVehicle) return;
+
+                                            // Kiểm tra nhập lý do khi từ chối
+                                            if (
+                                                selectedVehicle.status === "invalid" &&
+                                                !selectedVehicle.reason?.trim()
+                                            ) {
+                                                toast.error("Vui lòng nhập lý do từ chối!");
+                                                return;
+                                            }
+
+                                            await handleChangeStatus(
+                                                selectedVehicle.id,
+                                                selectedVehicle.status,
+                                                selectedVehicle.reason
+                                            );
+
+                                            setOpen(false);
+                                        }}
+                                    >
+                                        Lưu thay đổi
+                                    </Button>
+                                </div>
+                            </>
+                        )}
                     </DialogContent>
                 </Dialog>
+
+
             </main>
         </div>
     );
