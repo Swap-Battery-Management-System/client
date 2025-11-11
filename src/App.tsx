@@ -92,10 +92,14 @@ function App() {
         >
           <Route path="manage-battery" element={<BatteryManagement />} />
           <Route
-            path="swap-battery-process/:bookingId"
+            path="battery-process/booking/:bookingId"
             element={<BatteryProcess />}
           />
-          <Route path="walkin-swap" element={<WalkinSwap />} />
+          <Route
+            path="battery-process/swap/:swapSessionId"
+            element={<BatteryProcess />}
+          />
+          <Route path="walkin-swap" element={<BatteryProcess />} />
           <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="manage-booking" element={<StaffBookingManagement />} />
           {/* <Route index element={<StaffDashboard />} />
@@ -121,7 +125,6 @@ function App() {
           />
           <Route path="damage-fee" element={<AdminDamageFeeManagement />} />
           <Route path="dashboard" element={<AdminDashboard />} />
-
 
           <Route path="support-tickets" element={<AdminSupportTickets />} />
           <Route path="manage-battery" element={<BatteryManagement />} />

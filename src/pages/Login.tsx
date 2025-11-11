@@ -114,7 +114,7 @@ export default function Login() {
       const res = await api.post(
         `/auth/google`,
         { credential },
-        { withCredentials: true }
+        { withCredentials: true, headers: { "skip-auth-refresh": "true" } }
       );
       useAuthStore.getState().setAccessToken(res.data.data.accessToken);
       const user = res.data.data.user;

@@ -8,6 +8,7 @@ import api from "@/lib/api";
 
 export function Step2CheckPin({ onNext, onPrev, data }: any) {
   const [batteryCode, setBatteryCode] = useState(data?.oldBatteryCode || "");
+  const [hasOldBattery, setHasOldBattery] = useState(!!data?.oldBatteryCode);
   const [loading, setLoading] = useState(false);
   const [battery, setBattery] = useState<any>(null);
   const [internalDamage, setInternalDamage] = useState<any[]>([]);
@@ -57,6 +58,7 @@ export function Step2CheckPin({ onNext, onPrev, data }: any) {
       );
 
       const responseData = res.data.data;
+      console.log("batteryData",res.data);
       if (responseData?.batteryData) {
         setBattery(responseData.batteryData);
         setInternalDamage(responseData.damageFees);
@@ -82,7 +84,7 @@ export function Step2CheckPin({ onNext, onPrev, data }: any) {
   const startPolling = () => {
     if (!batteryCode.trim()) return toast.error("Nhập mã pin cần kiểm tra!");
     if (intervalRef.current) return toast.info("Đang kiểm tra pin...");
-    if (!data?.swapSessionId)
+    if (!swapSession?.id)
       return toast.error("Thiếu thông tin phiên đổi pin (swapSessionId)!");
 
     attemptCount.current = 0;
@@ -101,12 +103,28 @@ export function Step2CheckPin({ onNext, onPrev, data }: any) {
     );
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (!battery) return toast.error("Chưa có dữ liệu pin!");
-    onNext({
-      batteryId: battery.id,
-      selectedExternalDamageFees: selectedExternal,
-    });
+    try {
+      const selectedExternalObjects = externalDamageList.filter((d: any) =>
+        selectedExternal.includes(d.id)
+      );
+
+      const damageFees = [...internalDamage, ...selectedExternalObjects];
+      console.log("damageFee",damageFees);
+      const res = await api.post(
+        `/swap-sessions/${swapSession.id}/calc-damage`,
+        { batteryCode, damageFees },
+        { withCredentials: true }
+      );
+      console.log("invoice",res.data);
+      toast.success("Đã gửi danh sách hư hại thành công!");
+      onNext?.(res.data.data); // nếu cần chuyển sang bước kế tiếp
+    } catch (err: any) {
+      console.error("Lỗi khi xác nhận hư hại:", err);
+      toast.error("Không thể xác nhận hư hại. Vui lòng thử lại!");
+    }
+    
   };
 
   return (
@@ -138,14 +156,21 @@ export function Step2CheckPin({ onNext, onPrev, data }: any) {
 
           {/* Nếu chưa có mã pin thì cho nhập thủ công */}
           <div className="space-y-4">
-            {batteryCode ? (
-              <div className="bg-green-50 border border-green-200 p-4 rounded-lg">
+            {hasOldBattery ? (
+              <>
                 <p className="text-green-700 font-medium">
-                  Mã pin: {batteryCode}
+                  Mã pin hiện tại: {batteryCode}
                 </p>
-              </div>
+                <Input
+                  id="batteryId"
+                  placeholder="VD: LION041"
+                  value={batteryCode}
+                  onChange={(e) => setBatteryCode(e.target.value)}
+                  disabled={loading}
+                />
+              </>
             ) : (
-              <div className="space-y-2">
+              <>
                 <Label
                   htmlFor="batteryId"
                   className="text-gray-700 font-medium"
@@ -160,7 +185,7 @@ export function Step2CheckPin({ onNext, onPrev, data }: any) {
                   onChange={(e) => setBatteryCode(e.target.value)}
                   disabled={loading}
                 />
-              </div>
+              </>
             )}
 
             <div className="flex justify-center mt-4 gap-3">
