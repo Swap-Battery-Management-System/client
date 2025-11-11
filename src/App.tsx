@@ -1,184 +1,141 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
+import Login from "./pages/Login";
+import Register from "./pages/Register";
+import OtpVerify from "./pages/OtpVerify";
+import RegisterInfo from "./pages/RegisterInfo";
+// import RegisterLayout from "./layout/RegisterLayout";
+import { Route, Routes } from "react-router";
+import { Toaster } from "sonner";
+import { ProtectedRoute } from "./components/ProtectedRoute";
 
-interface Invoice {
-  type: string;
-  userId: string;
-  subUserId: string;
-  bookingId: string;
-  amountOrigin: number;
-  amountDiscount: number;
-  amountTotal: number;
-  reason: string;
-  status: string;
-}
+import StaffLayout from "./layout/StaffLayout";
+import Landing from "./pages/Landing";
+import Layout from "./layout/layout";
+import Home from "./pages/Home";
+import FindStation from "./pages/FindStation";
+import StationDetail from "./pages/StationDetail";
+import Booking from "./pages/Booking";
+import BookingHistory from "./pages/BookingHistory";
+import Subscription from "./pages/Subcription";
+import MySubcription from "./pages/MySubcription";
+import RegisterPassword from "./pages/SetPassword";
+import RegisterVehicle from "./pages/RegisterVehicle";
+import MyVehicles from "./pages/MyVehicles";
 
-export default function CreateInvoice() {
-  const [invoice, setInvoice] = useState<Invoice>({
-    type: "booking",
-    userId: "",
-    subUserId: "",
-    bookingId: "",
-    amountOrigin: 0,
-    amountDiscount: 0,
-    amountTotal: 0,
-    reason: "battery swap service",
-    status: "pending",
-  });
+import AdminVehicleManagement from "./pages/AdminVehicleManagement";
+import AdminUserManagement from "./pages/AdminUserManagement";
+import AdminStationManagement from "./pages/AdminStationManagement";
+import AdminBatteryTypeManagement from "./pages/AdminBatteryTypeManagement";
 
-  const handleChange = (field: keyof Invoice, value: string | number) => {
-    const updated = { ...invoice, [field]: value };
-    updated.amountTotal =
-      Number(updated.amountOrigin || 0) - Number(updated.amountDiscount || 0);
-    setInvoice(updated);
-  };
+import BatteryManagement from "./pages/BatteryManagement";
+import StaffBookingManagement from "./pages/StaffBookingManagement";
 
-  const handleSubmit = () => {
-    alert("💾 Hóa đơn (mock):\n" + JSON.stringify(invoice, null, 2));
-  };
+import AdminLayout from "./layout/AdminLayout";
+import ResetPassword from "./pages/ResetPassword";
+import BatteryProcess from "./pages/BatteryProcess";
+import AdminVehicleModelManagement from "./pages/ManageModels";
+import NotificationPage from "./pages/NotificationPage";
+import SupportTicketForm from "./pages/SupportTicketForm";
+import AdminSupportTickets from "./pages/AdminSupportTickets";
+import SupportHistoryPage from "./pages/SupportHistoryPage";
 
+function App() {
   return (
-    <div className="p-6 flex justify-center">
-      <Card className="w-full max-w-4xl shadow-md">
-        <CardHeader>
-          <CardTitle className="text-center text-emerald-600 text-xl font-bold">
-            🧾 TẠO HÓA ĐƠN TRẠM ĐỔI PIN SWAPNET
-          </CardTitle>
-        </CardHeader>
+    <>
+      <Routes>
+        {/* Trang công khai */}
+        <Route path="/" element={<Landing />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/login/reset-password" element={<ResetPassword />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/register/verify" element={<OtpVerify />} />
+        <Route path="/register/info" element={<RegisterInfo />} />
+        <Route path="/register/password" element={<RegisterPassword />} />
+        {/* Layout người dùng */}
+        <Route
+          path="/home"
+          element={
+            <ProtectedRoute roles={["driver"]}>
+              <Layout />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<Home />} />
+          <Route path="find-station" element={<FindStation />} />
+          <Route
+            path="find-station/station-detail/:id"
+            element={<StationDetail />}
+          />
+          <Route path="booking" element={<Booking />} />
+          <Route path="booking-history" element={<BookingHistory />} />
+          <Route path="subscription-packages" element={<Subscription />} />
+          <Route path="register-vehicle" element={<RegisterVehicle />} />
+          <Route path="my-vehicles" element={<MyVehicles />} />
+          <Route path="notifications" element={<NotificationPage />} />
+          <Route path="my-subscription-packages" element={<MySubcription />} />
+          <Route path="support" element={<SupportTicketForm />} />
+          <Route path="support-history" element={<SupportHistoryPage />} />
+        </Route>
+        {/* === Staff Routes === */}
+        <Route
+          path="/staff"
+          element={
+            <ProtectedRoute roles={["staff"]}>
+              <StaffLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route
+            path="manage-battery"
+            element={
+              <ProtectedRoute roles={["staff", "admin"]}>
+                <BatteryManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="swap-battery-process/:bookingId"
+            element={<BatteryProcess />}
+          />
+          <Route path="manage-battery" element={<BatteryManagement />} />
+          <Route path="manage-booking" element={<StaffBookingManagement />} />
+          {/* <Route index element={<StaffDashboard />} />
+         
+          <Route path="booking" element={<StaffBooking />} />
+          <Route path="report" element={<StaffReport />} />
+          <Route path="safety" element={<StaffSafety />} /> */}
+        </Route>
+        <Route
+          path="/admin"
+          element={
+            <ProtectedRoute roles={["admin"]}>
+              <AdminLayout />
+            </ProtectedRoute>
+          }
+        >
+          <Route path="manage-users" element={<AdminUserManagement />} />
+          <Route path="manage-stations" element={<AdminStationManagement />} />
+          <Route path="manage-vehicles" element={<AdminVehicleManagement />} />
+          <Route path="support-tickets" element={<AdminSupportTickets />} />
+          <Route
+            path="manage-battery"
+            element={
+              <ProtectedRoute roles={["staff", "admin"]}>
+                <BatteryManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="battery-types"
+            element={<AdminBatteryTypeManagement />}
+          />
+          <Route
+            path="vehicle-models"
+            element={<AdminVehicleModelManagement />}
+          />
+        </Route>
 
-        <CardContent className="space-y-6">
-          {/* ========== THÔNG TIN CHUNG ========== */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="type">Loại hóa đơn</Label>
-                <select
-                  id="type"
-                  className="w-full border rounded-lg p-2 mt-1"
-                  value={invoice.type}
-                  onChange={(e) => handleChange("type", e.target.value)}
-                >
-                  <option value="booking">Booking</option>
-                  <option value="manual">Manual</option>
-                </select>
-              </div>
-
-              <div>
-                <Label htmlFor="userId">Mã người dùng</Label>
-                <Input
-                  id="userId"
-                  placeholder="user-001"
-                  value={invoice.userId}
-                  onChange={(e) => handleChange("userId", e.target.value)}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="subUserId">Mã phụ (subUserId)</Label>
-                <Input
-                  id="subUserId"
-                  placeholder="sub-001"
-                  value={invoice.subUserId}
-                  onChange={(e) => handleChange("subUserId", e.target.value)}
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div>
-                <Label htmlFor="bookingId">Mã Booking</Label>
-                <Input
-                  id="bookingId"
-                  placeholder="booking-001"
-                  value={invoice.bookingId}
-                  onChange={(e) => handleChange("bookingId", e.target.value)}
-                />
-              </div>
-
-              <div>
-                <Label htmlFor="status">Trạng thái</Label>
-                <select
-                  id="status"
-                  className="w-full border rounded-lg p-2 mt-1"
-                  value={invoice.status}
-                  onChange={(e) => handleChange("status", e.target.value)}
-                >
-                  <option value="pending">Pending</option>
-                  <option value="paid">Paid</option>
-                  <option value="cancelled">Cancelled</option>
-                </select>
-              </div>
-
-              <div>
-                <Label htmlFor="reason">Lý do / Dịch vụ</Label>
-                <textarea
-                  id="reason"
-                  rows={2}
-                  className="w-full border rounded-lg p-2 mt-1 resize-none"
-                  placeholder="battery swap service"
-                  value={invoice.reason}
-                  onChange={(e) => handleChange("reason", e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
-
-          <Separator />
-
-          {/* ========== PHẦN TIỀN TỆ ========== */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <Label>Thành tiền gốc (VNĐ)</Label>
-              <Input
-                type="number"
-                value={invoice.amountOrigin}
-                onChange={(e) =>
-                  handleChange("amountOrigin", Number(e.target.value))
-                }
-              />
-            </div>
-
-            <div>
-              <Label>Giảm giá (VNĐ)</Label>
-              <Input
-                type="number"
-                value={invoice.amountDiscount}
-                onChange={(e) =>
-                  handleChange("amountDiscount", Number(e.target.value))
-                }
-              />
-            </div>
-
-            <div>
-              <Label>Tổng thanh toán (VNĐ)</Label>
-              <Input
-                type="number"
-                value={invoice.amountTotal}
-                readOnly
-                className="font-semibold bg-gray-100"
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-center mt-6">
-            <Button
-              onClick={handleSubmit}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-2 rounded-lg font-medium"
-            >
-              💾 Tạo hóa đơn (Mock)
-            </Button>
-          </div>
-
-          <p className="text-center text-sm text-gray-500 mt-4">
-            *Trang này hiện chỉ là giao diện hiển thị, chưa gắn API. <br />
-            Sau khi backend hoàn thiện, có thể tích hợp POST /invoices.
-          </p>
-        </CardContent>
-      </Card>
-    </div>
+      </Routes>
+      <Toaster richColors position="top-center" />
+    </>
   );
 }

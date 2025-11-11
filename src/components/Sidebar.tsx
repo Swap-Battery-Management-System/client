@@ -14,9 +14,11 @@ import {
   MessageSquare,
   HelpCircle,
   Bike,
+
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import logo from "/svg.svg"
+
 
 interface SidebarProps {
   isOpen: boolean;
@@ -167,8 +169,15 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 label="Báo cáo sự cố / Feedback"
                 onClick={onClose}
               />
+              <NavItem
+                to="support-history"
+                icon={<History />}
+                label="Lịch sử hỗ trợ"
+                onClick={onClose}
+              />
             </div>
           </div>
+
         </nav>
       </div>
     </>
