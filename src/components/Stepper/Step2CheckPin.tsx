@@ -142,7 +142,7 @@ export function Step2CheckPin({ onNext, onPrev, data, onCancelProcess, onUpdate 
         { withCredentials: true }
       );
       console.log("invoice", res.data);
-      // onUpdate("invoiceId",res.data.data);
+      onUpdate("invoiceId",res.data.data);
       toast.success("Đã gửi danh sách hư hại thành công!");
       onNext?.(); // nếu cần chuyển sang bước kế tiếp
     } catch (err: any) {

@@ -161,10 +161,11 @@ export default function BatteryProcess() {
         });
         const session = res.data.data || res.data.data?.swapSession;
         if (!session) return;
+        console.log("swapSession",session);
 
         handleUpdateData("swapSession", session);
         //luu invoiceId
-        handleUpdateData("invoiceId", res.data.data.invoiceId);
+        handleUpdateData("invoiceId", res.data.data.invoice.id);
 
         const [vehicleRes, userRes, stationRes] = await Promise.all([
           api.get(`/vehicles/${session.vehicleId}`, { withCredentials: true }),
@@ -274,7 +275,9 @@ export default function BatteryProcess() {
               onCancelProcess={handleCancelProcess}
             />
           )}
-          {currentStep === 3 && <Step4Payment onPrev={goToPrev} />}
+          {currentStep === 3 && (
+            <Step4Payment onPrev={goToPrev} data={processData} />
+          )}
         </div>
       )}
     </div>

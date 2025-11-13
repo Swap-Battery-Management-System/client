@@ -98,6 +98,7 @@ export default function SwapSessionManager() {
                 const invoiceRes = await api.get(`/invoices/${s.invoiceId}`, {
                   withCredentials: true,
                 });
+                console.log("invoice",invoiceRes.data);
                 invoice = invoiceRes.data.data.invoice;
               } catch {
                 invoice = null;

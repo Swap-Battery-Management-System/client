@@ -44,7 +44,6 @@ export function Step3InstallPin({
         {},
         { withCredentials: true }
       );
-
       toast.success("Đã xác nhận lắp pin thành công!");
       onNext();
     } catch (err: any) {
