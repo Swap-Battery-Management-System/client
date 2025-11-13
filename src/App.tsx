@@ -32,6 +32,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 
 import BatteryManagement from "./pages/BatteryManagement";
 import StaffBookingManagement from "./pages/StaffBookingManagement";
+import StaffDashboard from "./pages/StaffDashboard";
 
 import AdminLayout from "./layout/AdminLayout";
 import ResetPassword from "./pages/ResetPassword";
@@ -101,6 +102,7 @@ function App() {
           <Route path="walkin-swap" element={<WalkinSwap />} />
           <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="manage-booking" element={<StaffBookingManagement />} />
+          <Route path="dashboard" element={<StaffDashboard />} />
           {/* <Route index element={<StaffDashboard />} />
          
           <Route path="booking" element={<StaffBooking />} />
