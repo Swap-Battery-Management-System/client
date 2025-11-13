@@ -55,12 +55,18 @@ export default function StaffDashboard() {
         try {
             setLoading(true);
             const res = await api.get("/stations", { withCredentials: true });
-            console.log("StaffStation:", res.data);
+            console.log("API /stations response:", res.data);
 
-            // backend trả về 1 object duy nhất (station)
             const s = res.data?.data?.stations || null;
-            if (s) setStation(s);
-            else toast.info("Bạn chưa được gán vào trạm nào.");
+            if (s) {
+                setStation(s);
+
+                // Nếu API trả về bookings cùng lúc
+                if (res.data?.data?.bookings) {
+                    setBookings(res.data.data.bookings);
+                    console.log("Bookings from API:", res.data.data.bookings);
+                }
+            } else toast.info("Bạn chưa được gán vào trạm nào.");
         } catch (err) {
             console.error("Failed to load staff station:", err);
             toast.error("Không thể tải thông tin trạm của bạn");
@@ -69,11 +75,28 @@ export default function StaffDashboard() {
         }
     };
 
+    // ==================== Fetch Bookings ====================
+    const fetchBookings = async () => {
+        if (!station) return;
+        try {
+            setLoadingBooking(true);
+            const res = await api.get(`/bookings?stationId=${station.id}`, { withCredentials: true });
+            console.log("Bookings from API:", res.data);
+            setBookings(res.data.data.bookings || []);
+        } catch (err) {
+            console.error("Failed to fetch bookings:", err);
+            toast.error("Không thể tải dữ liệu đặt chỗ");
+        } finally {
+            setLoadingBooking(false);
+        }
+    };
+
     // ==================== Booking Stats ====================
     const fetchBookingStats = (range: "day" | "month" | "year") => {
         if (!bookings || bookings.length === 0) {
             setBookingData([]);
             setBookingDetails([]);
+            setSelectedLabel(null);
             return;
         }
 
@@ -95,8 +118,9 @@ export default function StaffDashboard() {
             counts[key] = (counts[key] || 0) + 1;
         });
 
-        const sortedKeys = Object.keys(counts).sort(
-            (a, b) => dayjs(a, "DD/MM/YYYY").valueOf() - dayjs(b, "DD/MM/YYYY").valueOf()
+        const sortedKeys = Object.keys(counts).sort((a, b) =>
+            dayjs.utc(a, range === "day" ? "DD/MM/YYYY" : range === "month" ? "MM/YYYY" : "YYYY").valueOf() -
+            dayjs.utc(b, range === "day" ? "DD/MM/YYYY" : range === "month" ? "MM/YYYY" : "YYYY").valueOf()
         );
 
         const result = sortedKeys.map((key) => ({ name: key, bookings: counts[key] }));
@@ -120,6 +144,11 @@ export default function StaffDashboard() {
                 }
                 return key === latestKey;
             });
+
+            console.log("Final bookingData:", result);
+            console.log("Latest bookingDetails:", details);
+            console.log("Selected label:", latestKey);
+
             setBookingDetails(details);
             setSelectedLabel(latestKey);
         }
@@ -131,7 +160,17 @@ export default function StaffDashboard() {
     }, []);
 
     useEffect(() => {
+        if (station) {
+            fetchBookings();
+        }
+    }, [station]);
+
+    useEffect(() => {
+        console.log("Bookings changed or view changed:", bookings.length, bookingView);
         fetchBookingStats(bookingView);
+        console.log("bookingData after fetchBookingStats:", bookingData);
+        console.log("bookingDetails after fetchBookingStats:", bookingDetails);
+        console.log("selectedLabel:", selectedLabel);
     }, [bookingView, bookings]);
 
     // ==================== Render ====================
@@ -272,7 +311,7 @@ export default function StaffDashboard() {
                                                 ID
                                             </th>
                                             <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">
-                                                Thời gian
+                                                Thời gian (UTC)
                                             </th>
                                             <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">
                                                 Trạng thái
@@ -287,15 +326,15 @@ export default function StaffDashboard() {
                                             <tr key={b.id} className="hover:bg-gray-50">
                                                 <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.id}</td>
                                                 <td className="px-4 py-2 text-sm text-gray-700 border-b">
-                                                    {dayjs.utc(b.scheduleTime).local().format("DD/MM/YYYY HH:mm")}
+                                                    {dayjs.utc(b.scheduleTime).format("DD/MM/YYYY HH:mm")}
                                                 </td>
                                                 <td className="px-4 py-2 text-sm font-semibold border-b">
                                                     <span
                                                         className={`px-2 py-0.5 rounded-full ${b.status === "completed"
-                                                            ? "bg-green-100 text-green-800"
-                                                            : b.status === "pending"
-                                                                ? "bg-yellow-100 text-yellow-800"
-                                                                : "bg-red-100 text-red-800"
+                                                                ? "bg-green-100 text-green-800"
+                                                                : b.status === "pending"
+                                                                    ? "bg-yellow-100 text-yellow-800"
+                                                                    : "bg-red-100 text-red-800"
                                                             }`}
                                                     >
                                                         {b.status}
