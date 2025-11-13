@@ -11,11 +11,13 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
+import { io, Socket } from "socket.io-client";
+import { cn } from "@/lib/utils";
 import logo from "/svg.svg";
 import api from "@/lib/api";
 import { toast } from "sonner";
+import { useAuthStore } from "@/stores/authStores";
 
-// ================= Interface =================
 interface NotificationItem {
   id: string;
   title?: string;
@@ -27,17 +29,47 @@ interface NotificationItem {
   status?: string;
 }
 
-// ================= Component =================
 export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
-  const { logout, user } = useAuth(); // ✅ Lấy user từ context
+  const { logout, user } = useAuth();
   const navigate = useNavigate();
+  const token = useAuthStore((state) => state.accessToken);
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [socket, setSocket] = useState<Socket | null>(null);
+  const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
+  const [selectedNoti, setSelectedNoti] = useState<NotificationItem | null>(null);
+  const [openModal, setOpenModal] = useState(false);
 
   // 🧭 Logout
   const handleLogout = () => {
     logout(() => navigate("/", { replace: true }));
+  };
+  const handleViewDetail = async (id: string) => {
+    try {
+      const res = await api.get(`/notifications/${id}`);
+      const detail = res.data?.data?.notification;
+
+      if (detail) {
+        setSelectedNoti(detail);
+        setOpenModal(true);
+      }
+
+      // 🔹 Gọi API đánh dấu đã đọc
+      await api.patch(`/notifications/${id}/read`);
+
+      // 🔹 Cập nhật lại danh sách (đổi status)
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.id === id ? { ...n, status: "Read", isRead: true } : n
+        )
+      );
+
+      // 🔹 Giảm số lượng chưa đọc
+      setUnreadCount((prev) => Math.max(prev - 1, 0));
+    } catch (err) {
+      console.error("❌ Lỗi khi mở chi tiết thông báo:", err);
+    }
   };
 
   // 🔔 Lấy thông báo mới nhất
@@ -70,6 +102,61 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
   // ⚡ Gọi khi load trang
   useEffect(() => {
     fetchNotifications();
+  }, [user]);
+  // 🔌 Kết nối socket realtime
+  useEffect(() => {
+    if (!user?.id) return;
+    if (!token) {
+      console.warn("⚠️ Không có token, bỏ qua kết nối socket.");
+      return;
+    }
+
+    console.log("🔌 Header kết nối Socket.IO:", SOCKET_URL);
+    const newSocket = io(SOCKET_URL, {
+      transports: ["websocket"],
+      auth: { token },
+      reconnectionAttempts: 5,
+      reconnectionDelay: 2000,
+      secure: true,
+    });
+
+
+    setSocket(newSocket);
+
+    newSocket.on("connect", () => {
+      console.log("✅ Socket connected:", newSocket.id);
+      newSocket.emit("register", user.id);
+    });
+
+    newSocket.on("notification", (data) => {
+      console.log("📩 Nhận thông báo mới (Header):", data);
+
+      const newItem: NotificationItem = {
+        id: data.id || Date.now().toString(),
+        title: data.title || "",
+        message: data.message || "Thông báo mới từ hệ thống.",
+        type: data.type || "Alert",
+        createdAt: new Date().toISOString(),
+        status: "Unread",
+      };
+
+      setNotifications((prev) => [newItem, ...prev].slice(0, 5));
+      setUnreadCount((prev) => prev + 1);
+      toast.info("🔔 " + (data.title || "Bạn có thông báo mới!"));
+    });
+
+    newSocket.on("disconnect", (reason) =>
+      console.warn("⚠️ Socket disconnected:", reason)
+    );
+
+    newSocket.on("connect_error", (err) =>
+      console.error("❌ Lỗi socket Header:", err.message)
+    );
+
+    return () => {
+      console.log("🧹 Ngắt kết nối socket Header...");
+      newSocket.disconnect();
+    };
   }, [user]);
 
   // ================== JSX ==================
@@ -151,27 +238,39 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
                     </div>
                   ) : (
                     notifications.map((item, i) => {
-                      const date = new Date(
-                        item.createdDate || item.createdAt || ""
-                      );
+                      const date = new Date(item.createdDate || item.createdAt || "");
                       const formatted = isNaN(date.getTime())
                         ? "—"
                         : date.toLocaleString("vi-VN");
 
+                      const isUnread = item.status === "Unread" || item.isRead === false;
+
                       return (
                         <DropdownMenuItem
                           key={i}
-                          className="flex flex-col items-start py-2 px-4 gap-1 cursor-pointer hover:bg-[#f3fdfa]"
+                          onClick={() => handleViewDetail(item.id)}
+                          className={cn(
+                            "flex flex-col items-start py-2 px-4 gap-1 cursor-pointer transition-all border-l-4",
+                            isUnread
+                              ? "bg-emerald-50 border-l-emerald-400 hover:bg-emerald-100"
+                              : "bg-white border-l-transparent hover:bg-gray-50"
+                          )}
                         >
-                          <p className="text-sm font-medium text-gray-800 line-clamp-2">
+                          <p
+                            className={cn(
+                              "text-sm line-clamp-2",
+                              isUnread
+                                ? "font-semibold text-emerald-700"
+                                : "text-gray-800"
+                            )}
+                          >
                             {item.title || item.message}
                           </p>
-                          <span className="text-xs text-gray-500">
-                            {formatted}
-                          </span>
+                          <span className="text-xs text-gray-500">{formatted}</span>
                         </DropdownMenuItem>
                       );
                     })
+
                   )}
                 </div>
 
@@ -223,6 +322,40 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
       </header>
 
       <AccountModal type={activeModal} onClose={() => setActiveModal(null)} />
+      {/* Modal chi tiết thông báo */}
+      {openModal && selectedNoti && (
+        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
+          <div className="bg-white rounded-2xl shadow-xl w-[400px] max-w-[90%] p-6 relative">
+            <button
+              onClick={() => setOpenModal(false)}
+              className="absolute top-2 right-3 text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+
+            <h3 className="text-lg font-bold text-emerald-600 mb-2">
+              {selectedNoti.title || "Chi tiết thông báo"}
+            </h3>
+            <p className="text-sm text-gray-700 mb-4 whitespace-pre-line">
+              {selectedNoti.message}
+            </p>
+
+            <div className="text-xs text-gray-500 text-right">
+              {new Date(selectedNoti.createdAt || "").toLocaleString("vi-VN")}
+            </div>
+
+            <div className="mt-4 flex justify-end">
+              <button
+                onClick={() => setOpenModal(false)}
+                className="bg-emerald-500 text-white px-4 py-1.5 rounded-lg hover:bg-emerald-600"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </>
   );
 }
