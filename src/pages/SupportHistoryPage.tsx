@@ -14,7 +14,7 @@ import { useAuth } from "@/context/AuthContext";
 import { Loader2, Plus, RefreshCw, Search } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import { toast } from "sonner";
-
+import { useNavigate } from "react-router-dom";
 // ====================== 📦 KIỂU DỮ LIỆU ======================
 interface SupportTicket {
     id: string;
@@ -51,7 +51,7 @@ export default function SupportHistoryPage() {
 
     // 🔍 Tìm kiếm
     const [search, setSearch] = useState("");
-
+    const navigate = useNavigate();
     // ➕ Dialog tạo ticket mới
     const [openCreate, setOpenCreate] = useState(false);
     const [form, setForm] = useState({ category: "", subject: "", description: "" });
@@ -138,8 +138,8 @@ export default function SupportHistoryPage() {
                     </Button>
 
                     <Button
-                        onClick={() => setOpenCreate(true)}
-                        className="flex items-center gap-2 bg-[#38A3A5] hover:bg-[#2d898a]"
+                        onClick={() => navigate("/home/support")}
+                        className="flex items-center gap-2 bg-[#38A3A5] hover:bg-[#2d898a] text-white"
                     >
                         <Plus size={16} /> Tạo đơn hỗ trợ
                     </Button>

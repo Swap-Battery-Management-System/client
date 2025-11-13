@@ -1,21 +1,11 @@
 import { useEffect, useState } from "react";
-import { Bell, Trash2, Undo2, Send, Clock, Eye } from "lucide-react";
+import { Bell, Trash2, Undo2, Send, Eye } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from "@/components/ui/select";
 import {
     Dialog,
     DialogContent,
     DialogHeader,
     DialogTitle,
-    DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
 import api from "@/lib/api";
@@ -44,7 +34,7 @@ interface Notification {
     message: string;
     type: NotificationType;
     sendType: NotificationSendType;
-    createdDate: string; // ✅ Đã đổi
+    createdDate: string;
     status: string;
     sendTime?: string;
     userId?: string;
@@ -59,22 +49,19 @@ export default function AdminNotifications() {
     const [openDetail, setOpenDetail] = useState(false);
     const [selected, setSelected] = useState<Notification | null>(null);
 
-    const [form, setForm] = useState({
-        title: "",
-        message: "",
-        type: "user" as NotificationType,
-        sendType: "immediate" as NotificationSendType,
-        userId: "",
-        stationsId: "",
-        sendTime: "",
-    });
+    // 📄 Phân trang
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
+
+    const totalPages = Math.ceil(notifications.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const currentItems = notifications.slice(startIndex, startIndex + itemsPerPage);
 
     // 🔄 Lấy danh sách thông báo
     const fetchNotifications = async () => {
         setLoading(true);
         try {
             const res = await api.get("/notifications");
-            console.log("📦 Raw notifications data:", res.data?.data?.notifications);
             setNotifications(res.data?.data?.notifications || []);
         } catch (err) {
             toast.error("Không thể tải danh sách thông báo!");
@@ -88,54 +75,7 @@ export default function AdminNotifications() {
         fetchNotifications();
     }, []);
 
-    // ✉️ Gửi thông báo mới
-    const handleCreate = async () => {
-        if (!form.title.trim() || !form.message.trim()) {
-            toast.warning("Vui lòng nhập tiêu đề và nội dung!");
-            return;
-        }
-
-        if (form.sendType === "scheduled" && !form.sendTime) {
-            toast.warning("Vui lòng chọn thời gian gửi khi chọn 'SCHEDULED'!");
-            return;
-        }
-
-        const payload: Record<string, any> = {
-            type: form.type,
-            title: form.title,
-            message: form.message,
-            sendType: form.sendType,
-        };
-
-        if (form.sendType === "scheduled") payload.sendTime = form.sendTime;
-        if (form.userId) payload.userId = form.userId;
-        if (form.stationsId)
-            payload.stationsId = form.stationsId
-                .split(",")
-                .map((id) => id.trim())
-                .filter((id) => id);
-
-        try {
-            await api.post("/notifications", payload);
-            toast.success("Đã gửi thông báo thành công!");
-            setOpenCreate(false);
-            setForm({
-                title: "",
-                message: "",
-                type: "user",
-                sendType: "immediate",
-                userId: "",
-                stationsId: "",
-                sendTime: "",
-            });
-            fetchNotifications();
-        } catch (err) {
-            toast.error("Không thể gửi thông báo!");
-            console.error(err);
-        }
-    };
-
-    // 🚫 Thu hồi (retract)
+    // 🚫 Thu hồi
     const handleRetract = async (id: string) => {
         if (!confirm("Thu hồi thông báo này?")) return;
         try {
@@ -164,6 +104,7 @@ export default function AdminNotifications() {
     // ================== JSX ==================
     return (
         <div className="max-w-5xl mx-auto p-6">
+            {/* ===== Header ===== */}
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold flex items-center gap-2 text-emerald-600">
                     <Bell className="w-6 h-6" /> Quản lý thông báo
@@ -176,6 +117,7 @@ export default function AdminNotifications() {
                 </Button>
             </div>
 
+            {/* ===== Main Table ===== */}
             {loading ? (
                 <p className="text-gray-500 animate-pulse">Đang tải...</p>
             ) : notifications.length === 0 ? (
@@ -183,66 +125,96 @@ export default function AdminNotifications() {
                     Chưa có thông báo nào.
                 </div>
             ) : (
-                <table className="min-w-full border bg-white rounded-xl overflow-hidden shadow-sm">
-                    <thead className="bg-emerald-50 text-emerald-700">
-                        <tr>
-                            <th className="p-3 text-left">Tiêu đề</th>
-                            <th className="p-3 text-left">Loại</th>
-                            <th className="p-3 text-left">Kiểu gửi</th>
-                            <th className="p-3 text-left">Thời gian tạo</th>
-                            <th className="p-3 text-center">Hành động</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {notifications.map((n) => (
-                            <tr
-                                key={n.id}
-                                className="border-b hover:bg-gray-50 transition-colors"
-                            >
-                                <td className="p-3">{n.title || "(Không có tiêu đề)"}</td>
-                                <td className="p-3 capitalize">{n.type}</td>
-                                <td className="p-3 capitalize">{n.sendType}</td>
-                                <td className="p-3 text-sm text-gray-500">
-                                    {n.createdDate
-                                        ? new Date(n.createdDate).toLocaleString("vi-VN")
-                                        : "—"}
-                                </td>
-
-                                <td className="p-3 flex gap-2 justify-center">
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => {
-                                            setSelected(n);
-                                            setOpenDetail(true);
-                                        }}
-                                    >
-                                        <Eye className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handleRetract(n.id)}
-                                        className="text-amber-600 border-amber-300 hover:bg-amber-50"
-                                    >
-                                        <Undo2 className="w-4 h-4" />
-                                    </Button>
-                                    <Button
-                                        size="sm"
-                                        variant="outline"
-                                        onClick={() => handleDelete(n.id)}
-                                        className="text-rose-600 border-rose-300 hover:bg-rose-50"
-                                    >
-                                        <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                </td>
+                <>
+                    <table className="min-w-full border bg-white rounded-xl overflow-hidden shadow-sm">
+                        <thead className="bg-emerald-50 text-emerald-700">
+                            <tr>
+                                <th className="p-3 text-left">Tiêu đề</th>
+                                <th className="p-3 text-left">Loại</th>
+                                <th className="p-3 text-left">Kiểu gửi</th>
+                                <th className="p-3 text-left">Thời gian tạo</th>
+                                <th className="p-3 text-center">Hành động</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {currentItems.map((n) => (
+                                <tr
+                                    key={n.id}
+                                    className="border-b hover:bg-gray-50 transition-colors"
+                                >
+                                    <td className="p-3">{n.title || "(Không có tiêu đề)"}</td>
+                                    <td className="p-3 capitalize">{n.type}</td>
+                                    <td className="p-3 capitalize">{n.sendType}</td>
+                                    <td className="p-3 text-sm text-gray-500">
+                                        {n.createdDate
+                                            ? new Date(n.createdDate).toLocaleString("vi-VN")
+                                            : "—"}
+                                    </td>
+                                    <td className="p-3 flex gap-2 justify-center">
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => {
+                                                setSelected(n);
+                                                setOpenDetail(true);
+                                            }}
+                                        >
+                                            <Eye className="w-4 h-4" />
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => handleRetract(n.id)}
+                                            className="text-amber-600 border-amber-300 hover:bg-amber-50"
+                                        >
+                                            <Undo2 className="w-4 h-4" />
+                                        </Button>
+                                        <Button
+                                            size="sm"
+                                            variant="outline"
+                                            onClick={() => handleDelete(n.id)}
+                                            className="text-rose-600 border-rose-300 hover:bg-rose-50"
+                                        >
+                                            <Trash2 className="w-4 h-4" />
+                                        </Button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+
+                    {/* ===== Pagination ===== */}
+                    {notifications.length > 0 && (
+                        <div className="flex justify-between items-center mt-4 text-sm text-gray-600">
+                            <p>
+                                Tổng số thông báo: {notifications.length} | Trang {currentPage} / {totalPages}
+                            </p>
+                            <div className="flex gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={currentPage === 1}
+                                    onClick={() => setCurrentPage((p) => p - 1)}
+                                    className="border-emerald-300 text-emerald-600 hover:bg-emerald-50"
+                                >
+                                    Trước
+                                </Button>
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={currentPage === totalPages || totalPages === 0}
+                                    onClick={() => setCurrentPage((p) => p + 1)}
+                                    className="border-emerald-300 text-emerald-600 hover:bg-emerald-50"
+                                >
+                                    Sau
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </>
             )}
 
-            {/* Dialog: Chi tiết */}
+            {/* ===== Dialog: Chi tiết ===== */}
             <Dialog open={openDetail} onOpenChange={setOpenDetail}>
                 <DialogContent className="max-w-md">
                     <DialogHeader>

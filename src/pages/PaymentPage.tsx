@@ -21,34 +21,39 @@ export default function PaymentPage() {
     // ======================= HANDLE PAYMENT =======================
     const handleConfirm = async () => {
         console.log("👉 Bấm xác nhận thanh toán");
-        console.log("🔍 Invoice ID:", invoiceId);
-        console.log("🔍 Tổng tiền:", amount);
-        console.log("🔍 Phương thức:", method);
+        console.log("Invoice:", invoiceId, "Amount:", amount, "Method:", method);
 
         try {
             const res = await api.post(`/invoices/${invoiceId}/pay`, {
                 method: method,
+                amount: amount,
+                successUrl: `${window.location.origin}/payment/success`,
+                cancelUrl: `${window.location.origin}/payment/failed`,
             });
 
-            console.log("✅ Kết quả từ API:", res.data);
+            console.log("✅ Backend trả về:", res.data);
 
             const paymentUrl = res.data?.data?.paymentUrl;
 
             if (!paymentUrl) {
-                toast.error("Không lấy được link thanh toán.");
-                console.log("❌ Không có paymentUrl trả về");
+                toast.error("Backend không trả về paymentUrl");
                 return;
             }
 
-            console.log("🌐 Redirect tới URL thanh toán:", paymentUrl);
-
             window.location.href = paymentUrl;
 
-        } catch (err) {
+        } catch (err: any) {
             console.error("🔥 Lỗi tạo thanh toán:", err);
-            toast.error("Không thể tạo thanh toán!");
+
+            if (err.response) {
+                console.log("📌 STATUS:", err.response.status);
+                console.log("📌 BACKEND:", err.response.data);
+            }
+
+            toast.error(err.response?.data?.message || "Không thể tạo thanh toán!");
         }
     };
+
 
     // =============================================================
 
@@ -80,8 +85,8 @@ export default function PaymentPage() {
                             console.log("💡 Đã chọn phương thức:", item.id);
                         }}
                         className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col items-center justify-center transition-all hover:shadow-md ${method === item.id
-                                ? "border-[#38A3A5] bg-[#e7f7f6] scale-[1.03]"
-                                : "border-gray-200 hover:border-[#38A3A5]/50"
+                            ? "border-[#38A3A5] bg-[#e7f7f6] scale-[1.03]"
+                            : "border-gray-200 hover:border-[#38A3A5]/50"
                             }`}
                     >
                         <img src={item.icon} alt={item.name} className="w-14 h-14 mb-2" />
