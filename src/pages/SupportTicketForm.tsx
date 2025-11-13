@@ -6,7 +6,7 @@ import api from "@/lib/api";
 import { toast } from "sonner";
 import { useAuth } from "@/context/AuthContext";
 
-// Danh sách vấn đề phong phú hơn
+// 🎯 Danh sách vấn đề gợi ý
 const danhSachVanDe = [
     { value: "Sự cố về pin", label: "🔋 Sự cố về pin" },
     { value: "Lỗi ứng dụng", label: "📱 Lỗi ứng dụng" },
@@ -16,12 +16,16 @@ const danhSachVanDe = [
     { value: "Không nhận được OTP", label: "📞 Không nhận được mã xác thực" },
     { value: "Không đăng nhập được", label: "🔐 Không đăng nhập được" },
     { value: "Không nhận được hóa đơn", label: "🧾 Không nhận được hóa đơn" },
-    { value: "Giao dịch bị trừ tiền nhưng thất bại", label: "💰 Giao dịch bị trừ tiền nhưng thất bại" },
+    {
+        value: "Giao dịch bị trừ tiền nhưng thất bại",
+        label: "💰 Giao dịch bị trừ tiền nhưng thất bại",
+    },
     { value: "Khác", label: "⚙️ Khác" },
 ];
 
 export default function SupportTicketForm() {
     const { user } = useAuth();
+
     const [vanDeChon, setVanDeChon] = useState<string>("");
     const [form, setForm] = useState({
         danhMuc: "",
@@ -30,45 +34,55 @@ export default function SupportTicketForm() {
     });
     const [dangGui, setDangGui] = useState(false);
 
-    const handleChange = (e: any) => {
+    // ====================== ✏️ Xử lý nhập liệu ======================
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         setForm({ ...form, [e.target.name]: e.target.value });
     };
 
-    const handleSubmit = async (e: any) => {
+    // ====================== 🚀 Gửi form ======================
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
-        if (!form.tieuDe || !form.moTa) {
+        // ✅ Kiểm tra rỗng
+        if (!form.tieuDe.trim() || !form.moTa.trim()) {
             toast.error("Vui lòng nhập đầy đủ tiêu đề và mô tả chi tiết!");
             return;
         }
 
-        if (vanDeChon === "Khác" && !form.danhMuc) {
+        // ✅ Nếu chọn "Khác" mà không nhập danh mục
+        if (vanDeChon === "Khác" && !form.danhMuc.trim()) {
             toast.error("Vui lòng nhập danh mục cho vấn đề khác!");
             return;
         }
 
         try {
             setDangGui(true);
-            const danhMuc = vanDeChon === "Khác" ? form.danhMuc : vanDeChon;
+            const danhMuc = vanDeChon === "Khác" ? form.danhMuc.trim() : vanDeChon;
 
+            // ✅ Gửi request đến API
             const res = await api.post("/support-tickets", {
                 userId: user?.id,
                 category: danhMuc,
-                subject: form.tieuDe,
-                description: form.moTa,
-                status: "open",
+                subject: form.tieuDe.trim(),
+                description: form.moTa.trim(),
+                status: "opened", // 🔥 Sửa lại đúng trạng thái hợp lệ
             });
 
-            toast.success(res.data.message || "Gửi yêu cầu hỗ trợ thành công!");
+            toast.success(res.data.message || "🎉 Gửi yêu cầu hỗ trợ thành công!");
+            // ✅ Reset form sau khi gửi
             setForm({ danhMuc: "", tieuDe: "", moTa: "" });
             setVanDeChon("");
         } catch (err: any) {
-            toast.error(err.response?.data?.message || "Không thể gửi yêu cầu hỗ trợ!");
+            console.error("Gửi ticket lỗi:", err);
+            toast.error(
+                err.response?.data?.message || "❌ Không thể gửi yêu cầu hỗ trợ!"
+            );
         } finally {
             setDangGui(false);
         }
     };
 
+    // ====================== 🧩 Giao diện ======================
     return (
         <div className="max-w-2xl mx-auto bg-white shadow-md rounded-xl p-6 mt-4">
             <h2 className="text-xl font-semibold text-[#38A3A5] mb-4">
@@ -94,9 +108,9 @@ export default function SupportTicketForm() {
                 </div>
             ) : (
                 <>
-
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        {vanDeChon === "Khác" && (
+                        {/* Nhập danh mục nếu chọn “Khác” */}
+                        {vanDeChon === "Khác" ? (
                             <div>
                                 <label className="block mb-1 font-medium">Danh mục</label>
                                 <Input
@@ -106,9 +120,7 @@ export default function SupportTicketForm() {
                                     placeholder="VD: Vấn đề khác (tài khoản, hồ sơ, ...)"
                                 />
                             </div>
-                        )}
-
-                        {vanDeChon !== "Khác" && (
+                        ) : (
                             <div>
                                 <p className="font-medium text-gray-700">
                                     Bạn đã chọn:{" "}
@@ -154,13 +166,12 @@ export default function SupportTicketForm() {
 
                             <Button
                                 type="submit"
-                                className="bg-[#38A3A5] hover:bg-[#2d898a] min-w-[160px]"
+                                className="bg-[#38A3A5] hover:bg-[#2d898a] min-w-[180px]"
                                 disabled={dangGui}
                             >
-                                {dangGui ? "Đang gửi..." : "Gửi yêu cầu hỗ trợ"}
+                                {dangGui ? "⏳ Đang gửi..." : "📩 Gửi yêu cầu hỗ trợ"}
                             </Button>
                         </div>
-
                     </form>
                 </>
             )}

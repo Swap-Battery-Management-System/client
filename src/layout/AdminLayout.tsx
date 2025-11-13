@@ -89,7 +89,7 @@ export default function AdminLayout() {
     },
     {
       name: "Trung tâm hỗ trợ",
-      path: "support-tickets",
+      path: "support",
       icon: <MessageSquare size={18} />,
     },
 
