@@ -2,164 +2,132 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "../ui/button";
 import { useState, useEffect } from "react";
 import api from "@/lib/api";
-import { useParams } from "react-router-dom";
-import { Calendar, User, Car, Battery, Recycle, MapPin } from "lucide-react"; // icon từ lucide-react
+import { Calendar, User, Car, Battery, Recycle, MapPin } from "lucide-react";
 import { toast } from "sonner";
-
-interface Booking {
-  id: string;
-  scheduleTime: string;
-  note: string;
-  status: string;
-  userId: string;
-  vehicleId: string;
-  batteryId: string;
-  stationId: string;
-}
-
-interface Vehicle {
-  id: string;
-  licensePlates: string;
-  VIN: string;
-  model: { id: string; name: string };
-  batteryId: string;
-}
-
-interface User {
-  id: string;
-  fullName: string;
-  email: string;
-  phoneNumber: string;
-  address: string;
-}
-
-interface Battery {
-  id: string;
-  code: string;
-  currentCapacity: number;
-  cycleCount: number;
-  soc: number;
-  batteryTypeId: string;
-}
-
-interface BatteryType {
-  id: string;
-  name: string;
-}
-
-interface Station {
-  id: string;
-  name: string;
-}
 
 interface Step1CheckInProps {
   onNext: () => void;
   onUpdate: (key: string, value: any) => void;
   disabled?: boolean;
+  data?: any; // processData từ BatteryProcess
+  onCheckinSuccess?: (swapSession: any) => void; // callback khi check-in thành công
 }
 
 export function Step1CheckIn({
   onNext,
   onUpdate,
   disabled = false,
+  data,
+  onCheckinSuccess,
 }: Step1CheckInProps) {
-  const [booking, setBooking] = useState<Booking>();
-  const [vehicle, setVehicle] = useState<Vehicle>();
-  const [user, setUser] = useState<User>();
-  const [battery, setBattery] = useState<Battery>();
-  const [oldBattery, setOldBattery] = useState<Battery>();
-  const [batteryType, setBatteryType] = useState<BatteryType>();
-  const [oldBatteryType, setOldBatteryType] = useState<BatteryType>();
-  const [station, setStation] = useState<Station>();
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(!data?.booking);
   const [submitting, setSubmitting] = useState(false);
 
-  const { bookingId } = useParams<{ bookingId: string }>();
+  const [booking, setBooking] = useState<any>(data?.booking || null);
+  const [vehicle, setVehicle] = useState<any>(data?.vehicle || null);
+  const [user, setUser] = useState<any>(data?.user || null);
+  const [battery, setBattery] = useState<any>(data?.newBattery || null);
+  const [oldBattery, setOldBattery] = useState<any>(data?.oldBattery || null);
+  const [batteryType, setBatteryType] = useState<any>(
+    data?.newBatteryType || null
+  );
+  const [oldBatteryType, setOldBatteryType] = useState<any>(
+    data?.oldBatteryType || null
+  );
+  const [station, setStation] = useState<any>(data?.station || null);
+
+  // --- Hàm tiện ích fetch pin và loại pin ---
+  const fetchBatteryWithType = async (batteryId: string) => {
+    const resBattery = await api.get(`/batteries/${batteryId}`, {
+      withCredentials: true,
+    });
+    const batteryData = resBattery.data.data.battery;
+    const resType = await api.get(
+      `/battery-types/${batteryData.batteryTypeId}`,
+      { withCredentials: true }
+    );
+    return { battery: batteryData, batteryType: resType.data.data.batteryType };
+  };
 
   useEffect(() => {
-    const fetchAllData = async () => {
-      if (!bookingId) return;
+    if (booking && vehicle && user && battery && station) {
+      setLoading(false);
+      return;
+    }
+
+    const fetchData = async () => {
       try {
         setLoading(true);
-        const resBooking = await api.get(`/bookings/${bookingId}`, {
+        if (!data?.booking?.id) return;
+
+        // Booking
+        const resBooking = await api.get(`/bookings/${data.booking.id}`, {
           withCredentials: true,
         });
-        const bookingData: Booking = resBooking.data.data.booking;
+        const bookingData = resBooking.data.data.booking;
         setBooking(bookingData);
+        onUpdate("booking", bookingData);
 
-        const [resVehicle, resUser, resBattery, resStation] = await Promise.all(
-          [
-            api.get(`/vehicles/${bookingData.vehicleId}`, {
-              withCredentials: true,
-            }),
-            api.get(`/users/${bookingData.userId}`, { withCredentials: true }),
-            api.get(`/batteries/${bookingData.batteryId}`, {
-              withCredentials: true,
-            }),
-            api.get(`/stations/${bookingData.stationId}`, {
-              withCredentials: true,
-            }),
-          ]
-        );
+        // Vehicle, User, Station
+        const [resVehicle, resUser, resStation] = await Promise.all([
+          api.get(`/vehicles/${bookingData.vehicleId}`, {
+            withCredentials: true,
+          }),
+          api.get(`/users/${bookingData.userId}`, { withCredentials: true }),
+          api.get(`/stations/${bookingData.stationId}`, {
+            withCredentials: true,
+          }),
+        ]);
 
         const vehicleData = resVehicle.data.data.vehicle;
         const userData = resUser.data.data.user;
-        const batteryData = resBattery.data.data.battery;
         const stationData = resStation.data.data.station;
 
         setVehicle(vehicleData);
         setUser(userData);
-        setBattery(batteryData);
         setStation(stationData);
 
-        const resBatteryType = await api.get(
-          `/battery-types/${batteryData.batteryTypeId}`,
-          { withCredentials: true }
-        );
-        setBatteryType(resBatteryType.data.data.batteryType);
-
-        // Pin cũ
-        if (vehicleData.batteryId) {
-          const resOldBattery = await api.get(
-            `/batteries/${vehicleData.batteryId}`,
-            { withCredentials: true }
-          );
-          const oldB = resOldBattery.data.data.battery;
-          setOldBattery(oldB);
-          onUpdate("oldBatteryCode", oldB.code);
-          const resOldType = await api.get(
-            `/battery-types/${oldB.batteryTypeId}`,
-            { withCredentials: true }
-          );
-          setOldBatteryType(resOldType.data.data.batteryType);
-        }
-
-        onUpdate("booking", bookingData);
         onUpdate("vehicle", vehicleData);
         onUpdate("user", userData);
-        onUpdate("newBattery", batteryData);
-        onUpdate("newBatteryType", resBatteryType.data.data.batteryType);
         onUpdate("station", stationData);
+
+        // Pin mới (đặt trước)
+        const { battery: newBattery, batteryType: newBatteryType } =
+          await fetchBatteryWithType(bookingData.batteryId);
+        setBattery(newBattery);
+        setBatteryType(newBatteryType);
+        onUpdate("newBattery", newBattery);
+        onUpdate("newBatteryType", newBatteryType);
+
+        // Pin cũ (nếu xe đang gắn pin)
+        if (vehicleData.batteryId) {
+          const { battery: oldB, batteryType: oldBType } =
+            await fetchBatteryWithType(vehicleData.batteryId);
+          setOldBattery(oldB);
+          setOldBatteryType(oldBType);
+          onUpdate("oldBattery", oldB);
+          onUpdate("oldBatteryType", oldBType);
+        }
       } catch (err) {
-        console.error("Không thể load dữ liệu đầy đủ", err);
-        alert("Không thể tải dữ liệu. Vui lòng thử lại sau!");
+        console.error("Không thể load dữ liệu Step1CheckIn", err);
+        toast.error("Không thể tải dữ liệu. Vui lòng thử lại sau!");
       } finally {
         setLoading(false);
       }
     };
 
-    fetchAllData();
-  }, [bookingId]);
+    fetchData();
+  }, [data]);
 
+  // --- Check-in ---
   const handleCheckin = async () => {
-    if (!booking || !station || !vehicle || !user) {
+    if (!booking || !vehicle || !user || !station) {
       toast.error("Thiếu dữ liệu để check-in!");
       return;
     }
 
     try {
       setSubmitting(true);
-
       const res = await api.post(
         `/stations/${station.id}/checkin`,
         {
@@ -171,72 +139,66 @@ export function Step1CheckIn({
         { withCredentials: true }
       );
 
-      console.log("checkin res:", res.data);
       const swapSession = res.data?.data?.swapSession;
-
       if (swapSession?.id) {
         onUpdate("swapSession", swapSession);
-        toast.success(" Check-in thành công!");
-        onNext();
+        toast.success("Check-in thành công!");
+        onCheckinSuccess ? onCheckinSuccess(swapSession) : onNext();
       } else {
-        toast.error("Không thể lấy mã phiên hoán đổi (swapSession).");
+        toast.error("Không lấy được swapSession.");
       }
-    } catch (error: any) {
-      console.error("Lỗi check-in:", error);
-      const message =
-        error.response?.data?.message ||
-        "Không thể thực hiện check-in. Vui lòng thử lại!";
-      toast.error(`❌ ${message}`);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.response?.data?.message || "Check-in thất bại!");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const formattedDate = booking?.scheduleTime
-    ? booking.scheduleTime.replace("T", " ").replace(".000Z", "")
-    : "Chưa có";
-
   if (loading) {
     return (
-      <div className="flex justify-center w-full py-12 bg-gray-50">
-        <p className="text-gray-500 text-lg animate-pulse">
-          Đang tải dữ liệu...
-        </p>
+      <div className="flex justify-center py-12">
+        <p className="text-gray-500 animate-pulse">Đang tải dữ liệu...</p>
       </div>
     );
   }
 
   return (
-    <div className="flex justify-center w-full py-12 bg-gray-50">
-      <Card className="w-full max-w-4xl shadow-md border border-[#38A3A5]/20 rounded-2xl bg-white">
+    <div className="flex justify-center py-12">
+      <Card className="w-full max-w-4xl shadow-md border rounded-2xl bg-white">
         <CardContent className="p-8 space-y-4">
-          <h2 className="text-3xl font-bold text-center text-[#38A3A5] mb-2">
+          <h2 className="text-3xl font-bold text-center text-[#38A3A5]">
             Xác nhận Check-in
           </h2>
 
-          {/* Booking Info */}
+          {/* Booking */}
           <Section
             icon={<Calendar className="w-5 h-5 text-[#38A3A5]" />}
             title="Thông tin đặt lịch"
           >
             <Info label="Mã đặt lịch" value={booking?.id} />
             <Info label="Trạng thái" value={booking?.status} />
-            <Info label="Thời gian hẹn" value={formattedDate} />
+            <Info
+              label="Thời gian hẹn"
+              value={booking?.scheduleTime
+                ?.replace("T", " ")
+                .replace(".000Z", "")}
+            />
             <Info label="Ghi chú" value={booking?.note || "—"} />
           </Section>
 
-          {/* User Info */}
+          {/* User */}
           <Section
             icon={<User className="w-5 h-5 text-[#38A3A5]" />}
             title="Thông tin khách hàng"
           >
             <Info label="Họ tên" value={user?.fullName} />
             <Info label="Email" value={user?.email} />
-            <Info label="Số điện thoại" value={user?.phoneNumber} />
+            <Info label="SĐT" value={user?.phoneNumber} />
             <Info label="Địa chỉ" value={user?.address} />
           </Section>
 
-          {/* Vehicle Info */}
+          {/* Vehicle */}
           <Section
             icon={<Car className="w-5 h-5 text-[#38A3A5]" />}
             title="Thông tin xe"
@@ -244,16 +206,16 @@ export function Step1CheckIn({
             <Info label="Mã xe" value={vehicle?.id} />
             <Info label="Biển số" value={vehicle?.licensePlates} />
             <Info label="Model" value={vehicle?.model?.name} />
-            <Info label="Số khung (VIN)" value={vehicle?.VIN} />
+            <Info label="VIN" value={vehicle?.VIN} />
           </Section>
 
-          {/* New Battery Info */}
+          {/* New Battery */}
           <Section
             icon={<Battery className="w-5 h-5 text-[#38A3A5]" />}
             title="Pin đặt"
           >
             <Info label="Mã pin" value={battery?.id} />
-            <Info label="Mã code" value={battery?.code} />
+            <Info label="Code" value={battery?.code} />
             <Info label="Loại pin" value={batteryType?.name} />
             <Info
               label="Dung lượng hiện tại (Wh)"
@@ -261,27 +223,29 @@ export function Step1CheckIn({
             />
           </Section>
 
-          {/* Old Battery Info */}
+          {/* Old Battery */}
           <Section
             icon={<Recycle className="w-5 h-5 text-[#38A3A5]" />}
-            title="Pin cũ của xe"
+            title="Pin cũ"
           >
             {oldBattery ? (
               <>
-                <Info label="Mã pin" value={oldBattery.id} />
+                <Info label="Mã pin" value={oldBattery?.id} />
+                <Info label="Code" value={oldBattery?.code} />
+                <Info label="Loại pin" value={oldBatteryType?.name || "—"} />
                 <Info
-                  label="Loại pin"
-                  value={oldBatteryType?.name || "Không xác định"}
+                  label="Dung lượng hiện tại (Wh)"
+                  value={oldBattery?.currentCapacity}
                 />
               </>
             ) : (
               <p className="text-gray-500 italic">
-                Xe hiện chưa từng được gắn hoặc đặt pin trước đây.
+                Xe chưa từng gắn pin trước đây.
               </p>
             )}
           </Section>
 
-          {/* Station Info */}
+          {/* Station */}
           <Section
             icon={<MapPin className="w-5 h-5 text-[#38A3A5]" />}
             title="Trạm sạc"
@@ -314,6 +278,7 @@ export function Step1CheckIn({
   );
 }
 
+// --- Sub-components ---
 function Section({
   icon,
   title,
@@ -324,19 +289,15 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="relative">
-      {/* Đường kẻ xanh ngăn cách */}
-      <div className="w-full h-px bg-[#38A3A5]/40 my-6"></div>
-
-      <div className="bg-gray-50/30">
-        <div className="flex items-center gap-2 mb-3">
-          {icon}
-          <h3 className="font-semibold text-lg text-[#2D8688]">{title}</h3>
-        </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-2">
-          {children}
-        </div>
+    <div className="my-4">
+      <div className="flex items-center gap-2 mb-2">
+        {icon}
+        <h3 className="font-semibold text-lg text-[#2D8688]">{title}</h3>
       </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-12 gap-y-2">
+        {children}
+      </div>
+      <div className="w-full h-px bg-[#38A3A5]/40 mt-4"></div>
     </div>
   );
 }
@@ -349,9 +310,9 @@ function Info({
   value?: string | number | null;
 }) {
   return (
-    <div className="flex justify-between border-b border-gray-100 py-1">
+    <div className="flex justify-between py-1 border-b border-gray-100">
       <p className="text-sm text-gray-500">{label}</p>
-      <p className="font-semibold text-[#0F172A] text-right truncate max-w-[65%]">
+      <p className="font-semibold text-right text-[#0F172A] truncate max-w-[65%]">
         {value ?? "—"}
       </p>
     </div>

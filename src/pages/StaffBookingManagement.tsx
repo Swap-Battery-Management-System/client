@@ -237,7 +237,7 @@ export default function StaffBookingManagement() {
     });
 
     const handleCheckin = async (bookingId: string) => {
-        navigate(`/staff/swap-battery-process/${bookingId}`);
+        navigate(`/staff/battery-process/booking/${bookingId}`);
     };
 
     return (

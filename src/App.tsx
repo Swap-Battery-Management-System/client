@@ -39,10 +39,13 @@ import AdminVehicleModelManagement from "./pages/ManageModels";
 import NotificationPage from "./pages/NotificationPage";
 import SupportTicketForm from "./pages/SupportTicketForm";
 import AdminSupportTickets from "./pages/AdminSupportTickets";
-import WalkinSwap from "./pages/WalkinSwap";
 
 import SupportHistoryPage from "./pages/SupportHistoryPage";
 import CreateInvoice from "./pages/CreateInvoice";
+import SwapSessionManager from "./pages/SwapSessionManagement";
+import AdminSupport from "./pages/AdminSupport";
+import InvoiceDetail from "./pages/InvoiceDetail";
+import PaymentPage from "./pages/PaymentPage";
 function App() {
   return (
     <>
@@ -55,7 +58,8 @@ function App() {
         <Route path="/register/verify" element={<OtpVerify />} />
         <Route path="/register/info" element={<RegisterInfo />} />
         <Route path="/register/password" element={<RegisterPassword />} />
-        <Route path="/create-invoice" element={<CreateInvoice />} />
+        <Route path="/invoice-detail" element={<InvoiceDetail />} />
+        <Route path="/payment" element={<PaymentPage />} />
         {/* Layout người dùng */}
         <Route
           path="/home"
@@ -80,6 +84,7 @@ function App() {
           <Route path="my-subscription-packages" element={<MySubcription />} />
           <Route path="support" element={<SupportTicketForm />} />
           <Route path="support-history" element={<SupportHistoryPage />} />
+
         </Route>
         {/* === Staff Routes === */}
         <Route
@@ -91,11 +96,12 @@ function App() {
           }
         >
           <Route path="manage-battery" element={<BatteryManagement />} />
-          <Route
-            path="swap-battery-process/:bookingId"
-            element={<BatteryProcess />}
-          />
-          <Route path="walkin-swap" element={<WalkinSwap />} />
+          <Route path="battery-process">
+            <Route path="booking/:bookingId" element={<BatteryProcess />} />
+            <Route path="swap/:swapSessionId" element={<BatteryProcess />} />
+          </Route>
+          <Route path="walkin-swap" element={<BatteryProcess />} />
+          <Route path="swap-session" element={<SwapSessionManager />} />
           <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="manage-booking" element={<StaffBookingManagement />} />
           {/* <Route index element={<StaffDashboard />} />
@@ -122,9 +128,17 @@ function App() {
           <Route path="damage-fee" element={<AdminDamageFeeManagement />} />
           <Route path="dashboard" element={<AdminDashboard />} />
 
-
           <Route path="support-tickets" element={<AdminSupportTickets />} />
           <Route path="manage-battery" element={<BatteryManagement />} />
+          <Route path="support" element={<AdminSupport />} />
+          <Route
+            path="manage-battery"
+            element={
+              <ProtectedRoute roles={["staff", "admin"]}>
+                <BatteryManagement />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="battery-types"
             element={<AdminBatteryTypeManagement />}

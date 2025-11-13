@@ -114,7 +114,7 @@ export default function Login() {
       const res = await api.post(
         `/auth/google`,
         { credential },
-        { withCredentials: true }
+        { withCredentials: true, headers: { "skip-auth-refresh": "true" } }
       );
       useAuthStore.getState().setAccessToken(res.data.data.accessToken);
       const user = res.data.data.user;
@@ -124,6 +124,7 @@ export default function Login() {
 
       setType("success");
       setMessage(successMessage[res.status]);
+      console.log("role",user.role);
       setTimeout(() => redirectByRole(user.role.name), 2000);
     } catch (err: any) {
       setType("error");
