@@ -226,7 +226,7 @@ export default function BookingHistory() {
     if (!confirm(`Bạn có chắc muốn hủy đặt lịch ${id} không?`)) return;
 
     try {
-      await api.patch(`/bookings/${id}/cancel`, { withCredentials: true });
+      await api.post(`/bookings/${id}/cancel`, { withCredentials: true });
       toast.success("Hủy đặt lịch thành công!");
       setHistory((prev) =>
         prev.map((item) =>
@@ -431,9 +431,7 @@ export default function BookingHistory() {
               <p>
                 <strong>Thời gian:</strong>{" "}
                 {selectedBooking.scheduleTime
-                  ? new Date(selectedBooking.scheduleTime).toLocaleString(
-                      "vi-VN"
-                    )
+                  ? selectedBooking.scheduleTime.replace("T", " ").replace(".000Z", "")
                   : "Chưa có"}
               </p>
               <p>

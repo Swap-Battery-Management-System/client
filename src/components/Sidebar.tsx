@@ -30,9 +30,7 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
   const navigate = useNavigate();
 
   const handleLogout = async () => {
-    logout(() => {
-      navigate("/", { replace: true });
-    })
+    logout();
   }
   return (
     <>

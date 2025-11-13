@@ -74,9 +74,10 @@ export default function Login() {
       : { username: form.identifier.trim(), password: form.password };
 
     try {
-       const res=await api.post("/auth/login", payload, {
-        withCredentials: true,
-      });
+       const res = await api.post("/auth/login", payload, {
+         withCredentials: true,
+         headers: { "skip-auth-refresh": "true" },
+       });
       useAuthStore.getState().setAccessToken(res.data.data.accessToken);
       const userData = await api.get("auth/me", { withCredentials: true });
       
@@ -89,6 +90,7 @@ export default function Login() {
       console.log(user.role.name);
       setTimeout(() => redirectByRole(user.role.name), 2000);
     } catch (err: any) {
+      console.error("Lỗi đăng nhập:", err);
       setType("error");
       if (err.response) {
         setMessage(
@@ -98,6 +100,7 @@ export default function Login() {
         setMessage("⚠️ Không thể kết nối đến máy chủ.");
       }
     } finally {
+      console.log("finally");
       setLoading(false);
     }
   };
@@ -111,7 +114,7 @@ export default function Login() {
       const res = await api.post(
         `/auth/google`,
         { credential },
-        { withCredentials: true }
+        { withCredentials: true, headers: { "skip-auth-refresh": "true" } }
       );
       useAuthStore.getState().setAccessToken(res.data.data.accessToken);
       const user = res.data.data.user;
@@ -121,6 +124,7 @@ export default function Login() {
 
       setType("success");
       setMessage(successMessage[res.status]);
+      console.log("role",user.role);
       setTimeout(() => redirectByRole(user.role.name), 2000);
     } catch (err: any) {
       setType("error");
@@ -184,6 +188,7 @@ export default function Login() {
               name: "password",
               type: "password",
               placeholder: "••••••••",
+              autocomplete: "current-password",
               icon: (
                 <Lock
                   className="absolute left-3 top-3 text-[#38A3A5]"

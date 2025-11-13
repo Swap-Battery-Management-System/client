@@ -1,25 +1,47 @@
-import api from "@/lib/api";
 import { create } from "zustand";
+import api from "@/lib/api";
+import type { User } from "@/types/user";
 
 interface AuthState {
   accessToken: string | null;
+  user: User | null;
+  initialized: boolean;
   setAccessToken: (token: string | null) => void;
-   refreshToken: () => Promise<void>;
+  setUser: (user: User | null) => void;
+  setInitialized: (init: boolean) => void;
+  refreshToken: () => Promise<void>;
+  logout: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   accessToken: null,
+  user: null,
+  initialized: false,
   setAccessToken: (token) => set({ accessToken: token }),
+  setUser: (user) => set({ user }),
+  setInitialized: (init) => set({ initialized: init }),
 
-  refreshToken: async () => {
+ refreshToken: async () => {
+  try {
+    const res = await api.get("/auth/refresh", { withCredentials: true,  headers: { "skip-auth-refresh": "true" },});
+    set({ accessToken: res.data.data.accessToken, initialized: true });
+    return res.data.data.accessToken;
+  } catch(err) {
+    console.error("Refresh token failed:", err);
+    set({ accessToken: null, initialized: true });
+    await get().logout();
+    throw new Error("Refresh token failed");
+  }
+},
+
+  logout: async () => {
     try {
-      const res = await api.get("/auth/refresh", { withCredentials: true });
-      const newToken = res.data.data.accessToken;
-      set({ accessToken: newToken });
-      console.log("Token refreshed:", res.data);
-    } catch (err) {
-      console.log("Refresh token failed", err);
-      set({ accessToken: null });
-    }
+      await api.post("/auth/logout", {
+        withCredentials: true,
+        headers: { "skip-auth-refresh": "true" },
+      });
+    } catch {}
+    set({ accessToken: null, user: null });
+    // window.location.href = "/"; 
   },
 }));

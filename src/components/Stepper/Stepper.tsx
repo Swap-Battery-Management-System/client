@@ -10,6 +10,9 @@ type Step = {
 type StepperProps = {
   steps?: Step[];
   currentStep?: number; // 0-based index
+  onNext?: () => void;
+  onPrev?: () => void;
+  onGoToStep?: (index: number) => void; // tuỳ chọn, nếu bạn muốn click để nhảy đến step bất kỳ
 };
 
 export default function Stepper({
@@ -20,6 +23,9 @@ export default function Stepper({
     { id: "payment", title: "Payment" },
   ],
   currentStep = 0,
+  onNext,
+  onPrev,
+  onGoToStep,
 }: StepperProps) {
   return (
     <nav aria-label="Progress" className="px-4 py-6">
@@ -28,30 +34,38 @@ export default function Stepper({
           const isActive = idx === currentStep;
           const isCompleted = idx < currentStep;
 
+          const handleClick = () => {
+            if (idx === currentStep) return; // đang ở step hiện tại thì bỏ qua
+            if (idx < currentStep) {
+              // quay lại step trước
+              onPrev?.();
+              onGoToStep?.(idx);
+            } else {
+              // đi tới step kế tiếp
+              onNext?.();
+              onGoToStep?.(idx);
+            }
+          };
+
           return (
             <li
               key={step.id}
-              className="flex items-center gap-3 md:gap-6 select-none"
+              className="flex items-center gap-3 md:gap-6 select-none cursor-pointer"
               aria-current={isActive ? "step" : undefined}
+              onClick={handleClick}
             >
               {/* Icon tròn */}
-              <div className="flex items-center">
-                <div
-                  className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200
-                    ${
-                      isCompleted
-                        ? "bg-[#38A3A5] text-white"
-                        : isActive
-                        ? "bg-white text-[#38A3A5] ring-2 ring-[#38A3A5]"
-                        : "bg-[#EAF8F8] text-gray-400 ring-1 ring-gray-200"
-                    }`}
-                >
-                  {isCompleted ? (
-                    <CheckCircle size={18} />
-                  ) : (
-                    <Circle size={18} />
-                  )}
-                </div>
+              <div
+                className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200
+                  ${
+                    isCompleted
+                      ? "bg-[#38A3A5] text-white"
+                      : isActive
+                      ? "bg-white text-[#38A3A5] ring-2 ring-[#38A3A5]"
+                      : "bg-[#EAF8F8] text-gray-400 ring-1 ring-gray-200"
+                  }`}
+              >
+                {isCompleted ? <CheckCircle size={18} /> : <Circle size={18} />}
               </div>
 
               {/* Tiêu đề */}

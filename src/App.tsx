@@ -26,7 +26,8 @@ import AdminUserManagement from "./pages/AdminUserManagement";
 import AdminStationManagement from "./pages/AdminStationManagement";
 import AdminBatteryTypeManagement from "./pages/AdminBatteryTypeManagement";
 import AdminSubscriptionManagement from "./pages/AdminSubscriptionManagement";
-import AdminDamageFeeManagement from "./pages/AdminDamageFeeManagement"
+import AdminDamageFeeManagement from "./pages/AdminDamageFeeManagement";
+import AdminDashboard from "./pages/AdminDashboard";
 
 import BatteryManagement from "./pages/BatteryManagement";
 import StaffBookingManagement from "./pages/StaffBookingManagement";
@@ -38,8 +39,10 @@ import AdminVehicleModelManagement from "./pages/ManageModels";
 import NotificationPage from "./pages/NotificationPage";
 import SupportTicketForm from "./pages/SupportTicketForm";
 import AdminSupportTickets from "./pages/AdminSupportTickets";
+
 import SupportHistoryPage from "./pages/SupportHistoryPage";
 import CreateInvoice from "./pages/CreateInvoice";
+import SwapSessionManager from "./pages/SwapSessionManagement";
 function App() {
   return (
     <>
@@ -87,18 +90,13 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route
-            path="manage-battery"
-            element={
-              <ProtectedRoute roles={["staff", "admin"]}>
-                <BatteryManagement />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="swap-battery-process/:bookingId"
-            element={<BatteryProcess />}
-          />
+          <Route path="manage-battery" element={<BatteryManagement />} />
+          <Route path="battery-process">
+            <Route path="booking/:bookingId" element={<BatteryProcess />} />
+            <Route path="swap/:swapSessionId" element={<BatteryProcess />} />
+          </Route>
+          <Route path="walkin-swap" element={<BatteryProcess />} />
+          <Route path="swap-session" element={<SwapSessionManager />} />
           <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="manage-booking" element={<StaffBookingManagement />} />
           {/* <Route index element={<StaffDashboard />} />
@@ -118,18 +116,15 @@ function App() {
           <Route path="manage-users" element={<AdminUserManagement />} />
           <Route path="manage-stations" element={<AdminStationManagement />} />
           <Route path="manage-vehicles" element={<AdminVehicleManagement />} />
-          <Route path="manage-subscription" element={<AdminSubscriptionManagement />} />
+          <Route
+            path="manage-subscription"
+            element={<AdminSubscriptionManagement />}
+          />
           <Route path="damage-fee" element={<AdminDamageFeeManagement />} />
+          <Route path="dashboard" element={<AdminDashboard />} />
 
           <Route path="support-tickets" element={<AdminSupportTickets />} />
-          <Route
-            path="manage-battery"
-            element={
-              <ProtectedRoute roles={["staff", "admin"]}>
-                <BatteryManagement />
-              </ProtectedRoute>
-            }
-          />
+          <Route path="manage-battery" element={<BatteryManagement />} />
           <Route
             path="battery-types"
             element={<AdminBatteryTypeManagement />}
@@ -139,7 +134,6 @@ function App() {
             element={<AdminVehicleModelManagement />}
           />
         </Route>
-
       </Routes>
       <Toaster richColors position="top-center" />
     </>

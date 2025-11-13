@@ -48,11 +48,20 @@ export default function AdminDamageFeeManagement() {
         variant: "",
     });
 
+    // 🧭 Bộ lọc
+    const [filters, setFilters] = useState({
+        severity: "",
+        type: "",
+        variant: "",
+        status: "",
+    });
+
     // 🔹 Fetch danh sách phí
     const fetchFees = async () => {
         try {
             setLoading(true);
             const res = await api.get("/damage-fees");
+            console.log("Fetched damage fees:", res.data);
             const list = Array.isArray(res.data?.data) ? res.data.data : [];
             setFees(list);
             setFiltered(list);
@@ -68,24 +77,38 @@ export default function AdminDamageFeeManagement() {
         fetchFees();
     }, []);
 
-    // 🔍 Tìm kiếm
+    // 🔍 Lọc dữ liệu (tìm kiếm + filter)
     useEffect(() => {
         const timer = setTimeout(() => {
-            if (!search.trim()) setFiltered(fees);
-            else {
-                const text = search.toLowerCase();
-                setFiltered(
-                    fees.filter(
-                        (f) =>
-                            f.name.toLowerCase().includes(text) ||
-                            f.code.toLowerCase().includes(text) ||
-                            f.type.toLowerCase().includes(text)
-                    )
+            const text = search.toLowerCase();
+            let result = fees.filter((f) => {
+                const matchesSearch =
+                    !search ||
+                    f.name.toLowerCase().includes(text) ||
+                    f.code.toLowerCase().includes(text) ||
+                    f.type.toLowerCase().includes(text);
+
+                const matchesSeverity = !filters.severity || f.severity === filters.severity;
+                const matchesType = !filters.type || f.type === filters.type;
+                const matchesVariant = !filters.variant || f.variant === filters.variant;
+                const matchesStatus =
+                    !filters.status ||
+                    (filters.status === "active" && f.status) ||
+                    (filters.status === "inactive" && !f.status);
+
+                return (
+                    matchesSearch &&
+                    matchesSeverity &&
+                    matchesType &&
+                    matchesVariant &&
+                    matchesStatus
                 );
-            }
+            });
+
+            setFiltered(result);
         }, 300);
         return () => clearTimeout(timer);
-    }, [search, fees]);
+    }, [search, fees, filters]);
 
     // 🔹 Reset form
     const resetForm = () => {
@@ -176,143 +199,198 @@ export default function AdminDamageFeeManagement() {
                 Quản lý Phí Hư Hại (Damage Fees)
             </h2>
 
-            <div className="flex justify-between mb-4">
+            <div className="flex items-center gap-3 mb-4">
                 <Input
                     placeholder="Tìm kiếm theo tên, code, hoặc type..."
                     className="w-1/3"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                 />
+                <div className="flex items-center gap-3">
+                    <Dialog open={open} onOpenChange={setOpen}>
+                        <DialogTrigger asChild>
+                            <Button
+                                onClick={() => resetForm()}
+                                className="bg-[#38A3A5] hover:bg-[#2d8a8b] text-white"
+                            >
+                                + Thêm Phí
+                            </Button>
+                        </DialogTrigger>
 
-                <Dialog open={open} onOpenChange={setOpen}>
-                    <DialogTrigger asChild>
-                        <Button
-                            onClick={() => resetForm()}
-                            className="bg-[#38A3A5] hover:bg-[#2d8a8b] text-white"
-                        >
-                            + Thêm Phí
-                        </Button>
-                    </DialogTrigger>
+                        <DialogContent className="sm:max-w-[500px]">
+                            <DialogHeader>
+                                <DialogTitle>{editItem ? "Cập nhật phí hư hại" : "Thêm phí hư hại mới"}</DialogTitle>
+                                <DialogDescription>
+                                    Vui lòng điền đầy đủ thông tin phí hư hại trước khi lưu.
+                                </DialogDescription>
+                            </DialogHeader>
 
-                    <DialogContent className="sm:max-w-[500px]">
-                        <DialogHeader>
-                            <DialogTitle>{editItem ? "Cập nhật phí hư hại" : "Thêm phí hư hại mới"}</DialogTitle>
-                            <DialogDescription>
-                                Vui lòng điền đầy đủ thông tin phí hư hại trước khi lưu.
-                            </DialogDescription>
-                        </DialogHeader>
-
-                        <form onSubmit={handleSubmit} className="space-y-3 mt-3">
-                            <div>
-                                <Label>Tên phí</Label>
-                                <Input
-                                    placeholder="VD: Giảm dung lượng đột ngột"
-                                    value={form.name}
-                                    onChange={(e) => setForm({ ...form, name: e.target.value })}
-                                />
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
+                            <form onSubmit={handleSubmit} className="space-y-3 mt-3">
                                 <div>
-                                    <Label>Mức độ (Severity)</Label>
-                                    <select
-                                        className="w-full border rounded-md p-2"
-                                        value={form.severity}
-                                        onChange={(e) => setForm({ ...form, severity: e.target.value })}
-                                    >
-                                        <option value="">-- Chọn mức độ --</option>
-                                        <option value="Low">Low</option>
-                                        <option value="Medium">Medium</option>
-                                        <option value="High">High</option>
-                                    </select>
-                                </div>
-
-                                <div>
-                                    <Label>Loại pin (Variant)</Label>
-                                    <select
-                                        className="w-full border rounded-md p-2"
-                                        value={form.variant}
-                                        onChange={(e) => setForm({ ...form, variant: e.target.value })}
-                                    >
-                                        <option value="">-- Chọn loại pin --</option>
-                                        <option value="LFP">LFP</option>
-                                        <option value="LIB">LIB</option>
-                                    </select>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <Label>Giá tiền (Amount)</Label>
+                                    <Label>Tên phí</Label>
                                     <Input
-                                        type="number"
-                                        placeholder="Nhập số tiền"
-                                        value={form.amount}
-                                        onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                                        placeholder="VD: Giảm dung lượng đột ngột"
+                                        value={form.name}
+                                        onChange={(e) => setForm({ ...form, name: e.target.value })}
                                     />
                                 </div>
 
-                                <div>
-                                    <Label>Đơn vị (Unit)</Label>
-                                    <Input
-                                        value={form.unit}
-                                        onChange={(e) => setForm({ ...form, unit: e.target.value })}
-                                    />
-                                </div>
-                            </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <Label>Mức độ (Severity)</Label>
+                                        <select
+                                            className="w-full border rounded-md p-2"
+                                            value={form.severity}
+                                            onChange={(e) => setForm({ ...form, severity: e.target.value })}
+                                        >
+                                            <option value="">-- Chọn mức độ --</option>
+                                            <option value="Low">Low</option>
+                                            <option value="Medium">Medium</option>
+                                            <option value="High">High</option>
+                                        </select>
+                                    </div>
 
-                            <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <Label>Loại pin (Variant)</Label>
+                                        <select
+                                            className="w-full border rounded-md p-2"
+                                            value={form.variant}
+                                            onChange={(e) => setForm({ ...form, variant: e.target.value })}
+                                        >
+                                            <option value="">-- Chọn loại pin --</option>
+                                            <option value="LFP">LFP</option>
+                                            <option value="LIB">LIB</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <Label>Giá tiền (Amount)</Label>
+                                        <Input
+                                            type="number"
+                                            placeholder="Nhập số tiền"
+                                            value={form.amount}
+                                            onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <Label>Đơn vị (Unit)</Label>
+                                        <Input
+                                            value={form.unit}
+                                            onChange={(e) => setForm({ ...form, unit: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <Label>Loại (Type)</Label>
+                                        <select
+                                            className="w-full border rounded-md p-2"
+                                            value={form.type}
+                                            onChange={(e) => setForm({ ...form, type: e.target.value })}
+                                        >
+                                            <option value="">-- Chọn loại --</option>
+                                            <option value="internal_force">Internal Force</option>
+                                            <option value="external_force">External Force</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <Label>Code</Label>
+                                        <Input
+                                            placeholder="VD: VOLT_HIGH_LIB"
+                                            value={form.code}
+                                            onChange={(e) => setForm({ ...form, code: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+
                                 <div>
-                                    <Label>Loại (Type)</Label>
+                                    <Label>Trạng thái</Label>
                                     <select
                                         className="w-full border rounded-md p-2"
-                                        value={form.type}
-                                        onChange={(e) => setForm({ ...form, type: e.target.value })}
+                                        value={form.status ? "true" : "false"}
+                                        onChange={(e) =>
+                                            setForm({ ...form, status: e.target.value === "true" })
+                                        }
                                     >
-                                        <option value="">-- Chọn loại --</option>
-                                        <option value="internal_force">Internal Force</option>
-                                        <option value="external_force">External Force</option>
+                                        <option value="true">Kích hoạt</option>
+                                        <option value="false">Vô hiệu hóa</option>
                                     </select>
                                 </div>
 
-                                <div>
-                                    <Label>Code</Label>
-                                    <Input
-                                        placeholder="VD: VOLT_HIGH_LIB"
-                                        value={form.code}
-                                        onChange={(e) => setForm({ ...form, code: e.target.value })}
-                                    />
-                                </div>
-                            </div>
+                                <DialogFooter>
+                                    <Button
+                                        type="submit"
+                                        className="bg-[#38A3A5] hover:bg-[#2d8a8b] text-white w-full"
+                                    >
+                                        {editItem ? "Lưu thay đổi" : "Xác nhận thêm"}
+                                    </Button>
+                                </DialogFooter>
+                            </form>
+                        </DialogContent>
+                    </Dialog>
+                </div>
+            </div>
 
-                            <div>
-                                <Label>Trạng thái</Label>
-                                <select
-                                    className="w-full border rounded-md p-2"
-                                    value={form.status ? "true" : "false"}
-                                    onChange={(e) =>
-                                        setForm({ ...form, status: e.target.value === "true" })
-                                    }
-                                >
-                                    <option value="true">Kích hoạt</option>
-                                    <option value="false">Vô hiệu hóa</option>
-                                </select>
-                            </div>
+            {/* Bộ lọc nằm giữa, đẹp và gọn */}
+            <div className="flex flex-wrap justify-center items-center gap-4 mb-6">
+                <select
+                    className="border rounded-md p-2 w-[150px] focus:ring-1 focus:ring-[#38A3A5]"
+                    value={filters.severity}
+                    onChange={(e) => setFilters({ ...filters, severity: e.target.value })}
+                >
+                    <option value="">Mức độ</option>
+                    <option value="Low">Low</option>
+                    <option value="Medium">Medium</option>
+                    <option value="High">High</option>
+                </select>
 
-                            <DialogFooter>
-                                <Button
-                                    type="submit"
-                                    className="bg-[#38A3A5] hover:bg-[#2d8a8b] text-white w-full"
-                                >
-                                    {editItem ? "Lưu thay đổi" : "Xác nhận thêm"}
-                                </Button>
-                            </DialogFooter>
-                        </form>
-                    </DialogContent>
-                </Dialog>
-                <span className="ml-auto font-semibold text-sm">
-                    Số lượng: {filtered.length}
-                </span>
+                <select
+                    className="border rounded-md p-2 w-[160px] focus:ring-1 focus:ring-[#38A3A5]"
+                    value={filters.type}
+                    onChange={(e) => setFilters({ ...filters, type: e.target.value })}
+                >
+                    <option value="">Loại</option>
+                    <option value="internal_force">Internal Force</option>
+                    <option value="external_force">External Force</option>
+                </select>
+
+                <select
+                    className="border rounded-md p-2 w-[150px] focus:ring-1 focus:ring-[#38A3A5]"
+                    value={filters.variant}
+                    onChange={(e) => setFilters({ ...filters, variant: e.target.value })}
+                >
+                    <option value="">Pin</option>
+                    <option value="LFP">LFP</option>
+                    <option value="LIB">LIB</option>
+                </select>
+
+                <select
+                    className="border rounded-md p-2 w-[150px] focus:ring-1 focus:ring-[#38A3A5]"
+                    value={filters.status}
+                    onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                >
+                    <option value="">Trạng thái</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
+                </select>
+
+                <Button
+                    variant="outline"
+                    className="border-[#38A3A5] text-[#38A3A5] hover:bg-[#38A3A5] hover:text-white"
+                    onClick={() => setFilters({ severity: "", type: "", variant: "", status: "" })}
+                >
+                    Đặt lại
+                </Button>
+            </div>
+
+
+            <div className="flex justify-end mb-2 font-semibold text-sm text-gray-600">
+                Tổng: {filtered.length}
             </div>
 
             <Card className="p-4 shadow-md overflow-x-auto">
