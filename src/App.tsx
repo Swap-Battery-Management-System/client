@@ -108,11 +108,12 @@ function App() {
         <Route
           path="/admin"
           element={
-            <ProtectedRoute roles={["admin"]}>
+            <ProtectedRoute roles={["admin","manager"]}>
               <AdminLayout />
             </ProtectedRoute>
           }
         >
+          <Route index element={<AdminDashboard />} />
           <Route path="manage-users" element={<AdminUserManagement />} />
           <Route path="manage-stations" element={<AdminStationManagement />} />
           <Route path="manage-vehicles" element={<AdminVehicleManagement />} />
@@ -121,7 +122,6 @@ function App() {
             element={<AdminSubscriptionManagement />}
           />
           <Route path="damage-fee" element={<AdminDamageFeeManagement />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
 
           <Route path="support-tickets" element={<AdminSupportTickets />} />
           <Route path="manage-battery" element={<BatteryManagement />} />

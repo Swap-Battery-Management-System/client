@@ -22,8 +22,8 @@ export function Step3InstallPin({
   const [confirming, setConfirming] = useState(false);
 
   const battery = data?.newBattery;
-  const batteryType = data?.newBatteryType;
-  const swapSession = data?.swap;
+  const batteryType = data?.batteryType;
+  const swapSession = data?.swapSession;
   const [showCancelModal, setShowCancelModal] = useState(false);
 
   const handleConfirm = async () => {
@@ -90,7 +90,7 @@ export function Step3InstallPin({
             <strong>Mã code:</strong> {battery.code || "Không có"}
           </p>
           <p>
-            <strong>Loại pin:</strong> {batteryType?.name || "Không xác định"}
+            <strong>Loại pin:</strong> {batteryType.name || "Không xác định"}
           </p>
           <p>
             <strong>Dung lượng hiện tại:</strong>{" "}

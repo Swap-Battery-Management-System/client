@@ -10,6 +10,7 @@ import { ConfirmModal } from "../ConfirmModal";
 export function Step2CheckPin({ onNext, onPrev, data, onCancelProcess, onUpdate }: any) {
   const [batteryCode, setBatteryCode] = useState(data?.oldBatteryCode || "");
   const [hasOldBattery, setHasOldBattery] = useState(!!data?.oldBatteryCode);
+  const batteryType=data?.batteryType;
   const [loading, setLoading] = useState(false);
   const [battery, setBattery] = useState<any>(null);
   const [internalDamage, setInternalDamage] = useState<any[]>([]);
@@ -130,16 +131,14 @@ export function Step2CheckPin({ onNext, onPrev, data, onCancelProcess, onUpdate 
   const handleConfirm = async () => {
     if (!battery) return toast.error("Chưa có dữ liệu pin!");
     try {
-      const selectedExternalObjects = externalDamageList.filter((d: any) =>
-        selectedExternal.includes(d.id)
-      );
+      
+      const internalDamageIds=internalDamage.map((i:any)=>i.id);
 
-      const damageFees = [...internalDamage, ...selectedExternalObjects];
-      console.log("damage fee list", damageFees);
-      console.log("damageFee", damageFees);
+      const damageFeeIds = [...internalDamageIds, ...selectedExternal];
+      console.log("damageFeeIds", damageFeeIds);
       const res = await api.post(
         `/swap-sessions/${swapSession.id}/calc-damage`,
-        { damageFees },
+        { damageFeeIds },
         { withCredentials: true }
       );
       console.log("invoice", res.data);
@@ -169,6 +168,7 @@ export function Step2CheckPin({ onNext, onPrev, data, onCancelProcess, onUpdate 
               <p>Tên xe: {vehicle.name || "Không có dữ liệu"}</p>
               <p>Loại xe: {vehicle.model.name || "Không có dữ liệu"}</p>
               <p>Biển số: {vehicle.licensePlates || "Không có dữ liệu"}</p>
+              <p>Loại pin: {batteryType.name || "Không có dữ liệu"}</p>
               {vehicle.image && (
                 <img
                   src={vehicle.image}
