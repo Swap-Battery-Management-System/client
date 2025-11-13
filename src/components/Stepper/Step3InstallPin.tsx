@@ -2,32 +2,57 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Battery, CheckCircle } from "lucide-react";
 import { useState } from "react";
+import api from "@/lib/api";
+import { toast } from "sonner";
+import { ConfirmModal } from "../ConfirmModal";
 
 interface Step3InstallPinProps {
   onNext: () => void;
   onPrev: () => void;
   data: any; // processData từ cha truyền xuống
+  onCancelProcess: () => Promise<void>;
 }
 
 export function Step3InstallPin({
   onNext,
   onPrev,
   data,
+  onCancelProcess,
 }: Step3InstallPinProps) {
   const [confirming, setConfirming] = useState(false);
 
   const battery = data?.newBattery;
   const batteryType = data?.newBatteryType;
+  const swapSession = data?.swap;
+  const [showCancelModal, setShowCancelModal] = useState(false);
 
   const handleConfirm = async () => {
+    if (!swapSession?.id) {
+      toast.error("Thiếu thông tin phiên đổi pin (swapSessionId)!");
+      return;
+    }
+
+    if (!battery?.id) {
+      toast.error("Thiếu thông tin pin để xác nhận!");
+      return;
+    }
+
     setConfirming(true);
     try {
-      // 👉 Nếu có API xác nhận lắp pin, gọi ở đây:
-      // await api.post(`/swap-sessions/${data.swapSessionId}/confirm-install`, {}, { withCredentials: true });
+      const res = await api.post(
+        `/swap-sessions/${swapSession.id}/confirm`,
+        {},
+        { withCredentials: true }
+      );
+
+      toast.success("Đã xác nhận lắp pin thành công!");
       onNext();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Lỗi xác nhận lắp pin:", err);
-      alert("Không thể xác nhận lắp pin. Vui lòng thử lại!");
+      const message =
+        err.response?.data?.message ||
+        "Không thể xác nhận lắp pin. Vui lòng thử lại!";
+      toast.error(message);
     } finally {
       setConfirming(false);
     }
@@ -59,39 +84,42 @@ export function Step3InstallPin({
 
         <div className="text-sm text-gray-700 space-y-2 bg-gray-50 rounded-lg p-4 border border-gray-100">
           <p>
-            <strong>Mã pin:</strong> {battery.id}
+            <strong>Mã pin:</strong> {battery.id || "Không xác định"}
           </p>
           <p>
-            <strong>Mã code:</strong> {battery.code}
+            <strong>Mã code:</strong> {battery.code || "Không có"}
           </p>
           <p>
             <strong>Loại pin:</strong> {batteryType?.name || "Không xác định"}
           </p>
           <p>
-            <strong>Dung lượng hiện tại:</strong> {battery.currentCapacity} Wh
+            <strong>Dung lượng hiện tại:</strong>{" "}
+            {battery.currentCapacity
+              ? `${battery.currentCapacity} Wh`
+              : "Không rõ"}
           </p>
           <p>
-            <strong>Mức SOC:</strong> {battery.soc}%
+            <strong>Mức SOC:</strong> {battery.soc ?? "Không rõ"}%
           </p>
           <p>
             <strong>Trạng thái:</strong>{" "}
-            <span className="text-green-700 font-medium">
+            <span
+              className={
+                battery?.status === "reserved"
+                  ? "text-green-700 font-medium"
+                  : "text-red-600 font-medium"
+              }
+            >
               {battery?.status === "reserved"
-                ? "sẵn sàng lắp"
-                : battery?.status?`Lỗi (${battery.status})`:"Không xác định"}
+                ? "Sẵn sàng lắp"
+                : battery?.status
+                ? `Lỗi (${battery.status})`
+                : "Không xác định"}
             </span>
           </p>
         </div>
 
         <div className="flex gap-2 pt-2">
-          <Button
-            variant="outline"
-            onClick={onPrev}
-            className="flex-1"
-            disabled={confirming}
-          >
-            Quay lại
-          </Button>
           <Button
             onClick={handleConfirm}
             disabled={confirming}
@@ -106,8 +134,26 @@ export function Step3InstallPin({
               </>
             )}
           </Button>
+          {/* Nút hủy tiến trình */}
+          <Button
+            onClick={() => setShowCancelModal(true)}
+            className="bg-gradient-to-r from-red-500 to-red-600 text-white px-10 py-3 font-medium hover:brightness-110 hover:shadow-lg transition-all duration-300"
+          >
+            Hủy tiến trình đổi pin
+          </Button>
         </div>
       </CardContent>
+      {/* ConfirmModal gọi onCancelProcess từ parent */}
+      <ConfirmModal
+        open={showCancelModal}
+        title="Xác nhận hủy tiến trình"
+        description="Bạn có chắc chắn muốn hủy tiến trình đổi pin này không?"
+        onClose={() => setShowCancelModal(false)}
+        onConfirm={async () => {
+          setShowCancelModal(false);
+          if (onCancelProcess) await onCancelProcess();
+        }}
+      />
     </Card>
   );
 }

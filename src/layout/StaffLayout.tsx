@@ -9,6 +9,7 @@ import {
   LifeBuoy,
   LogOut,
   UserCheck,
+  RefreshCcw,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import logo from "/png.png";
@@ -40,6 +41,11 @@ export default function StaffLayout() {
       name: "Check-in tại trạm",
       path: "walkin-swap",
       icon: <UserCheck size={18} />,
+    },
+    {
+      name: "Quản lý Swap Session",
+      path: "swap-session",
+      icon: <RefreshCcw size={18} />,
     },
     { name: "Báo cáo trạm", path: "reports", icon: <FileBarChart size={18} /> },
     {

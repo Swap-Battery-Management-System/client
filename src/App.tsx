@@ -39,10 +39,10 @@ import AdminVehicleModelManagement from "./pages/ManageModels";
 import NotificationPage from "./pages/NotificationPage";
 import SupportTicketForm from "./pages/SupportTicketForm";
 import AdminSupportTickets from "./pages/AdminSupportTickets";
-import WalkinSwap from "./pages/WalkinSwap";
 
 import SupportHistoryPage from "./pages/SupportHistoryPage";
 import CreateInvoice from "./pages/CreateInvoice";
+import SwapSessionManager from "./pages/SwapSessionManagement";
 function App() {
   return (
     <>
@@ -91,15 +91,12 @@ function App() {
           }
         >
           <Route path="manage-battery" element={<BatteryManagement />} />
-          <Route
-            path="battery-process/booking/:bookingId"
-            element={<BatteryProcess />}
-          />
-          <Route
-            path="battery-process/swap/:swapSessionId"
-            element={<BatteryProcess />}
-          />
+          <Route path="battery-process">
+            <Route path="booking/:bookingId" element={<BatteryProcess />} />
+            <Route path="swap/:swapSessionId" element={<BatteryProcess />} />
+          </Route>
           <Route path="walkin-swap" element={<BatteryProcess />} />
+          <Route path="swap-session" element={<SwapSessionManager />} />
           <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="manage-booking" element={<StaffBookingManagement />} />
           {/* <Route index element={<StaffDashboard />} />

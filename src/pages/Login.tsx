@@ -124,6 +124,7 @@ export default function Login() {
 
       setType("success");
       setMessage(successMessage[res.status]);
+      console.log("role",user.role);
       setTimeout(() => redirectByRole(user.role.name), 2000);
     } catch (err: any) {
       setType("error");

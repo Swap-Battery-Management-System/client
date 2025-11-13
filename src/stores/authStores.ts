@@ -23,10 +23,11 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
  refreshToken: async () => {
   try {
-    const res = await api.get("/auth/refresh", { withCredentials: true });
+    const res = await api.get("/auth/refresh", { withCredentials: true,  headers: { "skip-auth-refresh": "true" },});
     set({ accessToken: res.data.data.accessToken, initialized: true });
     return res.data.data.accessToken;
-  } catch {
+  } catch(err) {
+    console.error("Refresh token failed:", err);
     set({ accessToken: null, initialized: true });
     await get().logout();
     throw new Error("Refresh token failed");
@@ -35,7 +36,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
   logout: async () => {
     try {
-      await api.get("/auth/logout", {
+      await api.post("/auth/logout", {
         withCredentials: true,
         headers: { "skip-auth-refresh": "true" },
       });

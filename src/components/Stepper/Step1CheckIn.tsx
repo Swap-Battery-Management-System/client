@@ -27,15 +27,28 @@ export function Step1CheckIn({
   const [vehicle, setVehicle] = useState<any>(data?.vehicle || null);
   const [user, setUser] = useState<any>(data?.user || null);
   const [battery, setBattery] = useState<any>(data?.newBattery || null);
-  const [oldBattery, setOldBattery] = useState<any>(
-    data?.oldBatteryCode || null
-  );
+  const [oldBattery, setOldBattery] = useState<any>(data?.oldBattery || null);
   const [batteryType, setBatteryType] = useState<any>(
     data?.newBatteryType || null
   );
+  const [oldBatteryType, setOldBatteryType] = useState<any>(
+    data?.oldBatteryType || null
+  );
   const [station, setStation] = useState<any>(data?.station || null);
 
-  // Nếu chưa có dữ liệu, fetch từ API
+  // --- Hàm tiện ích fetch pin và loại pin ---
+  const fetchBatteryWithType = async (batteryId: string) => {
+    const resBattery = await api.get(`/batteries/${batteryId}`, {
+      withCredentials: true,
+    });
+    const batteryData = resBattery.data.data.battery;
+    const resType = await api.get(
+      `/battery-types/${batteryData.batteryTypeId}`,
+      { withCredentials: true }
+    );
+    return { battery: batteryData, batteryType: resType.data.data.batteryType };
+  };
+
   useEffect(() => {
     if (booking && vehicle && user && battery && station) {
       setLoading(false);
@@ -55,48 +68,45 @@ export function Step1CheckIn({
         setBooking(bookingData);
         onUpdate("booking", bookingData);
 
-        // Vehicle, User, Battery, Station
-        const [resVehicle, resUser, resBattery, resStation] = await Promise.all(
-          [
-            api.get(`/vehicles/${bookingData.vehicleId}`, {
-              withCredentials: true,
-            }),
-            api.get(`/users/${bookingData.userId}`, { withCredentials: true }),
-            api.get(`/batteries/${bookingData.batteryId}`, {
-              withCredentials: true,
-            }),
-            api.get(`/stations/${bookingData.stationId}`, {
-              withCredentials: true,
-            }),
-          ]
-        );
+        // Vehicle, User, Station
+        const [resVehicle, resUser, resStation] = await Promise.all([
+          api.get(`/vehicles/${bookingData.vehicleId}`, {
+            withCredentials: true,
+          }),
+          api.get(`/users/${bookingData.userId}`, { withCredentials: true }),
+          api.get(`/stations/${bookingData.stationId}`, {
+            withCredentials: true,
+          }),
+        ]);
 
-        setVehicle(resVehicle.data.data.vehicle);
-        setUser(resUser.data.data.user);
-        setBattery(resBattery.data.data.battery);
-        setStation(resStation.data.data.station);
+        const vehicleData = resVehicle.data.data.vehicle;
+        const userData = resUser.data.data.user;
+        const stationData = resStation.data.data.station;
 
-        onUpdate("vehicle", resVehicle.data.data.vehicle);
-        onUpdate("user", resUser.data.data.user);
-        onUpdate("newBattery", resBattery.data.data.battery);
-        onUpdate("station", resStation.data.data.station);
+        setVehicle(vehicleData);
+        setUser(userData);
+        setStation(stationData);
 
-        // Battery Type
-        const resType = await api.get(
-          `/battery-types/${resBattery.data.data.battery.batteryTypeId}`,
-          { withCredentials: true }
-        );
-        setBatteryType(resType.data.data.batteryType);
-        onUpdate("newBatteryType", resType.data.data.batteryType);
+        onUpdate("vehicle", vehicleData);
+        onUpdate("user", userData);
+        onUpdate("station", stationData);
 
-        // Pin cũ
-        if (resVehicle.data.data.vehicle.batteryId) {
-          const resOld = await api.get(
-            `/batteries/${resVehicle.data.data.vehicle.batteryId}`,
-            { withCredentials: true }
-          );
-          setOldBattery(resOld.data.data.battery);
-          onUpdate("oldBatteryCode", resOld.data.data.battery.code);
+        // Pin mới (đặt trước)
+        const { battery: newBattery, batteryType: newBatteryType } =
+          await fetchBatteryWithType(bookingData.batteryId);
+        setBattery(newBattery);
+        setBatteryType(newBatteryType);
+        onUpdate("newBattery", newBattery);
+        onUpdate("newBatteryType", newBatteryType);
+
+        // Pin cũ (nếu xe đang gắn pin)
+        if (vehicleData.batteryId) {
+          const { battery: oldB, batteryType: oldBType } =
+            await fetchBatteryWithType(vehicleData.batteryId);
+          setOldBattery(oldB);
+          setOldBatteryType(oldBType);
+          onUpdate("oldBattery", oldB);
+          onUpdate("oldBatteryType", oldBType);
         }
       } catch (err) {
         console.error("Không thể load dữ liệu Step1CheckIn", err);
@@ -109,6 +119,7 @@ export function Step1CheckIn({
     fetchData();
   }, [data]);
 
+  // --- Check-in ---
   const handleCheckin = async () => {
     if (!booking || !vehicle || !user || !station) {
       toast.error("Thiếu dữ liệu để check-in!");
@@ -132,12 +143,7 @@ export function Step1CheckIn({
       if (swapSession?.id) {
         onUpdate("swapSession", swapSession);
         toast.success("Check-in thành công!");
-        // if (onCheckinSuccess) {
-        //   onCheckinSuccess(swapSession);
-        // } else {
-        //   onNext();
-        // }
-        onNext();
+        onCheckinSuccess ? onCheckinSuccess(swapSession) : onNext();
       } else {
         toast.error("Không lấy được swapSession.");
       }
@@ -224,14 +230,18 @@ export function Step1CheckIn({
           >
             {oldBattery ? (
               <>
-                <Info label="Mã pin" value={oldBattery.id} />
+                <Info label="Mã pin" value={oldBattery?.id} />
+                <Info label="Code" value={oldBattery?.code} />
+                <Info label="Loại pin" value={oldBatteryType?.name || "—"} />
                 <Info
-                  label="Loại pin"
-                  value={oldBattery?.batteryTypeId || "—"}
+                  label="Dung lượng hiện tại (Wh)"
+                  value={oldBattery?.currentCapacity}
                 />
               </>
             ) : (
-              <p className="text-gray-500 italic">Xe chưa từng đặt pin trước đây.</p>
+              <p className="text-gray-500 italic">
+                Xe chưa từng gắn pin trước đây.
+              </p>
             )}
           </Section>
 
@@ -268,7 +278,7 @@ export function Step1CheckIn({
   );
 }
 
-// Section component
+// --- Sub-components ---
 function Section({
   icon,
   title,
@@ -292,7 +302,6 @@ function Section({
   );
 }
 
-// Info component
 function Info({
   label,
   value,
