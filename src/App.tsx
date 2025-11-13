@@ -20,6 +20,7 @@ import MySubcription from "./pages/MySubcription";
 import RegisterPassword from "./pages/SetPassword";
 import RegisterVehicle from "./pages/RegisterVehicle";
 import MyVehicles from "./pages/MyVehicles";
+import DamageFee from "./pages/DamageFee";
 
 import AdminVehicleManagement from "./pages/AdminVehicleManagement";
 import AdminUserManagement from "./pages/AdminUserManagement";
@@ -80,6 +81,8 @@ function App() {
           <Route path="my-subscription-packages" element={<MySubcription />} />
           <Route path="support" element={<SupportTicketForm />} />
           <Route path="support-history" element={<SupportHistoryPage />} />
+          <Route path="pricing" element={<DamageFee />} />
+
         </Route>
         {/* === Staff Routes === */}
         <Route
