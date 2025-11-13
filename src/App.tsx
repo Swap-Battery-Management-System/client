@@ -20,6 +20,7 @@ import MySubcription from "./pages/MySubcription";
 import RegisterPassword from "./pages/SetPassword";
 import RegisterVehicle from "./pages/RegisterVehicle";
 import MyVehicles from "./pages/MyVehicles";
+import DamageFee from "./pages/DamageFee";
 
 import AdminVehicleManagement from "./pages/AdminVehicleManagement";
 import AdminUserManagement from "./pages/AdminUserManagement";
@@ -31,6 +32,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 
 import BatteryManagement from "./pages/BatteryManagement";
 import StaffBookingManagement from "./pages/StaffBookingManagement";
+import StaffDashboard from "./pages/StaffDashboard";
 
 import AdminLayout from "./layout/AdminLayout";
 import ResetPassword from "./pages/ResetPassword";
@@ -89,6 +91,7 @@ function App() {
           <Route path="invoice/:id" element={<InvoiceDetail />} />
           <Route path="payment" element={<PaymentPage />} />
 
+          <Route path="pricing" element={<DamageFee />} />
 
         </Route>
         {/* === Staff Routes === */}
@@ -109,6 +112,7 @@ function App() {
           <Route path="swap-session" element={<SwapSessionManager />} />
           <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="manage-booking" element={<StaffBookingManagement />} />
+          <Route path="dashboard" element={<StaffDashboard />} />
           {/* <Route index element={<StaffDashboard />} />
          
           <Route path="booking" element={<StaffBooking />} />
