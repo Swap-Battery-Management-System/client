@@ -17,6 +17,7 @@ import logo from "/svg.svg";
 import api from "@/lib/api";
 import { toast } from "sonner";
 import { useAuthStore } from "@/stores/authStores";
+import { useNotificationStore } from "@/stores/notificationStore"; // ✅ Thêm dòng này
 
 interface NotificationItem {
   id: string;
@@ -33,9 +34,15 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
   const token = useAuthStore((state) => state.accessToken);
+
+  // 🧠 Dùng Zustand store thay vì useState
+  const unreadCount = useNotificationStore((state) => state.unreadCount);
+  const setUnreadCount = useNotificationStore((state) => state.setUnreadCount);
+  const decreaseUnread = useNotificationStore((state) => state.decreaseUnread);
+  const increaseUnread = useNotificationStore((state) => state.increaseUnread);
+
   const [activeModal, setActiveModal] = useState<string | null>(null);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [unreadCount, setUnreadCount] = useState(0);
   const [socket, setSocket] = useState<Socket | null>(null);
   const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
   const [selectedNoti, setSelectedNoti] = useState<NotificationItem | null>(null);
@@ -45,6 +52,8 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const handleLogout = () => {
     logout(() => navigate("/", { replace: true }));
   };
+
+  // 👁️ Xem chi tiết thông báo
   const handleViewDetail = async (id: string) => {
     try {
       const res = await api.get(`/notifications/${id}`);
@@ -55,18 +64,12 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
         setOpenModal(true);
       }
 
-      // 🔹 Gọi API đánh dấu đã đọc
       await api.patch(`/notifications/${id}/read`);
-
-      // 🔹 Cập nhật lại danh sách (đổi status)
       setNotifications((prev) =>
-        prev.map((n) =>
-          n.id === id ? { ...n, status: "Read", isRead: true } : n
-        )
+        prev.map((n) => (n.id === id ? { ...n, status: "Read", isRead: true } : n))
       );
 
-      // 🔹 Giảm số lượng chưa đọc
-      setUnreadCount((prev) => Math.max(prev - 1, 0));
+      decreaseUnread(); // ✅ Đồng bộ toàn app
     } catch (err) {
       console.error("❌ Lỗi khi mở chi tiết thông báo:", err);
     }
@@ -79,31 +82,30 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
       const res = await api.get(`/notifications?userId=${user.id}`);
       const list = res.data?.data?.notifications || [];
 
-      // 🔹 Sắp xếp theo thời gian mới nhất
       const sorted = [...list].sort(
         (a, b) =>
           new Date(b.createdDate || b.createdAt).getTime() -
           new Date(a.createdDate || a.createdAt).getTime()
       );
 
-      setNotifications(sorted.slice(0, 5)); // ✅ chỉ lấy 5 cái mới nhất
+      setNotifications(sorted.slice(0, 5));
 
-      // 🔹 Đếm thông báo chưa đọc
       const unread = list.filter(
         (n: any) => n.isRead === false || n.status === "Unread"
       ).length;
-      setUnreadCount(unread);
+
+      setUnreadCount(unread); // ✅ cập nhật store
     } catch (err) {
       console.error("❌ Lỗi khi tải thông báo:", err);
       toast.error("Không thể tải thông báo!");
     }
   };
 
-  // ⚡ Gọi khi load trang
   useEffect(() => {
     fetchNotifications();
   }, [user]);
-  // 🔌 Kết nối socket realtime
+
+  // 🔌 Socket realtime
   useEffect(() => {
     if (!user?.id) return;
     if (!token) {
@@ -119,7 +121,6 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
       reconnectionDelay: 2000,
       secure: true,
     });
-
 
     setSocket(newSocket);
 
@@ -141,7 +142,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
       };
 
       setNotifications((prev) => [newItem, ...prev].slice(0, 5));
-      setUnreadCount((prev) => prev + 1);
+      increaseUnread(); // ✅ Đồng bộ toàn app
       toast.info("🔔 " + (data.title || "Bạn có thông báo mới!"));
     });
 
@@ -157,14 +158,14 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
       console.log("🧹 Ngắt kết nối socket Header...");
       newSocket.disconnect();
     };
-  }, [user]);
+  }, [user, token]);
 
   // ================== JSX ==================
   return (
     <>
       <header className="bg-white px-8 py-4 flex justify-center">
         <div className="bg-white border border-[#38A3A5] w-full max-w-8xl rounded-full px-6 py-3 flex items-center justify-between">
-          {/* Logo + Menu icon */}
+          {/* Logo + Menu */}
           <div className="flex items-center gap-3">
             <button
               onClick={onMenuClick}
@@ -181,7 +182,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
             </NavLink>
           </div>
 
-          {/* Navigation Menu */}
+          {/* Navigation */}
           <nav className="flex items-center gap-8 text-sm font-medium text-black">
             {[
               ["", "Trang chủ"],
@@ -206,19 +207,14 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
             ))}
           </nav>
 
-          {/* Icons: Notifications + Account */}
+          {/* 🔔 Notifications + 👤 Account */}
           <div className="flex items-center gap-4">
-            {/* 🔔 Thông báo */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="relative text-[#38A3A5] hover:text-[#2d898a] transition">
                   <Bell className="w-6 h-6" />
                   {unreadCount > 0 && (
-                    <span
-                      className="absolute -top-1 -right-1 bg-red-500 text-white 
-                      text-[10px] font-semibold rounded-full px-1.5 py-[1px] 
-                      min-w-[16px] flex items-center justify-center"
-                    >
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full px-1.5 py-[1px] min-w-[16px] flex items-center justify-center">
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   )}
@@ -242,7 +238,6 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
                       const formatted = isNaN(date.getTime())
                         ? "—"
                         : date.toLocaleString("vi-VN");
-
                       const isUnread = item.status === "Unread" || item.isRead === false;
 
                       return (
@@ -270,7 +265,6 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
                         </DropdownMenuItem>
                       );
                     })
-
                   )}
                 </div>
 
@@ -286,7 +280,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* 👤 Dropdown tài khoản */}
+            {/* 👤 Account menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="text-[#38A3A5] hover:text-[#2d898a] transition">
@@ -322,6 +316,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
       </header>
 
       <AccountModal type={activeModal} onClose={() => setActiveModal(null)} />
+
       {/* Modal chi tiết thông báo */}
       {openModal && selectedNoti && (
         <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
@@ -355,7 +350,6 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
           </div>
         </div>
       )}
-
     </>
   );
 }

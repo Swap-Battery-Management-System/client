@@ -25,6 +25,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { useNotificationStore } from "@/stores/notificationStore";
 
 interface Notification {
   notification_id: string;
@@ -45,6 +46,10 @@ export default function NotificationPage() {
   const [detail, setDetail] = useState<any>(null);
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const { setUnreadCount,
+    decreaseUnread,
+    increaseUnread,
+    resetUnread } = useNotificationStore();
 
   const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "https://api.swapnet.io.vn";
 
@@ -59,6 +64,7 @@ export default function NotificationPage() {
 
   // 📩 Nhận thông báo realtime
   const handleNewNotification = useCallback((data: any) => {
+    increaseUnread();
     console.log("📩 Nhận thông báo mới từ socket:", data);
     const newItem: Notification = {
       notification_id: data.id || Date.now().toString(),
@@ -66,7 +72,9 @@ export default function NotificationPage() {
       type: data.type || "Alert",
       created_date: new Date().toISOString(),
       status: "Unread",
+
     };
+
     setNotifications((prev) => [newItem, ...prev]);
   }, []);
 
@@ -129,6 +137,9 @@ export default function NotificationPage() {
               new Date(a.created_date).getTime()
           );
         setNotifications(formatted);
+        const unread = formatted.filter((n) => n.status === "Unread").length;
+        setUnreadCount(unread);
+
       } else {
         setNotifications([]);
       }
@@ -307,18 +318,27 @@ export default function NotificationPage() {
             </Button>
 
             <Button
+              disabled={detail?.isRead}
               onClick={async () => {
                 if (detail?.id) {
                   await api.patch(`/notifications/${detail.id}/read`);
+                  decreaseUnread();
                   toast.success("Đã đánh dấu thông báo là đã đọc");
                   await fetchNotifications();
                 }
                 setOpen(false);
               }}
-              className="bg-gradient-to-r from-cyan-500 to-emerald-500 text-white hover:from-cyan-600 hover:to-emerald-600 flex items-center gap-2 shadow-md transition"
+              className={cn(
+                "flex items-center gap-2 shadow-md transition",
+                detail?.isRead
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-cyan-500 to-emerald-500 text-white hover:from-cyan-600 hover:to-emerald-600"
+              )}
             >
-              <CheckCircle className="w-4 h-4" /> Đã đọc
+              <CheckCircle className="w-4 h-4" />
+              Đã đọc
             </Button>
+
           </div>
         </DialogContent>
       </Dialog>
@@ -349,6 +369,7 @@ export default function NotificationPage() {
               onClick={async () => {
                 try {
                   await api.patch("/notifications/read");
+                  resetUnread();
                   toast.success("Tất cả thông báo đã được đánh dấu là đã đọc");
                   setConfirmOpen(false);
                   await fetchNotifications();
