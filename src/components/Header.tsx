@@ -1,7 +1,7 @@
+import { useEffect, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { Bell, User, Menu } from "lucide-react";
 import AccountModal from "@/pages/AccountModal";
-
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,49 +11,72 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
-import logo from "/svg.svg"
-import { useState } from "react";
+import logo from "/svg.svg";
+import api from "@/lib/api";
+import { toast } from "sonner";
 
+// ================= Interface =================
+interface NotificationItem {
+  id: string;
+  title?: string;
+  message: string;
+  type: string;
+  createdAt?: string;
+  createdDate?: string;
+  isRead?: boolean;
+  status?: string;
+}
+
+// ================= Component =================
 export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
-  const { logout } = useAuth();
+  const { logout, user } = useAuth(); // ✅ Lấy user từ context
   const navigate = useNavigate();
   const [activeModal, setActiveModal] = useState<string | null>(null);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
+  const [unreadCount, setUnreadCount] = useState(0);
 
-
-  const handleLogout = async () => {
-    logout(() =>
-      navigate("/", { replace: true })
-    ); // truyền callback redirect
+  // 🧭 Logout
+  const handleLogout = () => {
+    logout(() => navigate("/", { replace: true }));
   };
 
-  const notifications = [
-    {
-      title: "Đặt lịch đổi pin thành công cho xe Wave Alpha - Trạm Bến Thành",
-      time: "5 phút trước",
-    },
-    {
-      title: "Trạm Nguyễn Văn Linh hiện còn 3 pin trống, hãy đến sớm nhé!",
-      time: "30 phút trước",
-    },
-    {
-      title:
-        "Lịch đổi pin ngày mai (11/10) lúc 09:00, vui lòng kiểm tra lại thông tin trước khi đến",
-      time: "1 giờ trước",
-    },
-    {
-      title:
-        "Hệ thống đang bảo trì tạm thời tại trạm Quận 7, dự kiến hoàn thành trong hôm nay",
-      time: "2 giờ trước",
-    },
-  ];
+  // 🔔 Lấy thông báo mới nhất
+  const fetchNotifications = async () => {
+    if (!user?.id) return;
+    try {
+      const res = await api.get(`/notifications?userId=${user.id}`);
+      const list = res.data?.data?.notifications || [];
+
+      // 🔹 Sắp xếp theo thời gian mới nhất
+      const sorted = [...list].sort(
+        (a, b) =>
+          new Date(b.createdDate || b.createdAt).getTime() -
+          new Date(a.createdDate || a.createdAt).getTime()
+      );
+
+      setNotifications(sorted.slice(0, 5)); // ✅ chỉ lấy 5 cái mới nhất
+
+      // 🔹 Đếm thông báo chưa đọc
+      const unread = list.filter(
+        (n: any) => n.isRead === false || n.status === "Unread"
+      ).length;
+      setUnreadCount(unread);
+    } catch (err) {
+      console.error("❌ Lỗi khi tải thông báo:", err);
+      toast.error("Không thể tải thông báo!");
+    }
+  };
+
+  // ⚡ Gọi khi load trang
+  useEffect(() => {
+    fetchNotifications();
+  }, [user]);
+
+  // ================== JSX ==================
   return (
     <>
-      <header className="bg-white px-8 py-4 
-      flex justify-center">
-        <div className="bg-white border 
-        border-[#38A3A5] w-full max-w-8xl 
-        rounded-full px-6 py-3 flex items-center 
-        justify-between">
+      <header className="bg-white px-8 py-4 flex justify-center">
+        <div className="bg-white border border-[#38A3A5] w-full max-w-8xl rounded-full px-6 py-3 flex items-center justify-between">
           {/* Logo + Menu icon */}
           <div className="flex items-center gap-3">
             <button
@@ -71,7 +94,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
             </NavLink>
           </div>
 
-          {/* Menu */}
+          {/* Navigation Menu */}
           <nav className="flex items-center gap-8 text-sm font-medium text-black">
             {[
               ["", "Trang chủ"],
@@ -83,7 +106,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
             ].map(([path, label]) => (
               <NavLink
                 key={path}
-                to={`${path}`}
+                to={path}
                 state={path === "find-station" ? { openShowModal: true } : null}
                 end={path === ""}
                 className={({ isActive }) =>
@@ -95,39 +118,61 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
               </NavLink>
             ))}
           </nav>
-          {/* Icons: Thông báo + Account */}
+
+          {/* Icons: Notifications + Account */}
           <div className="flex items-center gap-4">
-            {/* Dropdown Thông báo */}
+            {/* 🔔 Thông báo */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="relative text-[#38A3A5] hover:text-[#2d898a] transition">
                   <Bell className="w-6 h-6" />
-                  <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full animate-pulse"></span>
+                  {unreadCount > 0 && (
+                    <span
+                      className="absolute -top-1 -right-1 bg-red-500 text-white 
+                      text-[10px] font-semibold rounded-full px-1.5 py-[1px] 
+                      min-w-[16px] flex items-center justify-center"
+                    >
+                      {unreadCount > 9 ? "9+" : unreadCount}
+                    </span>
+                  )}
                 </button>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent
-                align="end"
-                className="w-80 p-0 overflow-hidden"
-              >
+              <DropdownMenuContent align="end" className="w-80 p-0 overflow-hidden">
                 <DropdownMenuLabel className="px-4 py-2 font-semibold text-[#38A3A5]">
-                  Thông báo
+                  Thông báo mới nhất
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
 
-                {/* Danh sách thông báo */}
                 <div className="max-h-60 overflow-y-auto">
-                  {notifications.map((item, i) => (
-                    <DropdownMenuItem
-                      key={i}
-                      className="flex flex-col items-start py-2 px-4 gap-1 cursor-pointer hover:bg-[#f3fdfa]"
-                    >
-                      <p className="text-sm font-medium text-gray-800 truncate w-full">
-                        {item.title}
-                      </p>
-                      <span className="text-xs text-gray-500">{item.time}</span>
-                    </DropdownMenuItem>
-                  ))}
+                  {notifications.length === 0 ? (
+                    <div className="text-center text-gray-500 py-4 text-sm">
+                      Không có thông báo nào.
+                    </div>
+                  ) : (
+                    notifications.map((item, i) => {
+                      const date = new Date(
+                        item.createdDate || item.createdAt || ""
+                      );
+                      const formatted = isNaN(date.getTime())
+                        ? "—"
+                        : date.toLocaleString("vi-VN");
+
+                      return (
+                        <DropdownMenuItem
+                          key={i}
+                          className="flex flex-col items-start py-2 px-4 gap-1 cursor-pointer hover:bg-[#f3fdfa]"
+                        >
+                          <p className="text-sm font-medium text-gray-800 line-clamp-2">
+                            {item.title || item.message}
+                          </p>
+                          <span className="text-xs text-gray-500">
+                            {formatted}
+                          </span>
+                        </DropdownMenuItem>
+                      );
+                    })
+                  )}
                 </div>
 
                 <DropdownMenuSeparator />
@@ -142,7 +187,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Dropdown Tài khoản */}
+            {/* 👤 Dropdown tài khoản */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="text-[#38A3A5] hover:text-[#2d898a] transition">
@@ -176,6 +221,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
           </div>
         </div>
       </header>
+
       <AccountModal type={activeModal} onClose={() => setActiveModal(null)} />
     </>
   );
