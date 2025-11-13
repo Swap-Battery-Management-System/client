@@ -87,8 +87,7 @@ function App() {
           <Route path="support-history" element={<SupportHistoryPage />} />
           <Route path="transaction-history" element={<TransactionHistoryPage />} />
           <Route path="invoice/:id" element={<InvoiceDetail />} />
-          <Route path="/payment/verify" element={<PaymentPage />} />
-
+          <Route path="payment" element={<PaymentPage />} />
 
         </Route>
         {/* === Staff Routes === */}
