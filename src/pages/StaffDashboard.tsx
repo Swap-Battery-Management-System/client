@@ -89,7 +89,11 @@ export default function StaffDashboard() {
     const [bookingData, setBookingData] = useState<{ name: string; bookings: number }[]>([]);
     const [bookingDetails, setBookingDetails] = useState<Booking[]>([]);
     const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
-    const [selectedBatteryStatus, setSelectedBatteryStatus] = useState<string | null>(null);
+    const [selectedBatteryStatus, setSelectedBatteryStatus] = useState<string>("all");
+    const [page, setPage] = useState(1);
+    const [bookingPage, setBookingPage] = useState(1);
+
+
 
     // ==================== Fetch Staff Station ====================
     const fetchStaffStation = async () => {
@@ -305,7 +309,7 @@ export default function StaffDashboard() {
                             </div>
                         </div>
 
-                        {/* ==================== Bên phải: Bảng pin chi tiết ==================== */}
+                        {/* ==================== Bên phải: Bảng pin chi tiết với phân trang ==================== */}
                         <div className="md:col-span-2">
                             <Card className="p-6 bg-white rounded-2xl shadow-xl border border-gray-100">
                                 <h2 className="text-lg font-semibold text-[#6D28D9] mb-4">
@@ -314,36 +318,82 @@ export default function StaffDashboard() {
                                         : "Danh sách tất cả pin"}
                                 </h2>
 
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full border border-gray-200">
-                                        <thead className="bg-gray-50">
-                                            <tr>
-                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">ID</th>
-                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Code</th>
-                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Trạng thái</th>
-                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">SOC</th>
-                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Nhiệt độ</th>
-                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Điện áp</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {station.batteries
-                                                .filter((b) => selectedBatteryStatus === "all" || b.status === selectedBatteryStatus)
-                                                .map((b) => (
-                                                    <tr key={b.id} className="hover:bg-gray-50">
-                                                        <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.id}</td>
-                                                        <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.code}</td>
-                                                        <td className="px-4 py-2 text-sm font-semibold border-b">{b.status}</td>
-                                                        <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.soc}</td>
-                                                        <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.temperature}</td>
-                                                        <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.voltage}</td>
+                                {/* Lọc theo status */}
+                                {station.batteries.filter((b) => selectedBatteryStatus === "all" || b.status === selectedBatteryStatus).length === 0 ? (
+                                    <p className="text-gray-400 text-center">Không có pin nào</p>
+                                ) : (
+                                    <>
+                                        <div className="overflow-x-auto">
+                                            <table className="min-w-full border border-gray-200">
+                                                <thead className="bg-gray-50">
+                                                    <tr>
+                                                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">ID</th>
+                                                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Code</th>
+                                                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Trạng thái</th>
+                                                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">SOC</th>
+                                                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Nhiệt độ</th>
+                                                        <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Điện áp</th>
                                                     </tr>
-                                                ))}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                                </thead>
+                                                <tbody>
+                                                    {(() => {
+                                                        const filtered = station.batteries.filter(
+                                                            (b) => selectedBatteryStatus === "all" || b.status === selectedBatteryStatus
+                                                        );
+                                                        const ITEMS_PER_PAGE = 8;
+                                                        const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
+                                                        const currentPageData = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+
+                                                        return currentPageData.map((b) => (
+                                                            <tr key={b.id} className="hover:bg-gray-50">
+                                                                <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.id}</td>
+                                                                <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.code}</td>
+                                                                <td className="px-4 py-2 text-sm font-semibold border-b">{b.status}</td>
+                                                                <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.soc}</td>
+                                                                <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.temperature}</td>
+                                                                <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.voltage}</td>
+                                                            </tr>
+                                                        ));
+                                                    })()}
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        {/* Pagination */}
+                                        {(() => {
+                                            const filtered = station.batteries.filter(
+                                                (b) => selectedBatteryStatus === "all" || b.status === selectedBatteryStatus
+                                            );
+                                            const ITEMS_PER_PAGE = 8;
+                                            const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
+
+                                            return (
+                                                <div className="flex justify-center items-center gap-4 mt-4">
+                                                    <button
+                                                        disabled={page === 1}
+                                                        onClick={() => setPage((p) => p - 1)}
+                                                        className="px-3 py-1 border rounded text-sm disabled:opacity-50"
+                                                    >
+                                                        Trước
+                                                    </button>
+                                                    <span>
+                                                        Trang {page} / {totalPages}
+                                                    </span>
+                                                    <button
+                                                        disabled={page === totalPages}
+                                                        onClick={() => setPage((p) => p + 1)}
+                                                        className="px-3 py-1 border rounded text-sm disabled:opacity-50"
+                                                    >
+                                                        Sau
+                                                    </button>
+                                                </div>
+                                            );
+                                        })()}
+                                    </>
+                                )}
                             </Card>
                         </div>
+
                     </div>
 
 
@@ -400,42 +450,85 @@ export default function StaffDashboard() {
                         )}
                     </Card>
 
-                    {/* Bảng chi tiết booking */}
+                    {/* Booking Details Table with Pagination */}
                     <Card className="p-6 md:p-8 bg-white rounded-2xl shadow-xl border border-gray-100">
                         <h2 className="text-lg font-semibold text-[#6D28D9] mb-4">
-                            Lượt đặt chỗ ({selectedLabel || "mới nhất"})
+                            Chi tiết lượt đặt chỗ {selectedLabel ? `(${selectedLabel})` : ""}
                         </h2>
+
                         {bookingDetails.length === 0 ? (
-                            <p className="text-gray-400 text-center">Chưa có lượt đặt chỗ nào</p>
+                            <p className="text-gray-400 text-center">Không có lượt đặt chỗ</p>
                         ) : (
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full border border-gray-200">
-                                    <thead className="bg-gray-50">
-                                        <tr>
-                                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">ID</th>
-                                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Thời gian (UTC)</th>
-                                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Trạng thái</th>
-                                            <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Ghi chú</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {bookingDetails.map((b) => (
-                                            <tr key={b.id} className="hover:bg-gray-50">
-                                                <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.id}</td>
-                                                <td className="px-4 py-2 text-sm text-gray-700 border-b">{dayjs.utc(b.scheduleTime).format("DD/MM/YYYY HH:mm")}</td>
-                                                <td className="px-4 py-2 text-sm font-semibold border-b">
-                                                    <span className={`px-2 py-0.5 rounded-full ${b.status === "completed" ? "bg-green-100 text-green-800" : b.status === "pending" ? "bg-yellow-100 text-yellow-800" : "bg-red-100 text-red-800"}`}>
-                                                        {b.status}
-                                                    </span>
-                                                </td>
-                                                <td className="px-4 py-2 text-sm text-gray-500 border-b">{b.note || "-"}</td>
+                            <>
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full border border-gray-200">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">ID</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Thời gian</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Trạng thái</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Ghi chú</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Trạm</th>
                                             </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                                        </thead>
+                                        <tbody>
+                                            {(() => {
+                                                const ITEMS_PER_PAGE = 8;
+                                                const totalPages = Math.ceil(bookingDetails.length / ITEMS_PER_PAGE) || 1;
+                                                const currentPageData = bookingDetails.slice(
+                                                    (bookingPage - 1) * ITEMS_PER_PAGE,
+                                                    bookingPage * ITEMS_PER_PAGE
+                                                );
+
+                                                return currentPageData.map((b) => (
+                                                    <tr key={b.id} className="hover:bg-gray-50">
+                                                        <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.id}</td>
+                                                        <td className="px-4 py-2 text-sm text-gray-700 border-b">
+                                                            {dayjs.utc(b.scheduleTime).format("DD/MM/YYYY HH:mm")}
+                                                        </td>
+                                                        <td className="px-4 py-2 text-sm font-semibold border-b">{b.status}</td>
+                                                        <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.note || "-"}</td>
+                                                        <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.stationId}</td>
+                                                    </tr>
+                                                ));
+                                            })()}
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                {/* Pagination */}
+                                <div className="flex justify-center items-center gap-4 mt-4">
+                                    {(() => {
+                                        const ITEMS_PER_PAGE = 8;
+                                        const totalPages = Math.ceil(bookingDetails.length / ITEMS_PER_PAGE) || 1;
+
+                                        return (
+                                            <>
+                                                <button
+                                                    disabled={bookingPage === 1}
+                                                    onClick={() => setBookingPage((p) => p - 1)}
+                                                    className="px-3 py-1 border rounded text-sm disabled:opacity-50"
+                                                >
+                                                    Trước
+                                                </button>
+                                                <span>
+                                                    Trang {bookingPage} / {totalPages}
+                                                </span>
+                                                <button
+                                                    disabled={bookingPage === totalPages}
+                                                    onClick={() => setBookingPage((p) => p + 1)}
+                                                    className="px-3 py-1 border rounded text-sm disabled:opacity-50"
+                                                >
+                                                    Sau
+                                                </button>
+                                            </>
+                                        );
+                                    })()}
+                                </div>
+                            </>
                         )}
                     </Card>
+
                 </>
             ) : (
                 <p className="text-gray-400 text-center mt-10">Bạn chưa được gán vào trạm nào.</p>
