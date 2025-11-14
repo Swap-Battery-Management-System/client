@@ -19,26 +19,26 @@ export function Step4Payment({ onPrev, data }: Step4PaymentProps) {
   const station = data?.station;
   const [transaction, setTransaction] = useState<any>(null);
 
-  useEffect(() => {
-    console.log("user",user, station);
-    if (!user || !station || !invoiceId) return;
-    // Đăng ký room
-    socket.emit("register", user?.id);
-    socket.emit("station-register", station?.id);
+  // useEffect(() => {
+  //   console.log("user",user, station);
+  //   if (!user || !station || !invoiceId) return;
+  //   // Đăng ký room
+  //   socket.emit("register", user?.id);
+  //   socket.emit("station-register", station?.id);
 
-    // Lắng nghe sự kiện
-    const handler = (payload: any) => {
-      console.log("Payment status updated:", payload);
-    };
-    socket.on("payment:status", handler);
+  //   // Lắng nghe sự kiện
+  //   const handler = (payload: any) => {
+  //     console.log("Payment status updated:", payload);
+  //   };
+  //   socket.on("payment:status", handler);
 
-    return () => {
-      // Hủy listener và leave room khi unmount
-      socket.emit("unregister", user?.id);
-      socket.emit("station-unregister", station?.id);
-      socket.off("payment:status", handler);
-    };
-  }, []);
+  //   return () => {
+  //     // Hủy listener và leave room khi unmount
+  //     socket.emit("unregister", user?.id);
+  //     socket.emit("station-unregister", station?.id);
+  //     socket.off("payment:status", handler);
+  //   };
+  // }, []);
 
   const confirmCashPayment = async () => {
     if (!transaction) return;

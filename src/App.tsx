@@ -81,7 +81,10 @@ function App() {
         >
           <Route index element={<Home />} />
           <Route path="find-station" element={<FindStation />} />
-          <Route path="find-station/station-detail/:id" element={<StationDetail />} />
+          <Route
+            path="find-station/station-detail/:id"
+            element={<StationDetail />}
+          />
           <Route path="booking" element={<Booking />} />
           <Route path="booking-history" element={<BookingHistory />} />
           <Route path="subscription-packages" element={<Subscription />} />
@@ -125,7 +128,7 @@ function App() {
         <Route
           path="/admin"
           element={
-            <ProtectedRoute roles={["admin", "manager"]}>
+            <ProtectedRoute roles={["admin"]}>
               <AdminLayout />
             </ProtectedRoute>
           }
@@ -134,17 +137,26 @@ function App() {
           <Route path="manage-users" element={<AdminUserManagement />} />
           <Route path="manage-stations" element={<AdminStationManagement />} />
           <Route path="manage-vehicles" element={<AdminVehicleManagement />} />
-          <Route path="manage-subscription" element={<AdminSubscriptionManagement />} />
+          <Route
+            path="manage-subscription"
+            element={<AdminSubscriptionManagement />}
+          />
           <Route path="damage-fee" element={<AdminDamageFeeManagement />} />
           <Route path="support-tickets" element={<AdminSupportTickets />} />
           <Route path="support" element={<AdminSupport />} />
-          <Route path="battery-types" element={<AdminBatteryTypeManagement />} />
-          <Route path="vehicle-models" element={<AdminVehicleModelManagement />} />
-          <Route path="manage-battery" element={<BatteryManagement />} />
-          <Route path="swap-session" element={<SwapSessionManager />} />
-          <Route path="create-invoice" element={<CreateInvoice />} />
+          <Route
+            path="battery-types"
+            element={<AdminBatteryTypeManagement />}
+          />
+          <Route
+            path="vehicle-models"
+            element={<AdminVehicleModelManagement />}
+          />
+          <Route
+            path="manage-battery"
+            element={<BatteryManagement />}
+          />
         </Route>
-
       </Routes>
 
       <Toaster richColors position="top-center" />
