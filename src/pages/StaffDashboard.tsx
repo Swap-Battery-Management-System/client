@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Card } from "@/components/ui/card";
 import { Battery, MapPin, RefreshCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -92,6 +93,7 @@ export default function StaffDashboard() {
     const [selectedBatteryStatus, setSelectedBatteryStatus] = useState<string>("all");
     const [page, setPage] = useState(1);
     const [bookingPage, setBookingPage] = useState(1);
+    const navigate = useNavigate();
 
 
 
@@ -312,11 +314,19 @@ export default function StaffDashboard() {
                         {/* ==================== Bên phải: Bảng pin chi tiết với phân trang ==================== */}
                         <div className="md:col-span-2">
                             <Card className="p-6 bg-white rounded-2xl shadow-xl border border-gray-100">
-                                <h2 className="text-lg font-semibold text-[#6D28D9] mb-4">
-                                    {selectedBatteryStatus && selectedBatteryStatus !== "all"
-                                        ? `Danh sách pin: ${selectedBatteryStatus.replace("-", " ")}`
-                                        : "Danh sách tất cả pin"}
-                                </h2>
+                                <div className="flex justify-between items-center mb-4">
+                                    <h2 className="text-lg font-semibold text-[#6D28D9]">
+                                        Chi tiết lượt đặt chỗ {selectedLabel ? `(${selectedLabel})` : ""}
+                                    </h2>
+                                    <Button
+                                        size="sm"
+                                        variant="outline"
+                                        onClick={() => navigate("/staff/manage-battery")}
+                                    >
+                                        Xem chi tiết
+                                    </Button>
+                                </div>
+
 
                                 {/* Lọc theo status */}
                                 {station.batteries.filter((b) => selectedBatteryStatus === "all" || b.status === selectedBatteryStatus).length === 0 ? (
@@ -452,9 +462,21 @@ export default function StaffDashboard() {
 
                     {/* Booking Details Table with Pagination */}
                     <Card className="p-6 md:p-8 bg-white rounded-2xl shadow-xl border border-gray-100">
-                        <h2 className="text-lg font-semibold text-[#6D28D9] mb-4">
-                            Chi tiết lượt đặt chỗ {selectedLabel ? `(${selectedLabel})` : ""}
-                        </h2>
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold text-[#6D28D9]">
+                                {selectedBatteryStatus && selectedBatteryStatus !== "all"
+                                    ? `Danh sách pin: ${selectedBatteryStatus.replace("-", " ")}`
+                                    : "Danh sách tất cả pin"}
+                            </h2>
+                            <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => navigate("/staff/manage-booking")}
+                            >
+                                Xem chi tiết
+                            </Button>
+                        </div>
+
 
                         {bookingDetails.length === 0 ? (
                             <p className="text-gray-400 text-center">Không có lượt đặt chỗ</p>
@@ -532,7 +554,8 @@ export default function StaffDashboard() {
                 </>
             ) : (
                 <p className="text-gray-400 text-center mt-10">Bạn chưa được gán vào trạm nào.</p>
-            )}
-        </div>
+            )
+            }
+        </div >
     );
 }

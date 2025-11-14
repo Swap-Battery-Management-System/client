@@ -106,6 +106,9 @@ export default function StaffBookingManagement() {
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
+
     const navigate = useNavigate();
 
     const handleStatusClick = (status: Booking["status"]) => {
@@ -236,6 +239,17 @@ export default function StaffBookingManagement() {
         return matchesSearch && matchesStatus && matchesDate;
     });
 
+    // 🔹 Tính tổng trang
+    const totalPages = Math.ceil(filteredBookings.length / ITEMS_PER_PAGE) || 1;
+
+    // 🔹 Lấy dữ liệu hiện tại
+    const currentBookings = filteredBookings.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
+
+
+
     const handleCheckin = async (bookingId: string) => {
         navigate(`/staff/swap-battery-process/${bookingId}`);
     };
@@ -331,6 +345,21 @@ export default function StaffBookingManagement() {
                             />
                         </div>
 
+                        {/* 🔹 Nút Clear */}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="ml-2"
+                            onClick={() => {
+                                setSearchCode("");
+                                setFilterStatus("all");
+                                setStartDate("");
+                                setEndDate("");
+                            }}
+                        >
+                            Clear
+                        </Button>
+
                         <span className="ml-auto font-semibold text-sm">
                             Số lượng: {filteredBookings.length}
                         </span>
@@ -353,7 +382,7 @@ export default function StaffBookingManagement() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredBookings.map(b => {
+                                {currentBookings.map(b => {
                                     const vehicle = vehiclesMap.get(b.vehicleId);
                                     return (
                                         <tr key={b.id} className="border-b hover:bg-gray-50">
@@ -397,6 +426,38 @@ export default function StaffBookingManagement() {
                             </tbody>
 
                         </table>
+                    </div>
+
+                    {/* Pagination */}
+                    <div className="flex justify-center mt-4 gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(prev => prev - 1)}
+                        >
+                            Trước
+                        </Button>
+
+                        {Array.from({ length: totalPages }, (_, i) => (
+                            <Button
+                                key={i + 1}
+                                variant={currentPage === i + 1 ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(i + 1)}
+                            >
+                                {i + 1}
+                            </Button>
+                        ))}
+
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(prev => prev + 1)}
+                        >
+                            Tiếp
+                        </Button>
                     </div>
 
                     {/* 🔹 Modal xem chi tiết booking */}
