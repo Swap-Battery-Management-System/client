@@ -241,7 +241,7 @@ export default function InvoiceDetail() {
                     <Button
                         className="bg-[#38A3A5] text-white"
                         onClick={() =>
-                            navigate("/home/payment", {
+                            navigate("/payment", {
                                 state: {
                                     amount: Number(invoice.amountTotal),
                                     invoiceId: invoice.id,
