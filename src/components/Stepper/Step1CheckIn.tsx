@@ -9,8 +9,8 @@ interface Step1CheckInProps {
   onNext: () => void;
   onUpdate: (key: string, value: any) => void;
   disabled?: boolean;
-  data?: any; // processData từ BatteryProcess
-  onCheckinSuccess?: (swapSession: any) => void; // callback khi check-in thành công
+  data?: any;
+  onCheckinSuccess?: (swapSession: any) => void;
 }
 
 export function Step1CheckIn({
@@ -29,14 +29,11 @@ export function Step1CheckIn({
   const [battery, setBattery] = useState<any>(data?.newBattery || null);
   const [oldBattery, setOldBattery] = useState<any>(data?.oldBattery || null);
   const [batteryType, setBatteryType] = useState<any>(
-    data?.newBatteryType || null
-  );
-  const [oldBatteryType, setOldBatteryType] = useState<any>(
-    data?.oldBatteryType || null
+    data?.batteryType || null
   );
   const [station, setStation] = useState<any>(data?.station || null);
 
-  // --- Hàm tiện ích fetch pin và loại pin ---
+  // --- Hàm fetch pin và loại pin ---
   const fetchBatteryWithType = async (batteryId: string) => {
     const resBattery = await api.get(`/batteries/${batteryId}`, {
       withCredentials: true,
@@ -91,22 +88,21 @@ export function Step1CheckIn({
         onUpdate("user", userData);
         onUpdate("station", stationData);
 
-        // Pin mới (đặt trước)
-        const { battery: newBattery, batteryType: newBatteryType } =
+        // Pin mới
+        const { battery: newBattery, batteryType: fetchedType } =
           await fetchBatteryWithType(bookingData.batteryId);
         setBattery(newBattery);
-        setBatteryType(newBatteryType);
+        setBatteryType(fetchedType);
         onUpdate("newBattery", newBattery);
-        onUpdate("newBatteryType", newBatteryType);
+        onUpdate("batteryType", fetchedType);
 
         // Pin cũ (nếu xe đang gắn pin)
         if (vehicleData.batteryId) {
-          const { battery: oldB, batteryType: oldBType } =
-            await fetchBatteryWithType(vehicleData.batteryId);
+          const { battery: oldB } = await fetchBatteryWithType(
+            vehicleData.batteryId
+          );
           setOldBattery(oldB);
-          setOldBatteryType(oldBType);
           onUpdate("oldBattery", oldB);
-          onUpdate("oldBatteryType", oldBType);
         }
       } catch (err) {
         console.error("Không thể load dữ liệu Step1CheckIn", err);
@@ -209,21 +205,21 @@ export function Step1CheckIn({
             <Info label="VIN" value={vehicle?.VIN} />
           </Section>
 
-          {/* New Battery */}
+          {/* Pin mới */}
           <Section
             icon={<Battery className="w-5 h-5 text-[#38A3A5]" />}
             title="Pin đặt"
           >
             <Info label="Mã pin" value={battery?.id} />
             <Info label="Code" value={battery?.code} />
-            <Info label="Loại pin" value={batteryType?.name} />
+            <Info label="Loại pin" value={batteryType?.name || "—"} />
             <Info
               label="Dung lượng hiện tại (Wh)"
               value={battery?.currentCapacity}
             />
           </Section>
 
-          {/* Old Battery */}
+          {/* Pin cũ */}
           <Section
             icon={<Recycle className="w-5 h-5 text-[#38A3A5]" />}
             title="Pin cũ"
@@ -232,7 +228,7 @@ export function Step1CheckIn({
               <>
                 <Info label="Mã pin" value={oldBattery?.id} />
                 <Info label="Code" value={oldBattery?.code} />
-                <Info label="Loại pin" value={oldBatteryType?.name || "—"} />
+                <Info label="Loại pin" value={batteryType?.name || "—"} />
                 <Info
                   label="Dung lượng hiện tại (Wh)"
                   value={oldBattery?.currentCapacity}

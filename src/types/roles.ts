@@ -1,1 +1,1 @@
-export type Role ="admin"|"driver"|"staff";
+export type Role ="admin"|"driver"|"staff"|"manager";

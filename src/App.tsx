@@ -19,6 +19,7 @@ import MySubcription from "./pages/MySubcription";
 import RegisterPassword from "./pages/SetPassword";
 import RegisterVehicle from "./pages/RegisterVehicle";
 import MyVehicles from "./pages/MyVehicles";
+import DamageFee from "./pages/DamageFee";
 
 import AdminVehicleManagement from "./pages/AdminVehicleManagement";
 import AdminUserManagement from "./pages/AdminUserManagement";
@@ -30,6 +31,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 
 import BatteryManagement from "./pages/BatteryManagement";
 import StaffBookingManagement from "./pages/StaffBookingManagement";
+import StaffDashboard from "./pages/StaffDashboard";
 
 import AdminLayout from "./layout/AdminLayout";
 import ResetPassword from "./pages/ResetPassword";
@@ -89,10 +91,14 @@ function App() {
           <Route path="my-subscription-packages" element={<MySubcription />} />
           <Route path="support" element={<SupportTicketForm />} />
           <Route path="support-history" element={<SupportHistoryPage />} />
-          <Route path="transaction-history" element={<TransactionHistoryPage />} />
+          <Route
+            path="transaction-history"
+            element={<TransactionHistoryPage />}
+          />
           <Route path="invoice/:id" element={<InvoiceDetail />} />
+          <Route path="payment" element={<PaymentPage />} />
 
-          {/* ❌ ĐÃ GỠ ROUTE /home/payment (PHẢI GỠ ĐỂ TRÁNH LỖI) */}
+          <Route path="pricing" element={<DamageFee />} />
         </Route>
 
         {/* STAFF ROUTES */}
@@ -104,6 +110,7 @@ function App() {
             </ProtectedRoute>
           }
         >
+          <Route index element={<StaffDashboard />} />
           <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="battery-process">
             <Route path="booking/:bookingId" element={<BatteryProcess />} />
@@ -118,17 +125,17 @@ function App() {
         <Route
           path="/admin"
           element={
-            <ProtectedRoute roles={["admin"]}>
+            <ProtectedRoute roles={["admin", "manager"]}>
               <AdminLayout />
             </ProtectedRoute>
           }
         >
+          <Route index element={<AdminDashboard />} />
           <Route path="manage-users" element={<AdminUserManagement />} />
           <Route path="manage-stations" element={<AdminStationManagement />} />
           <Route path="manage-vehicles" element={<AdminVehicleManagement />} />
           <Route path="manage-subscription" element={<AdminSubscriptionManagement />} />
           <Route path="damage-fee" element={<AdminDamageFeeManagement />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
           <Route path="support-tickets" element={<AdminSupportTickets />} />
           <Route path="support" element={<AdminSupport />} />
           <Route path="battery-types" element={<AdminBatteryTypeManagement />} />

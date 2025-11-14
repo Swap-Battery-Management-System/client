@@ -16,7 +16,7 @@ export default function BatteryProcess() {
   }>();
   const navigate = useNavigate();
 
-  const [loading, setLoading] = useState(true); // 👈 Thêm state loading
+  const [loading, setLoading] = useState(true); //  Thêm state loading
   const [currentSwapId, setCurrentSwapId] = useState<string | null>(
     swapSessionId || null
   );
@@ -27,9 +27,8 @@ export default function BatteryProcess() {
     user: null,
     vehicle: null,
     newBattery: null,
-    newBatteryType: null,
+    batteryType: null,
     oldBattery: null,
-    oldBatteryType: null,
     station: null,
     checkPinResult: null,
     payment: null,
@@ -51,13 +50,21 @@ export default function BatteryProcess() {
     { id: "payment", title: "Thanh toán" },
   ];
 
+  // ===== Trường hợp walk-in: tắt loading =====
+  useEffect(() => {
+    if (!bookingId && !currentSwapId) {
+      setLoading(false);
+    }
+  }, [bookingId, currentSwapId]);
+
   // ===== Hủy tiến trình swap session =====
   const handleCancelProcess = async () => {
     if (!processData.swapSession?.id) return;
 
     try {
       await api.patch(
-        `/swap-sessions/${processData.swapSession.id}/cancel`,{},
+        `/swap-sessions/${processData.swapSession.id}/cancel`,
+        {},
         { withCredentials: true }
       );
 
@@ -67,9 +74,8 @@ export default function BatteryProcess() {
         user: processData.user,
         vehicle: processData.vehicle,
         newBattery: null,
-        newBatteryType: null,
+        batteryType: null,
         oldBattery: null,
-        oldBatteryType: null,
         station: processData.station,
         checkPinResult: null,
         payment: null,
@@ -81,7 +87,7 @@ export default function BatteryProcess() {
     } catch (err) {
       console.error("Lỗi khi hủy tiến trình swap session:", err);
       toast.error("Không thể hủy tiến trình");
-    } 
+    }
   };
 
   // ===== Fetch booking khi có bookingId =====
@@ -121,10 +127,7 @@ export default function BatteryProcess() {
           `/battery-types/${batteryRes.data.data.battery.batteryTypeId}`,
           { withCredentials: true }
         );
-        handleUpdateData(
-          "newBatteryType",
-          resBatteryType.data.data.batteryType
-        );
+        handleUpdateData("batteryType", resBatteryType.data.data.batteryType);
 
         if (vehicleRes.data.data.vehicle.batteryId) {
           const oldRes = await api.get(
@@ -132,15 +135,6 @@ export default function BatteryProcess() {
             { withCredentials: true }
           );
           handleUpdateData("oldBattery", oldRes.data.data.battery);
-
-          const resOldBatteryType = await api.get(
-            `/battery-types/${oldRes.data.data.battery.batteryTypeId}`,
-            { withCredentials: true }
-          );
-          handleUpdateData(
-            "oldBatteryType",
-            resOldBatteryType.data.data.batteryType
-          );
         }
       } catch (err) {
         console.error("Không thể load dữ liệu booking:", err);
@@ -164,10 +158,12 @@ export default function BatteryProcess() {
         });
         const session = res.data.data || res.data.data?.swapSession;
         if (!session) return;
+        console.log("swapSession", session);
 
         handleUpdateData("swapSession", session);
         //luu invoiceId
-        handleUpdateData("invoiceId", res.data.data.invoiceId);
+        if (session?.invoice?.id)
+          handleUpdateData("invoiceId", session.invoice.id);
 
         const [vehicleRes, userRes, stationRes] = await Promise.all([
           api.get(`/vehicles/${session.vehicleId}`, { withCredentials: true }),
@@ -191,7 +187,7 @@ export default function BatteryProcess() {
             `/battery-types/${newBattery.batteryTypeId}`,
             { withCredentials: true }
           );
-          handleUpdateData("newBatteryType", resType.data.data.batteryType);
+          handleUpdateData("batteryType", resType.data.data.batteryType);
         }
 
         if (session.oldBatteryId) {
@@ -200,18 +196,12 @@ export default function BatteryProcess() {
           });
           const oldBattery = resOld.data.data.battery;
           handleUpdateData("oldBattery", oldBattery);
-
-          const resOldType = await api.get(
-            `/battery-types/${oldBattery.batteryTypeId}`,
-            { withCredentials: true }
-          );
-          handleUpdateData("oldBatteryType", resOldType.data.data.batteryType);
         }
 
         const stepMap: Record<string, number> = {
           "in-progress:check-in": 1,
-          "in-progress:calc-damage": 2,
-          "in-progress:confirm": 3,
+          "in-progress:calc-damage": 1,
+          "in-progress:confirm": 2,
           "in-progress:pay": 3,
           completed: 3,
         };
@@ -219,7 +209,7 @@ export default function BatteryProcess() {
       } catch (err) {
         console.error("Không thể resume swapSessionId:", err);
       } finally {
-        setLoading(false); 
+        setLoading(false);
       }
     };
 
@@ -261,13 +251,18 @@ export default function BatteryProcess() {
             />
           )}
           {currentStep === 0 && !bookingId && !currentSwapId && (
-            <Step1WalkinCheckIn onNext={goToNext} onUpdate={handleUpdateData} />
+            <Step1WalkinCheckIn
+              onNext={goToNext}
+              onUpdate={handleUpdateData}
+              onCheckinSuccess={handleCheckinSuccess}
+            />
           )}
           {currentStep === 1 && (
             <Step2CheckPin
               onNext={goToNext}
               onPrev={goToPrev}
               data={processData}
+              onUpdate={handleUpdateData}
               onCancelProcess={handleCancelProcess}
             />
           )}
@@ -277,10 +272,11 @@ export default function BatteryProcess() {
               onPrev={goToPrev}
               data={processData}
               onCancelProcess={handleCancelProcess}
-              // onUpdate={handleUpdateData} 
             />
           )}
-          {currentStep === 3 && <Step4Payment onPrev={goToPrev} />}
+          {currentStep === 3 && (
+            <Step4Payment onPrev={goToPrev} data={processData} />
+          )}
         </div>
       )}
     </div>
