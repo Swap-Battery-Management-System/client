@@ -58,11 +58,13 @@ export default function PaymentPage() {
             const paymentUrl = res.data?.data?.paymentUrl;
 
             // CASE 1: CASH => Không có paymentUrl
+            // CASE 1: CASH => Không có paymentUrl
             if (!paymentUrl) {
                 toast.success("Thanh toán tiền mặt thành công!");
-                navigate(`/invoice/${invoiceId}`);
+                navigate(`/home/invoice/${invoiceId}`);
                 return;
             }
+
 
             // CASE 2: VNPAY / MOMO => Redirect
             window.location.href = paymentUrl;
@@ -113,8 +115,8 @@ export default function PaymentPage() {
                                 console.log("💡 Đã chọn phương thức:", item.id);
                             }}
                             className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col items-center justify-center transition-all hover:shadow-md ${methodId === item.id
-                                    ? "border-[#38A3A5] bg-[#e7f7f6] scale-[1.03]"
-                                    : "border-gray-200 hover:border-[#38A3A5]/50"
+                                ? "border-[#38A3A5] bg-[#e7f7f6] scale-[1.03]"
+                                : "border-gray-200 hover:border-[#38A3A5]/50"
                                 }`}
                         >
                             <img src={item.iconUrl} alt={item.name} className="w-14 h-14 mb-2" />
