@@ -7,7 +7,7 @@ import api from "@/lib/api";
 interface PaymentMethod {
     id: string;
     name: string;
-    code: string; // momo / vnpay / payos / cash
+    code: string;
     iconUrl: string;
 }
 
@@ -15,7 +15,6 @@ export default function PaymentPage() {
     const location = useLocation();
     const navigate = useNavigate();
 
-    // Nhận dữ liệu từ trang trước
     const { amount, invoiceId } = location.state || {
         amount: 0,
         invoiceId: "",
@@ -24,7 +23,7 @@ export default function PaymentPage() {
     const [methods, setMethods] = useState<PaymentMethod[]>([]);
     const [selected, setSelected] = useState("");
 
-    // ====================== LOAD PAYMENT METHODS ======================
+    // ================= LOAD PAYMENT METHODS =================
     useEffect(() => {
         console.log("📥 [PAYMENT PAGE] Nhận dữ liệu:", { amount, invoiceId });
 
@@ -33,33 +32,30 @@ export default function PaymentPage() {
                 const res = await api.get("/payment-methods");
                 const list: PaymentMethod[] = res.data?.data || [];
 
-                console.log("✅ [PAYMENT PAGE] Payment methods:", list);
-
+                console.log("💳 [PAYMENT PAGE] Methods:", list);
                 setMethods(list);
+                if (list.length > 0) setSelected(list[0].id);
 
-                if (list.length > 0) {
-                    setSelected(list[0].id); // chọn mặc định
-                }
             } catch (err) {
-                console.error("❌ [PAYMENT PAGE] Lỗi load methods:", err);
-                toast.error("Không thể tải danh sách phương thức thanh toán");
+                console.error("❌ Lỗi load methods:", err);
+                toast.error("Không thể tải phương thức thanh toán");
             }
         };
 
         fetchMethods();
     }, []);
 
-    // ========================== HANDLE PAY =============================
+    // ================= HANDLE PAY =================
     const handleConfirm = async () => {
         if (!selected) {
             toast.error("Hãy chọn phương thức thanh toán");
             return;
         }
 
-        console.log("🚀 [PAYMENT] Bắt đầu thanh toán...");
-        console.log("➡️ invoiceId:", invoiceId);
-        console.log("➡️ amount:", amount);
-        console.log("➡️ methodId:", selected);
+        console.log("🚀 [PAYMENT] Thanh toán bắt đầu");
+        console.log("➡ invoiceId:", invoiceId);
+        console.log("➡ totalAmount:", amount);
+        console.log("➡ method:", selected);
 
         try {
             const res = await api.post(`/invoices/${invoiceId}/pay`, {
@@ -67,34 +63,38 @@ export default function PaymentPage() {
                 totalAmount: amount,
             });
 
-            console.log("📦 [PAYMENT] API Response:", res.data);
+            console.log("📦 [PAYMENT] API response:", res.data);
 
             const paymentUrl =
                 res.data?.data?.paymentUrl ||
                 res.data?.paymentUrl ||
                 res.data?.checkoutUrl;
 
-            console.log("🔗 [PAYMENT] paymentUrl:", paymentUrl);
+            console.log("🔗 paymentUrl nhận từ BE:", paymentUrl);
 
-            // CASE 1: CASH → Không redirect
+            // CASE 1 — CASH (không có URL)
             if (!paymentUrl) {
-                console.log("💵 [PAYMENT] Thanh toán tiền mặt — No redirect");
-                toast.success("Đã thanh toán tiền mặt!");
+                console.log("💵 Thanh toán tiền mặt — không redirect");
+                toast.success("Đã thanh toán tiền mặt");
                 navigate(`/home/invoice/${invoiceId}`);
                 return;
             }
 
-            // CASE 2: Redirect sang PayOS / MoMo / VNPAY
-            console.log("🌐 Redirect →", paymentUrl);
-            window.location.href = paymentUrl;
+            // ================= IMPORTANT FIX =================
+            // GẮN invoiceId để lúc PayOS redirect về không mất ID
+            const redirectUrl =
+                `${paymentUrl}${paymentUrl.includes("?") ? "&" : "?"}invoiceId=${invoiceId}`;
 
+            console.log("🌐 Redirecting to:", redirectUrl);
+
+            window.location.href = redirectUrl;
         } catch (err: any) {
-            console.error("❌ [PAYMENT] Payment error:", err);
-            toast.error(err.response?.data?.message || "Không thể tạo thanh toán");
+            console.error("❌ [PAYMENT] Error:", err);
+            toast.error(err.response?.data?.message || "Lỗi thanh toán");
         }
     };
 
-    // ========================== UI =============================
+    // ================= UI =================
     return (
         <div className="max-w-lg mx-auto bg-white shadow-md rounded-xl p-6">
             <h2 className="text-xl font-bold mb-4 text-center text-[#38A3A5]">
@@ -123,13 +123,9 @@ export default function PaymentPage() {
                             ${selected === m.id
                                 ? "border-[#38A3A5] bg-[#e8f5f5]"
                                 : "border-gray-200 hover:border-[#38A3A5]"
-                            }
-                        `}
+                            }`}
                     >
-                        <img
-                            src={m.iconUrl}
-                            className="w-12 h-12 object-contain mb-2"
-                        />
+                        <img src={m.iconUrl} className="w-12 h-12 mb-2" />
                         <p className="text-sm font-medium">{m.name}</p>
                     </div>
                 ))}

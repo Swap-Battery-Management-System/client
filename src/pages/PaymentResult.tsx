@@ -2,30 +2,31 @@ import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 export default function PaymentResult() {
     const navigate = useNavigate();
-    const { method } = useParams();
     const location = useLocation();
+    const { method } = useParams();
 
     console.log("📥 [RESULT] Raw query:", location.search);
 
     const query = new URLSearchParams(location.search);
 
-    console.log("📌 [RESULT] Query params:");
+    console.log("📌 Query params:");
     query.forEach((v, k) => console.log(`   ${k}: ${v}`));
 
     const status =
         query.get("status") ||
         query.get("code") ||
+        query.get("message") ||
         "unknown";
 
-    console.log("📌 [RESULT] status =", status);
+    console.log("📌 status =", status);
 
+    // FIX: Chỉ lấy invoiceId do mình gắn → không lấy 'id' của PayOS
     const invoiceId =
-        query.get("id") ||
         query.get("invoiceId") ||
         location.state?.invoiceId ||
         "";
 
-    console.log("🧾 [RESULT] invoiceId =", invoiceId);
+    console.log("🧾 invoiceId =", invoiceId);
 
     const transactionId =
         query.get("orderCode") ||
@@ -34,15 +35,14 @@ export default function PaymentResult() {
         query.get("tranId") ||
         "unknown";
 
-    console.log("🔗 [RESULT] transactionId =", transactionId);
+    console.log("🔗 transactionId =", transactionId);
 
     const success =
         status === "PAID" ||
         status === "00" ||
         status === "success";
 
-    console.log("🎯 RESULT success =", success);
-    console.log("➡️ method param =", method);
+    console.log("🎯 SUCCESS =", success);
 
     return (
         <div className="max-w-lg mx-auto bg-white shadow-md rounded-xl p-6 text-center mt-10">
@@ -52,8 +52,13 @@ export default function PaymentResult() {
                         🎉 Giao dịch thành công
                     </h2>
 
-                    <p className="mb-2">Mã hóa đơn hệ thống: <b>{invoiceId}</b></p>
-                    <p className="mb-4">Mã giao dịch cổng thanh toán: <b>{transactionId}</b></p>
+                    <p className="mb-2">
+                        Mã hóa đơn hệ thống: <b>{invoiceId}</b>
+                    </p>
+
+                    <p className="mb-4">
+                        Mã giao dịch cổng thanh toán: <b>{transactionId}</b>
+                    </p>
 
                     <button
                         className="w-full bg-[#38A3A5] text-white px-5 py-2 rounded-lg"
@@ -75,13 +80,18 @@ export default function PaymentResult() {
                         ❌ Giao dịch thất bại
                     </h2>
 
-                    <p className="mb-2">Mã hóa đơn hệ thống: <b>{invoiceId}</b></p>
-                    <p className="mb-4">Mã giao dịch cổng thanh toán: <b>{transactionId}</b></p>
+                    <p className="mb-2">
+                        Mã hóa đơn hệ thống: <b>{invoiceId}</b>
+                    </p>
+
+                    <p className="mb-4">
+                        Mã giao dịch cổng thanh toán: <b>{transactionId}</b>
+                    </p>
 
                     <button
                         className="w-full bg-[#38A3A5] text-white px-5 py-2 rounded-lg"
                         onClick={() =>
-                            navigate("/payment", {
+                            navigate("/home/payment", {
                                 state: { invoiceId },
                             })
                         }
@@ -93,7 +103,7 @@ export default function PaymentResult() {
                         className="w-full mt-3 bg-gray-200 text-gray-700 px-5 py-2 rounded-lg"
                         onClick={() => navigate("/home")}
                     >
-                        ❌ Hủy & về trang chủ
+                        ❌ Hủy & quay lại trang chủ
                     </button>
                 </>
             )}
