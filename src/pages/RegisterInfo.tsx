@@ -14,6 +14,7 @@ export default function RegisterInfo() {
     const navigate = useNavigate();
     const location = useLocation();
 
+    // Get pending information
     const pendingEmail = location.state?.email || localStorage.getItem("pendingEmail");
     const savedUserId = localStorage.getItem("pendingUserId");
     const userId = user?.id || savedUserId;
@@ -33,12 +34,12 @@ export default function RegisterInfo() {
     });
 
     const [usernameError, setUsernameError] = useState("");
-    const [usernameStatus, setUsernameStatus] = useState<
-        "idle" | "checking" | "available" | "taken"
-    >("idle");
+    const [usernameStatus, setUsernameStatus] =
+        useState<"idle" | "checking" | "available" | "taken">("idle");
     const [ageError, setAgeError] = useState("");
     const [loading, setLoading] = useState(false);
 
+    // Validate tuổi
     const validateAge = (dateStr: string) => {
         if (!dateStr) return true;
         const dob = new Date(dateStr);
@@ -47,6 +48,20 @@ export default function RegisterInfo() {
         const monthDiff = now.getMonth() - dob.getMonth();
         if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) age--;
         return age >= 18;
+    };
+
+    // Redirect theo ROLE
+    const redirectByRole = (role: string) => {
+        switch (role) {
+            case "admin":
+                navigate("/admin");
+                break;
+            case "staff":
+                navigate("/staff");
+                break;
+            default:
+                navigate("/home");
+        }
     };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -87,18 +102,22 @@ export default function RegisterInfo() {
         if (!validateAge(form.dateOfBirth))
             return toast.error("Phải đủ 18 tuổi!");
 
-        if (!userId) {
-            toast.error("Không tìm thấy thông tin người dùng!");
-            return;
-        }
+        if (!userId) return toast.error("Không tìm thấy thông tin người dùng!");
 
         setLoading(true);
 
         try {
-            const address = [form.detailAddress, form.ward, form.district, form.city, form.country]
+            const address = [
+                form.detailAddress,
+                form.ward,
+                form.district,
+                form.city,
+                form.country,
+            ]
                 .filter(Boolean)
                 .join(", ");
 
+            // Gửi API hoàn tất thông tin
             await api.patch(`/users/${userId}/complete`, {
                 fullName: form.fullname,
                 username: form.username,
@@ -111,31 +130,50 @@ export default function RegisterInfo() {
 
             toast.success("Hoàn tất đăng ký thành công! 🎉");
 
+            // ===============================
+            //  ĐĂNG NHẬP LẠI SAU KHI HOÀN TẤT
+            // ===============================
+
+            let finalUser = null;
             const pendingPassword = localStorage.getItem("pendingPassword");
             const token = useAuthStore.getState().accessToken;
 
+            // CASE 1: Đăng ký bằng email
             if (pendingEmail && pendingPassword) {
-                // Đăng ký bằng email
                 const res = await api.post("/auth/login", {
                     email: pendingEmail,
                     password: pendingPassword,
                 });
                 useAuthStore.getState().setAccessToken(res.data.data.accessToken);
-                setUser(res.data.data.user);
-            } else if (token) {
-                // Đăng ký bằng Google
+                finalUser = res.data.data.user;
+            }
+            // CASE 2: Đăng ký bằng Google
+            else if (token) {
                 const res = await api.get("/auth/me");
-                setUser(res.data.data);
-            } else {
+                finalUser = res.data.data.user;
+            }
+            else {
                 toast.warning("Không tìm thấy token hoặc thông tin đăng nhập!");
                 navigate("/login");
                 return;
             }
 
+            // Lưu vào context
+            if (!finalUser) {
+                toast.error("Không lấy được thông tin người dùng!");
+                navigate("/login");
+                return;
+            }
+
+            setUser(finalUser);
+
+            // XÓA LOCAL STORAGE
             localStorage.removeItem("pendingEmail");
             localStorage.removeItem("pendingPassword");
             localStorage.removeItem("pendingUserId");
-            navigate("/home");
+
+            // điều hướng theo role
+            redirectByRole(finalUser.role.name);
         } catch (err: any) {
             console.error("❌ Lỗi khi hoàn tất đăng ký:", err);
             toast.error(err.response?.data?.message || "Không thể hoàn tất đăng ký!");
