@@ -140,6 +140,9 @@ function App() {
           <Route path="support" element={<AdminSupport />} />
           <Route path="battery-types" element={<AdminBatteryTypeManagement />} />
           <Route path="vehicle-models" element={<AdminVehicleModelManagement />} />
+          <Route path="manage-battery" element={<BatteryManagement />} />
+          <Route path="swap-session" element={<SwapSessionManager />} />
+          <Route path="create-invoice" element={<CreateInvoice />} />
         </Route>
 
       </Routes>
