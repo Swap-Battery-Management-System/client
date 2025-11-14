@@ -2,7 +2,6 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import OtpVerify from "./pages/OtpVerify";
 import RegisterInfo from "./pages/RegisterInfo";
-// import RegisterLayout from "./layout/RegisterLayout";
 import { Route, Routes } from "react-router";
 import { Toaster } from "sonner";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -48,11 +47,12 @@ import InvoiceDetail from "./pages/InvoiceDetail";
 import PaymentPage from "./pages/PaymentPage";
 import TransactionHistoryPage from "./pages/TransactionHistoryPage";
 import PaymentResult from "./pages/PaymentResult";
+
 function App() {
   return (
     <>
       <Routes>
-        {/* Trang công khai */}
+        {/* PUBLIC ROUTES */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/login/reset-password" element={<ResetPassword />} />
@@ -60,11 +60,15 @@ function App() {
         <Route path="/register/verify" element={<OtpVerify />} />
         <Route path="/register/info" element={<RegisterInfo />} />
         <Route path="/register/password" element={<RegisterPassword />} />
-        <Route path="/invoice-detail" element={<InvoiceDetail />} />
+
+        {/* 🔥 PAYMENT ROUTES — luôn ở ROOT */}
         <Route path="/payment" element={<PaymentPage />} />
         <Route path="/payment/:method/result" element={<PaymentResult />} />
 
-        {/* Layout người dùng */}
+        {/* INVOICE PUBLIC (OPTIONAL) */}
+        <Route path="/invoice-detail" element={<InvoiceDetail />} />
+
+        {/* USER HOME LAYOUT */}
         <Route
           path="/home"
           element={
@@ -75,10 +79,7 @@ function App() {
         >
           <Route index element={<Home />} />
           <Route path="find-station" element={<FindStation />} />
-          <Route
-            path="find-station/station-detail/:id"
-            element={<StationDetail />}
-          />
+          <Route path="find-station/station-detail/:id" element={<StationDetail />} />
           <Route path="booking" element={<Booking />} />
           <Route path="booking-history" element={<BookingHistory />} />
           <Route path="subscription-packages" element={<Subscription />} />
@@ -90,12 +91,11 @@ function App() {
           <Route path="support-history" element={<SupportHistoryPage />} />
           <Route path="transaction-history" element={<TransactionHistoryPage />} />
           <Route path="invoice/:id" element={<InvoiceDetail />} />
-          <Route path="payment" element={<PaymentPage />} />
-          <Route path="payment/result" element={<PaymentResult />} />
 
-
+          {/* ❌ ĐÃ GỠ ROUTE /home/payment (PHẢI GỠ ĐỂ TRÁNH LỖI) */}
         </Route>
-        {/* === Staff Routes === */}
+
+        {/* STAFF ROUTES */}
         <Route
           path="/staff"
           element={
@@ -111,14 +111,10 @@ function App() {
           </Route>
           <Route path="walkin-swap" element={<BatteryProcess />} />
           <Route path="swap-session" element={<SwapSessionManager />} />
-          <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="manage-booking" element={<StaffBookingManagement />} />
-          {/* <Route index element={<StaffDashboard />} />
-         
-          <Route path="booking" element={<StaffBooking />} />
-          <Route path="report" element={<StaffReport />} />
-          <Route path="safety" element={<StaffSafety />} /> */}
         </Route>
+
+        {/* ADMIN ROUTES */}
         <Route
           path="/admin"
           element={
@@ -130,34 +126,17 @@ function App() {
           <Route path="manage-users" element={<AdminUserManagement />} />
           <Route path="manage-stations" element={<AdminStationManagement />} />
           <Route path="manage-vehicles" element={<AdminVehicleManagement />} />
-          <Route
-            path="manage-subscription"
-            element={<AdminSubscriptionManagement />}
-          />
+          <Route path="manage-subscription" element={<AdminSubscriptionManagement />} />
           <Route path="damage-fee" element={<AdminDamageFeeManagement />} />
           <Route path="dashboard" element={<AdminDashboard />} />
-
           <Route path="support-tickets" element={<AdminSupportTickets />} />
-          <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="support" element={<AdminSupport />} />
-          <Route
-            path="manage-battery"
-            element={
-              <ProtectedRoute roles={["staff", "admin"]}>
-                <BatteryManagement />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="battery-types"
-            element={<AdminBatteryTypeManagement />}
-          />
-          <Route
-            path="vehicle-models"
-            element={<AdminVehicleModelManagement />}
-          />
+          <Route path="battery-types" element={<AdminBatteryTypeManagement />} />
+          <Route path="vehicle-models" element={<AdminVehicleModelManagement />} />
         </Route>
+
       </Routes>
+
       <Toaster richColors position="top-center" />
     </>
   );

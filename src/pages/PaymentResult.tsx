@@ -5,18 +5,27 @@ export default function PaymentResult() {
     const { method } = useParams();
     const location = useLocation();
 
+    console.log("📥 [RESULT] Raw query:", location.search);
+
     const query = new URLSearchParams(location.search);
+
+    console.log("📌 [RESULT] Query params:");
+    query.forEach((v, k) => console.log(`   ${k}: ${v}`));
 
     const status =
         query.get("status") ||
         query.get("code") ||
         "unknown";
 
+    console.log("📌 [RESULT] status =", status);
+
     const invoiceId =
         query.get("id") ||
         query.get("invoiceId") ||
         location.state?.invoiceId ||
         "";
+
+    console.log("🧾 [RESULT] invoiceId =", invoiceId);
 
     const transactionId =
         query.get("orderCode") ||
@@ -25,10 +34,15 @@ export default function PaymentResult() {
         query.get("tranId") ||
         "unknown";
 
+    console.log("🔗 [RESULT] transactionId =", transactionId);
+
     const success =
         status === "PAID" ||
         status === "00" ||
         status === "success";
+
+    console.log("🎯 RESULT success =", success);
+    console.log("➡️ method param =", method);
 
     return (
         <div className="max-w-lg mx-auto bg-white shadow-md rounded-xl p-6 text-center mt-10">
