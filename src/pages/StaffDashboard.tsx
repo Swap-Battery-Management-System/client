@@ -159,15 +159,22 @@ export default function StaffDashboard() {
     // ==================== Booking Stats ====================
     const fetchBookingStats = (range: "day" | "month" | "year") => {
         if (!bookings || bookings.length === 0) {
+            console.log("No bookings available");
             setBookingData([]);
             setBookingDetails([]);
             setSelectedLabel(null);
             return;
         }
 
+        // 1. Đếm số lượt đặt chỗ theo key (ngày/tháng/năm)
         const counts: Record<string, number> = {};
+
         bookings.forEach((b) => {
+            if (!b.scheduleTime) return;
+
             const date = dayjs.utc(b.scheduleTime);
+            if (!date.isValid()) return;
+
             let key = "";
             switch (range) {
                 case "day":
@@ -180,40 +187,52 @@ export default function StaffDashboard() {
                     key = date.format("YYYY");
                     break;
             }
+
             counts[key] = (counts[key] || 0) + 1;
         });
 
-        const sortedKeys = Object.keys(counts).sort((a, b) =>
-            dayjs.utc(a, range === "day" ? "DD/MM/YYYY" : range === "month" ? "MM/YYYY" : "YYYY").valueOf() -
-            dayjs.utc(b, range === "day" ? "DD/MM/YYYY" : range === "month" ? "MM/YYYY" : "YYYY").valueOf()
-        );
+        console.log("Counts per key:", counts);
 
+        // 2. Sắp xếp key từ ngày cũ → ngày mới
+        const sortedKeys = Object.keys(counts).sort((a, b) => {
+            const da = dayjs.utc(a.split('/').reverse().join('-')); // "YYYY-MM-DD"
+            const db = dayjs.utc(b.split('/').reverse().join('-'));
+            return da.valueOf() - db.valueOf(); // từ ngày cũ → ngày mới
+        });
+
+        console.log("Sorted keys (old → new):", sortedKeys);
+
+        // 3. Chuyển thành mảng để LineChart dùng
         const result = sortedKeys.map((key) => ({ name: key, bookings: counts[key] }));
+        console.log("Booking data for LineChart:", result);
         setBookingData(result);
 
+        // 4. Lấy chi tiết của ngày mới nhất (hiển thị bảng)
         if (result.length > 0) {
             const latestKey = result[result.length - 1].name;
+            console.log("Latest key for details table:", latestKey);
+
             const details = bookings.filter((b) => {
                 const date = dayjs.utc(b.scheduleTime);
                 let key = "";
                 switch (range) {
-                    case "day":
-                        key = date.format("DD/MM/YYYY");
-                        break;
-                    case "month":
-                        key = date.format("MM/YYYY");
-                        break;
-                    case "year":
-                        key = date.format("YYYY");
-                        break;
+                    case "day": key = date.format("DD/MM/YYYY"); break;
+                    case "month": key = date.format("MM/YYYY"); break;
+                    case "year": key = date.format("YYYY"); break;
                 }
                 return key === latestKey;
             });
 
+            console.log("Booking details for latest key:", details);
+
             setBookingDetails(details);
             setSelectedLabel(latestKey);
+        } else {
+            setBookingDetails([]);
+            setSelectedLabel(null);
         }
     };
+
 
     // ==================== Hooks ====================
     useEffect(() => {
@@ -316,7 +335,9 @@ export default function StaffDashboard() {
                             <Card className="p-6 bg-white rounded-2xl shadow-xl border border-gray-100">
                                 <div className="flex justify-between items-center mb-4">
                                     <h2 className="text-lg font-semibold text-[#6D28D9]">
-                                        Chi tiết lượt đặt chỗ {selectedLabel ? `(${selectedLabel})` : ""}
+                                        {selectedBatteryStatus && selectedBatteryStatus !== "all"
+                                            ? `Danh sách pin: ${selectedBatteryStatus.replace("-", " ")}`
+                                            : "Danh sách tất cả pin"}
                                     </h2>
                                     <Button
                                         size="sm"
@@ -462,11 +483,10 @@ export default function StaffDashboard() {
 
                     {/* Booking Details Table with Pagination */}
                     <Card className="p-6 md:p-8 bg-white rounded-2xl shadow-xl border border-gray-100">
+
                         <div className="flex justify-between items-center mb-4">
                             <h2 className="text-lg font-semibold text-[#6D28D9]">
-                                {selectedBatteryStatus && selectedBatteryStatus !== "all"
-                                    ? `Danh sách pin: ${selectedBatteryStatus.replace("-", " ")}`
-                                    : "Danh sách tất cả pin"}
+                                Chi tiết lượt đặt chỗ {selectedLabel ? `(${selectedLabel})` : ""}
                             </h2>
                             <Button
                                 size="sm"
@@ -476,7 +496,6 @@ export default function StaffDashboard() {
                                 Xem chi tiết
                             </Button>
                         </div>
-
 
                         {bookingDetails.length === 0 ? (
                             <p className="text-gray-400 text-center">Không có lượt đặt chỗ</p>
