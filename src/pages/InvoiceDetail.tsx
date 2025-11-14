@@ -236,10 +236,10 @@ export default function InvoiceDetail() {
             </section>
 
             {/* ================= NÚT THANH TOÁN ================= */}
-            {invoice.status === "pending" && (
+            {invoice.status === "processing" && (
                 <div className="flex justify-end mt-6">
                     <Button
-                        className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c] px-6 py-2 text-base"
+                        className="bg-[#38A3A5] text-white"
                         onClick={() =>
                             navigate("/home/payment", {
                                 state: {
@@ -253,6 +253,14 @@ export default function InvoiceDetail() {
                     </Button>
                 </div>
             )}
+
+            {invoice.status === "paid" && (
+                <div className="text-right mt-6 text-lg font-semibold text-green-600">
+                    ✔ Hóa đơn đã thanh toán
+                </div>
+            )}
+
+
         </div>
     );
 }
