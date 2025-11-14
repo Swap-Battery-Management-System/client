@@ -127,10 +127,7 @@ export default function BatteryProcess() {
           `/battery-types/${batteryRes.data.data.battery.batteryTypeId}`,
           { withCredentials: true }
         );
-        handleUpdateData(
-          "batteryType",
-          resBatteryType.data.data.batteryType
-        );
+        handleUpdateData("batteryType", resBatteryType.data.data.batteryType);
 
         if (vehicleRes.data.data.vehicle.batteryId) {
           const oldRes = await api.get(
@@ -161,11 +158,12 @@ export default function BatteryProcess() {
         });
         const session = res.data.data || res.data.data?.swapSession;
         if (!session) return;
-        console.log("swapSession",session);
+        console.log("swapSession", session);
 
         handleUpdateData("swapSession", session);
         //luu invoiceId
-        handleUpdateData("invoiceId", res.data.data.invoice.id);
+        if (session?.invoice?.id)
+          handleUpdateData("invoiceId", session.invoice.id);
 
         const [vehicleRes, userRes, stationRes] = await Promise.all([
           api.get(`/vehicles/${session.vehicleId}`, { withCredentials: true }),
@@ -264,6 +262,7 @@ export default function BatteryProcess() {
               onNext={goToNext}
               onPrev={goToPrev}
               data={processData}
+              onUpdate={handleUpdateData}
               onCancelProcess={handleCancelProcess}
             />
           )}

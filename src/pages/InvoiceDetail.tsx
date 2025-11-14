@@ -13,8 +13,6 @@ interface InvoiceDetailProps {
 export default function InvoiceDetail({
   invoiceId: propInvoiceId,
   staffMode = false,
-  swapSessionId,
-  onPaid,
 }: InvoiceDetailProps) {
   const { id: paramId } = useParams();
   const id = propInvoiceId || paramId; // ưu tiên prop nếu có
@@ -221,18 +219,6 @@ export default function InvoiceDetail({
           </span>
         </p>
       </section>
-
-      {/* NÚT THANH TOÁN CHO STAFF */}
-      {staffMode && invoice.status === "processing" && (
-        <div className="flex justify-end mt-6">
-          <Button
-            className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c] px-6 py-2 text-base"
-            onClick={() => onPaid?.()}
-          >
-            XÁC NHẬN THANH TOÁN
-          </Button>
-        </div>
-      )}
 
       {/* NÚT THANH TOÁN BÌNH THƯỜNG */}
       {!staffMode && invoice.status === "processing" && (
