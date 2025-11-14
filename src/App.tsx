@@ -47,6 +47,7 @@ import AdminSupport from "./pages/AdminSupport";
 import InvoiceDetail from "./pages/InvoiceDetail";
 import PaymentPage from "./pages/PaymentPage";
 import TransactionHistoryPage from "./pages/TransactionHistoryPage";
+import PaymentResult from "./pages/PaymentResult";
 function App() {
   return (
     <>
@@ -61,6 +62,8 @@ function App() {
         <Route path="/register/password" element={<RegisterPassword />} />
         <Route path="/invoice-detail" element={<InvoiceDetail />} />
         <Route path="/payment" element={<PaymentPage />} />
+        <Route path="/payment/result" element={<PaymentResult />} />
+
         {/* Layout người dùng */}
         <Route
           path="/home"
@@ -88,6 +91,8 @@ function App() {
           <Route path="transaction-history" element={<TransactionHistoryPage />} />
           <Route path="invoice/:id" element={<InvoiceDetail />} />
           <Route path="payment" element={<PaymentPage />} />
+          <Route path="payment/result" element={<PaymentResult />} />
+
 
         </Route>
         {/* === Staff Routes === */}

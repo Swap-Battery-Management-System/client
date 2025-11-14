@@ -80,7 +80,7 @@ export default function InvoiceDetail() {
                 <Button
                     variant="outline"
                     className="px-4 py-2"
-                    onClick={() => navigate(-1)}
+                    onClick={() => navigate("/home/transaction-history")}
                 >
                     ⬅ Quay lại
                 </Button>
