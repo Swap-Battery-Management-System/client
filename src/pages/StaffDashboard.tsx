@@ -53,12 +53,19 @@ const StatCard = ({
     title,
     value,
     percent = 100,
+    onClick,
+    className = "",
 }: {
     title: string;
     value: number;
     percent?: number;
+    onClick?: () => void;
+    className?: string;
 }) => (
-    <Card className="p-5 rounded-xl shadow-md border border-gray-100">
+    <Card
+        className={`p-5 rounded-xl shadow-md border border-gray-100 ${className} cursor-pointer`}
+        onClick={onClick}
+    >
         <p className="text-sm font-medium text-gray-600">{title}</p>
         <div className="flex items-center gap-3 mt-2">
             <Battery className="w-10 h-10 text-green-600" />
@@ -82,6 +89,7 @@ export default function StaffDashboard() {
     const [bookingData, setBookingData] = useState<{ name: string; bookings: number }[]>([]);
     const [bookingDetails, setBookingDetails] = useState<Booking[]>([]);
     const [selectedLabel, setSelectedLabel] = useState<string | null>(null);
+    const [selectedBatteryStatus, setSelectedBatteryStatus] = useState<string | null>(null);
 
     // ==================== Fetch Staff Station ====================
     const fetchStaffStation = async () => {
@@ -259,17 +267,85 @@ export default function StaffDashboard() {
                         </Card>
                     </div>
 
-                    {/* Tổng pin + Status */}
-                    <div className="space-y-6">
-                        {station.batteries.length > 0 && <StatCard title="Tổng số pin" value={station.batteries.length} percent={100} />}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            {["in-use", "available", "faulty", "in-transit", "reserved", "in-charged"].map((status) => {
-                                const count = station.batteries.filter((b) => b.status === status).length;
-                                const percent = Number(((count / station.batteries.length) * 100).toFixed(0));
-                                return <StatCard key={status} title={`Pin: ${status.replace("-", " ")}`} value={count} percent={percent} />;
-                            })}
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {/* ==================== Bên trái: StatCard ==================== */}
+                        <div className="space-y-4 md:col-span-1">
+                            {/* Tổng số pin */}
+                            <StatCard
+                                title="Tổng số pin"
+                                value={station.batteries.length}
+                                percent={100}
+                                onClick={() => setSelectedBatteryStatus("all")}
+                            />
+
+                            {/* Trạng thái pin */}
+                            <div className="grid grid-cols-3 gap-2">
+                                {["in-use", "available", "faulty", "in-transit", "reserved", "in-charged"].map((status) => {
+                                    const count = station.batteries.filter((b) => b.status === status).length;
+                                    const percent = Number(((count / station.batteries.length) * 100).toFixed(0));
+                                    return (
+                                        <StatCard
+                                            key={status}
+                                            title={status.replace("-", " ")}
+                                            value={count}
+                                            percent={percent}
+                                            onClick={() => {
+                                                if (selectedBatteryStatus === status) {
+                                                    // Click 2 lần → hiện tất cả pin
+                                                    setSelectedBatteryStatus("all");
+                                                } else {
+                                                    setSelectedBatteryStatus(status);
+                                                }
+                                            }}
+                                            className="cursor-pointer hover:shadow-lg"
+                                        />
+                                    );
+                                })}
+                            </div>
+                        </div>
+
+                        {/* ==================== Bên phải: Bảng pin chi tiết ==================== */}
+                        <div className="md:col-span-2">
+                            <Card className="p-6 bg-white rounded-2xl shadow-xl border border-gray-100">
+                                <h2 className="text-lg font-semibold text-[#6D28D9] mb-4">
+                                    {selectedBatteryStatus && selectedBatteryStatus !== "all"
+                                        ? `Danh sách pin: ${selectedBatteryStatus.replace("-", " ")}`
+                                        : "Danh sách tất cả pin"}
+                                </h2>
+
+                                <div className="overflow-x-auto">
+                                    <table className="min-w-full border border-gray-200">
+                                        <thead className="bg-gray-50">
+                                            <tr>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">ID</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Code</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Trạng thái</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">SOC</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Nhiệt độ</th>
+                                                <th className="px-4 py-2 text-left text-sm font-medium text-gray-700 border-b">Điện áp</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {station.batteries
+                                                .filter((b) => selectedBatteryStatus === "all" || b.status === selectedBatteryStatus)
+                                                .map((b) => (
+                                                    <tr key={b.id} className="hover:bg-gray-50">
+                                                        <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.id}</td>
+                                                        <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.code}</td>
+                                                        <td className="px-4 py-2 text-sm font-semibold border-b">{b.status}</td>
+                                                        <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.soc}</td>
+                                                        <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.temperature}</td>
+                                                        <td className="px-4 py-2 text-sm text-gray-700 border-b">{b.voltage}</td>
+                                                    </tr>
+                                                ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </Card>
                         </div>
                     </div>
+
 
                     {/* Biểu đồ booking */}
                     <Card className="p-6 md:p-8 bg-white rounded-2xl shadow-xl border border-gray-100">
