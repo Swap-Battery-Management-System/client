@@ -5,7 +5,7 @@ import api from "@/lib/api";
 import { Button } from "@/components/ui/button";
 
 interface VerifyResponse {
-    status: string; // "paid" | "failed"
+    status: string;
     invoiceId: string;
     transactionId: string;
     message?: string;
@@ -14,7 +14,7 @@ interface VerifyResponse {
 export default function PaymentResult() {
     const navigate = useNavigate();
     const location = useLocation();
-    const { method } = useParams(); // vnpay / payos / momo / cash
+    const { method } = useParams();
 
     const [loading, setLoading] = useState(true);
     const [verifyData, setVerifyData] = useState<VerifyResponse | null>(null);
@@ -120,7 +120,7 @@ export default function PaymentResult() {
                         <Button
                             className="bg-[#38A3A5] text-white w-full"
                             onClick={() =>
-                                navigate("/home/payment", {
+                                navigate("/payment", {
                                     state: { invoiceId },
                                 })
                             }
