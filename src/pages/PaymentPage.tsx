@@ -7,8 +7,8 @@ import api from "@/lib/api";
 interface PaymentMethod {
     id: string;
     name: string;
+    code: string;     // momo / vnpay / payos / cash
     iconUrl: string;
-    description?: string;
 }
 
 export default function PaymentPage() {
@@ -17,125 +17,93 @@ export default function PaymentPage() {
 
     const { amount, invoiceId } = location.state || { amount: 0, invoiceId: "" };
 
-    const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-    const [methodId, setMethodId] = useState<string>("");
+    const [methods, setMethods] = useState<PaymentMethod[]>([]);
+    const [selected, setSelected] = useState("");
 
-    // ==================== LOAD PAYMENT METHODS ====================
+    // Load danh sách phương thức
     useEffect(() => {
-        const fetchPaymentMethods = async () => {
+        const fetchMethods = async () => {
             try {
                 const res = await api.get("/payment-methods");
                 const list = res.data?.data || [];
+                setMethods(list);
 
-                setPaymentMethods(list);
-
-                if (list.length > 0) {
-                    setMethodId(list[0].id); // chọn phương thức đầu tiên mặc định
-                }
-
+                if (list.length > 0) setSelected(list[0].id);
             } catch (err) {
-                console.error("❌ Lỗi load payment methods:", err);
-                toast.error("Không thể tải phương thức thanh toán!");
+                toast.error("Không thể tải danh sách thanh toán");
             }
         };
 
-        fetchPaymentMethods();
+        fetchMethods();
     }, []);
 
-    // ======================= HANDLE PAYMENT =======================
     const handleConfirm = async () => {
-        console.log("👉 Bấm xác nhận thanh toán");
-        console.log("Invoice:", invoiceId, "Amount:", amount, "MethodId:", methodId);
+        if (!selected) {
+            toast.error("Hãy chọn phương thức thanh toán");
+            return;
+        }
 
         try {
             const res = await api.post(`/invoices/${invoiceId}/pay`, {
-                methodId: methodId,
+                methodId: selected,
                 totalAmount: amount
             });
 
-            console.log("✅ Backend trả về:", res.data);
-
             const paymentUrl = res.data?.data?.paymentUrl;
 
-            // CASE 1: CASH => Không có paymentUrl
-            // CASE 1: CASH => Không có paymentUrl
+            // CASE 1: CASH
             if (!paymentUrl) {
-                toast.success("Thanh toán tiền mặt thành công!");
+                toast.success("Đã thanh toán tiền mặt!");
                 navigate(`/home/invoice/${invoiceId}`);
                 return;
             }
 
-
-            // CASE 2: VNPAY / MOMO => Redirect
+            // CASE 2: Redirect sang MoMo / VNPAY / PayOS
             window.location.href = paymentUrl;
 
         } catch (err: any) {
-            console.error("🔥 Lỗi tạo thanh toán:", err);
-
-            if (err.response) {
-                console.log("📌 STATUS:", err.response.status);
-                console.log("📌 BACKEND:", err.response.data);
-            }
-
-            toast.error(err.response?.data?.message || "Không thể tạo thanh toán!");
+            toast.error(err.response?.data?.message || "Không thể tạo thanh toán");
         }
     };
 
-    // ============================= UI ==============================
-
     return (
-        <div className="max-w-lg mx-auto bg-white shadow-lg rounded-xl p-6 border border-gray-200">
-            <h2 className="text-2xl font-bold text-[#38A3A5] mb-4 text-center">
-                💳 Thanh toán hóa đơn
+        <div className="max-w-lg mx-auto bg-white shadow-md rounded-xl p-6">
+            <h2 className="text-xl font-bold mb-4 text-center text-[#38A3A5]">
+                Thanh toán hóa đơn
             </h2>
 
-            <p className="text-sm text-gray-600 mb-2">
-                Mã hóa đơn: <b>{invoiceId}</b>
-            </p>
-
-            <p className="text-lg font-semibold mb-6">
-                Số tiền cần thanh toán:{" "}
-                <span className="text-[#38A3A5]">
+            <p>Mã hóa đơn: <b>{invoiceId}</b></p>
+            <p className="text-lg font-semibold mb-4">
+                Số tiền: <span className="text-[#38A3A5]">
                     {amount.toLocaleString("vi-VN")}₫
                 </span>
             </p>
 
-            <h3 className="font-semibold mb-2">Chọn phương thức thanh toán:</h3>
+            <h3 className="font-semibold mb-2">Phương thức thanh toán:</h3>
 
-            {/* Nếu chưa load xong */}
-            {paymentMethods.length === 0 ? (
-                <p className="text-center text-gray-500">Đang tải...</p>
-            ) : (
-                <div className="grid grid-cols-2 gap-3">
-                    {paymentMethods.map((item) => (
-                        <div
-                            key={item.id}
-                            onClick={() => {
-                                setMethodId(item.id);
-                                console.log("💡 Đã chọn phương thức:", item.id);
-                            }}
-                            className={`cursor-pointer border-2 rounded-xl p-4 flex flex-col items-center justify-center transition-all hover:shadow-md ${methodId === item.id
-                                ? "border-[#38A3A5] bg-[#e7f7f6] scale-[1.03]"
-                                : "border-gray-200 hover:border-[#38A3A5]/50"
-                                }`}
-                        >
-                            <img src={item.iconUrl} alt={item.name} className="w-14 h-14 mb-2" />
-                            <p className="font-medium text-gray-700">{item.name}</p>
-                        </div>
-                    ))}
-                </div>
-            )}
+            <div className="grid grid-cols-2 gap-3">
+                {methods.map((m) => (
+                    <div
+                        key={m.id}
+                        onClick={() => setSelected(m.id)}
+                        className={`border-2 rounded-xl p-3 cursor-pointer flex flex-col items-center 
+                            ${selected === m.id
+                                ? "border-[#38A3A5] bg-[#e8f5f5]"
+                                : "border-gray-200"
+                            }`}
+                    >
+                        <img src={m.iconUrl} className="w-12 mb-2" />
+                        <p>{m.name}</p>
+                    </div>
+                ))}
+            </div>
 
-            <div className="flex justify-center gap-4 mt-6">
+            <div className="flex justify-center gap-3 mt-5">
                 <Button variant="outline" onClick={() => navigate(-1)}>
-                    ⬅ Quay lại
+                    Quay lại
                 </Button>
-
-                <Button
-                    className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
-                    onClick={handleConfirm}
-                >
-                    ✅ Xác nhận thanh toán
+                <Button className="bg-[#38A3A5]" onClick={handleConfirm}>
+                    Xác nhận
                 </Button>
             </div>
         </div>

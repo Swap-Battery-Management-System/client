@@ -62,7 +62,7 @@ function App() {
         <Route path="/register/password" element={<RegisterPassword />} />
         <Route path="/invoice-detail" element={<InvoiceDetail />} />
         <Route path="/payment" element={<PaymentPage />} />
-        <Route path="/payment/result" element={<PaymentResult />} />
+        <Route path="/payment/:method/result" element={<PaymentResult />} />
 
         {/* Layout người dùng */}
         <Route
