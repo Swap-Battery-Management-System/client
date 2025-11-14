@@ -19,61 +19,49 @@ export function Step4Payment({ onPrev, data }: Step4PaymentProps) {
   const station = data?.station;
   const [transaction, setTransaction] = useState<any>(null);
 
-  // useEffect(() => {
-  //   if (!user || !station || !invoiceId) return;
-  //   // Đăng ký room
-  //   socket.emit("register", user?.id);
-  //   socket.emit("station-register", station?.id);
+  useEffect(() => {
+    console.log("user",user, station);
+    if (!user || !station || !invoiceId) return;
+    // Đăng ký room
+    socket.emit("register", user?.id);
+    socket.emit("station-register", station?.id);
 
-  //   // Lắng nghe sự kiện
-  //   const handler = (payload: any) => {
-  //     console.log("Payment status updated:", payload);
-  //   };
-  //   socket.on("payment:status", handler);
+    // Lắng nghe sự kiện
+    const handler = (payload: any) => {
+      console.log("Payment status updated:", payload);
+    };
+    socket.on("payment:status", handler);
 
-  //   return () => {
-  //     // Hủy listener và leave room khi unmount
-  //     socket.emit("unregister", user?.id);
-  //     socket.emit("station-unregister", station?.id);
-  //     socket.off("payment:status", handler);
-  //   };
-  // }, []);
+    return () => {
+      // Hủy listener và leave room khi unmount
+      socket.emit("unregister", user?.id);
+      socket.emit("station-unregister", station?.id);
+      socket.off("payment:status", handler);
+    };
+  }, []);
 
-  // const confirmCashPayment = async () => {
-  //   if (!transaction) return;
-  //   try {
-  //     const transactionRes = await api.patch(
-  //       `/transactions/${transaction.id}`,
-  //       {
-  //         status: "completed",
-  //       }
-  //     );
-  //     setTransaction(transactionRes.data);
-  //     const invoiceRes = await api.patch(`/invoices/${invoiceId}`, {
-  //       status: "completed",
-  //     });
-  //     console.log("Invoice updated:", invoiceRes.data);
-  //   } catch (err) {
-  //     console.error("Xác nhận thanh toán lỗi:", err);
-  //   }
-  // };
+  const confirmCashPayment = async () => {
+    if (!transaction) return;
+    try {
+      const transactionRes = await api.patch(
+        `/transactions/${transaction.id}`,
+        {
+          status: "completed",
+        }
+      );
+      setTransaction(transactionRes.data);
+      const invoiceRes = await api.patch(`/invoices/${invoiceId}`, {
+        status: "completed",
+      });
+      console.log("Invoice updated:", invoiceRes.data);
+    } catch (err) {
+      console.error("Xác nhận thanh toán lỗi:", err);
+    }
+  };
 
   console.log("invoiceId", invoiceId);
   return (
     <div className="space-y-5">
-      {/* Nút quay lại Step 3 */}
-{/* 
-      <Card className="p-3 border max-w-lg mx-auto">
-        <p>
-          <strong>Phương thức:</strong> {transaction.method}
-        </p>
-        <p>
-          <strong>Trạng thái:</strong> {transaction.status}
-        </p>
-        <p>
-          <strong>Số tiền:</strong> {transaction.amount}
-        </p>
-      </Card> */}
       {/* Embed InvoiceDetail với chế độ staff/payment */}
       {invoiceId && (
         <InvoiceDetail
@@ -84,19 +72,32 @@ export function Step4Payment({ onPrev, data }: Step4PaymentProps) {
         />
       )}
 
+      {/* <Card className="p-3 border max-w-lg mx-auto">
+        <p>
+          <strong>Phương thức:</strong>{" "}
+          {transaction?.paymentMethod.name || "Chưa có"}
+        </p>
+        <p>
+          <strong>Trạng thái:</strong> {transaction?.status}
+        </p>
+        <p>
+          <strong>Số tiền:</strong> {transaction.totalAmount}
+        </p>
+      </Card> */}
+
       {/* Nếu tiền mặt và chưa thanh toán
       {transaction.method === "cash" && transaction.status === "pending" && (
         <Button onClick={confirmCashPayment}>Xác nhận đã thu tiền</Button>
       )} */}
 
-      {/* Thông báo sau khi thanh toán */}
-      {paid && (
+      {/* Khi thanh toán xong */}
+      {/* {transaction.status === "completed" && (
         <Card className="max-w-lg mx-auto border border-green-500 bg-green-50">
           <CardContent className="text-green-700 font-medium">
             💰 Thanh toán thành công!
           </CardContent>
         </Card>
-      )}
+      )} */}
     </div>
   );
 }
