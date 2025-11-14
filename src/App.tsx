@@ -87,12 +87,14 @@ function App() {
           <Route path="my-subscription-packages" element={<MySubcription />} />
           <Route path="support" element={<SupportTicketForm />} />
           <Route path="support-history" element={<SupportHistoryPage />} />
-          <Route path="transaction-history" element={<TransactionHistoryPage />} />
+          <Route
+            path="transaction-history"
+            element={<TransactionHistoryPage />}
+          />
           <Route path="invoice/:id" element={<InvoiceDetail />} />
           <Route path="payment" element={<PaymentPage />} />
 
           <Route path="pricing" element={<DamageFee />} />
-
         </Route>
         {/* === Staff Routes === */}
         <Route
@@ -103,6 +105,7 @@ function App() {
             </ProtectedRoute>
           }
         >
+          <Route index element={<StaffDashboard />} />
           <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="battery-process">
             <Route path="booking/:bookingId" element={<BatteryProcess />} />
@@ -112,7 +115,7 @@ function App() {
           <Route path="swap-session" element={<SwapSessionManager />} />
           <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="manage-booking" element={<StaffBookingManagement />} />
-          <Route path="dashboard" element={<StaffDashboard />} />
+
           {/* <Route index element={<StaffDashboard />} />
          
           <Route path="booking" element={<StaffBooking />} />
@@ -122,7 +125,7 @@ function App() {
         <Route
           path="/admin"
           element={
-            <ProtectedRoute roles={["admin","manager"]}>
+            <ProtectedRoute roles={["admin", "manager"]}>
               <AdminLayout />
             </ProtectedRoute>
           }
