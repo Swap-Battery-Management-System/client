@@ -100,7 +100,6 @@ export default function Register() {
         return;
       }
 
-      // === CASE 2: TÀI KHOẢN ĐÃ TỒN TẠI → đăng nhập luôn ===
       toast.success("Đăng nhập Google thành công!");
 
       const role = user.role?.name;
