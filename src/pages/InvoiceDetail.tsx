@@ -6,7 +6,7 @@ import api from "@/lib/api";
 interface InvoiceDetailProps {
   invoiceId?: string; // có thể truyền từ ngoài
   staffMode?: boolean; // bật chế độ staff/payment
-  swapSessionId?: string; // nếu muốn check socket
+  swapSessionId?: string; // check socket
   onPaid?: () => void; // callback khi thanh toán xong
 }
 
@@ -53,17 +53,19 @@ export default function InvoiceDetail({
   return (
     <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-xl p-6 border border-gray-200">
       {/* 🔙 NÚT QUAY LẠI */}
-      <div className="mb-3">
-        <Button
-          variant="outline"
-          className="px-4 py-2"
-          onClick={() => navigate(-1)}
-        >
-          ⬅ Quay lại
-        </Button>
-      </div>
+      {!staffMode && (
+        <div className="mb-3">
+          <Button
+            variant="outline"
+            className="px-4 py-2"
+            onClick={() => navigate(-1)}
+          >
+            ⬅ Quay lại
+          </Button>
+        </div>
+      )}
 
-      {/* HEADER */}
+      {/* ================= HEADER ================= */}
       <div className="flex justify-between border-b pb-3 mb-4">
         <div className="font-bold text-2xl text-[#38A3A5]">🔋 SWAPNET</div>
         <div className="text-right text-sm">
@@ -73,7 +75,7 @@ export default function InvoiceDetail({
         </div>
       </div>
 
-      {/* THÔNG TIN KHÁCH HÀNG */}
+      {/* ================= KHÁCH HÀNG ================= */}
       <section className="border-b pb-3 mb-3">
         <h3 className="font-semibold text-gray-700 mb-2">
           THÔNG TIN KHÁCH HÀNG
@@ -83,7 +85,7 @@ export default function InvoiceDetail({
         {invoice.user?.address && <p>- Địa chỉ: {invoice.user.address}</p>}
       </section>
 
-      {/* THÔNG TIN TRẠM */}
+      {/* ================= TRẠM ================= */}
       <section className="border-b pb-3 mb-3">
         <h3 className="font-semibold text-gray-700 mb-2">
           THÔNG TIN TRẠM HOẠT ĐỘNG
@@ -92,9 +94,10 @@ export default function InvoiceDetail({
         <p>- Địa điểm: {invoice.swapSession?.station?.address || "—"}</p>
       </section>
 
-      {/* BẢNG DỊCH VỤ */}
+      {/* ================= BẢNG 1: DỊCH VỤ ================= */}
       <section className="border-b pb-3 mb-3">
         <h3 className="font-semibold text-gray-700 mb-2">CHI TIẾT DỊCH VỤ</h3>
+
         <table className="w-full text-sm border border-gray-300">
           <thead className="bg-gray-100">
             <tr>
@@ -105,6 +108,7 @@ export default function InvoiceDetail({
               <th className="border px-2 py-1 text-right">Thành tiền</th>
             </tr>
           </thead>
+
           <tbody>
             <tr>
               <td className="border px-2 py-1">Dịch vụ đổi pin</td>
@@ -119,6 +123,7 @@ export default function InvoiceDetail({
                 {totalService.toLocaleString("vi-VN")}
               </td>
             </tr>
+
             <tr>
               <td className="border px-2 py-1">Phí hư hỏng (nếu có)</td>
               <td className="border text-center">
@@ -136,6 +141,85 @@ export default function InvoiceDetail({
             </tr>
           </tbody>
         </table>
+      </section>
+
+      {/* ================= BẢNG 2: PHÍ HƯ HỎNG ================= */}
+      <section className="border-b pb-3 mb-3">
+        <h3 className="font-semibold text-gray-700 mb-2">
+          CHI TIẾT PHÍ HƯ HỎNG
+        </h3>
+
+        <table className="w-full text-sm border border-gray-300">
+          <thead className="bg-gray-100">
+            <tr>
+              <th className="border px-2 py-1">STT</th>
+              <th className="border px-2 py-1 text-left">Loại</th>
+              <th className="border px-2 py-1 text-left">Tên mô tả</th>
+              <th className="border px-2 py-1">Mức độ</th>
+              <th className="border px-2 py-1 text-right">Phí</th>
+              <th className="border px-2 py-1 text-right">Giảm giá</th>
+              <th className="border px-2 py-1 text-right">Thành tiền</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {invoice.invoiceDamageFees.length > 0 ? (
+              invoice.invoiceDamageFees.map((fee: any, index: number) => (
+                <tr key={fee.id}>
+                  <td className="border text-center">{index + 1}</td>
+                  <td className="border px-2">
+                    {fee.damageFee.type === "internal_force"
+                      ? "Bên trong"
+                      : "Bên ngoài"}
+                  </td>
+                  <td className="border px-2">{fee.damageFee.name}</td>
+                  <td className="border text-center">
+                    {fee.damageFee.severity}
+                  </td>
+                  <td className="border text-right">
+                    {Number(fee.amountOriginal).toLocaleString("vi-VN")}
+                  </td>
+                  <td className="border text-right text-red-500">
+                    -{Number(fee.amountDiscount).toLocaleString("vi-VN")}
+                  </td>
+                  <td className="border text-right font-medium">
+                    {Number(fee.amountFinal).toLocaleString("vi-VN")}
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td className="border py-2 text-center" colSpan={7}>
+                  Không có phí hư hỏng
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </section>
+
+      {/* ================= TỔNG TIỀN ================= */}
+      <section className="text-sm space-y-1 text-right pr-2">
+        <p>
+          Tạm tính dịch vụ:
+          <span className="font-medium ml-1">
+            {totalService.toLocaleString("vi-VN")}
+          </span>
+        </p>
+
+        <p>
+          Phí hư hỏng:
+          <span className="font-medium ml-1">
+            {totalDamage.toLocaleString("vi-VN")}
+          </span>
+        </p>
+
+        <p className="pt-2 border-t font-semibold text-lg">
+          THÀNH TIỀN:
+          <span className="text-[#38A3A5] font-bold text-xl ml-1">
+            {Number(invoice.amountTotal).toLocaleString("vi-VN")}₫
+          </span>
+        </p>
       </section>
 
       {/* NÚT THANH TOÁN CHO STAFF */}
@@ -164,7 +248,7 @@ export default function InvoiceDetail({
               })
             }
           >
-             THANH TOÁN
+            THANH TOÁN
           </Button>
         </div>
       )}
