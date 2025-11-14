@@ -24,7 +24,7 @@ export default function StaffLayout() {
   const links = [
     {
       name: "Dashboard",
-      path: "dashboard",
+      path: "",
       icon: <LayoutDashboard size={18} />,
     },
     {
