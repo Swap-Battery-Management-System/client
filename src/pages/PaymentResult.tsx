@@ -81,7 +81,7 @@ export default function PaymentResult() {
                     <button
                         className="w-full bg-[#38A3A5] text-white px-5 py-2 rounded-lg"
                         onClick={() =>
-                            navigate("/home/payment", {
+                            navigate("/payment", {
                                 state: { invoiceId },
                             })
                         }
