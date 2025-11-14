@@ -7,25 +7,22 @@ export default function PaymentResult() {
 
     const query = new URLSearchParams(location.search);
 
-    // trạng thái giao dịch
     const status =
-        query.get("status") || // PayOS = PAID
-        query.get("code") || // VNPAY = 00
+        query.get("status") ||
+        query.get("code") ||
         "unknown";
 
-    // mã hóa đơn hệ thống
     const invoiceId =
+        query.get("id") ||
         query.get("invoiceId") ||
-        query.get("orderCode") ||
         location.state?.invoiceId ||
         "";
 
-    // mã giao dịch
     const transactionId =
-        query.get("orderCode") ||       // PayOS
-        query.get("transactionNo") ||   // VNPAY
-        query.get("vnp_TxnRef") ||      // VNPAY alternative
-        query.get("tranId") ||          // MoMo
+        query.get("orderCode") ||
+        query.get("transactionNo") ||
+        query.get("vnp_TxnRef") ||
+        query.get("tranId") ||
         "unknown";
 
     const success =
