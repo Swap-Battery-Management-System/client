@@ -46,6 +46,7 @@ import SwapSessionManager from "./pages/SwapSessionManagement";
 import AdminSupport from "./pages/AdminSupport";
 import InvoiceDetail from "./pages/InvoiceDetail";
 import PaymentPage from "./pages/PaymentPage";
+import TransactionHistoryPage from "./pages/TransactionHistoryPage";
 function App() {
   return (
     <>
@@ -84,6 +85,9 @@ function App() {
           <Route path="my-subscription-packages" element={<MySubcription />} />
           <Route path="support" element={<SupportTicketForm />} />
           <Route path="support-history" element={<SupportHistoryPage />} />
+          <Route path="transaction-history" element={<TransactionHistoryPage />} />
+          <Route path="invoice/:id" element={<InvoiceDetail />} />
+          <Route path="payment" element={<PaymentPage />} />
 
         </Route>
         {/* === Staff Routes === */}
