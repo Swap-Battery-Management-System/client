@@ -3,6 +3,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import type { Station } from "@/types/station";
 import { useAuth } from "@/context/AuthContext";
+import { BatteryCharging, BatteryFull, Zap } from "lucide-react";
 
 export default function StationDetail() {
   const { id } = useParams<{ id: string }>();
@@ -104,64 +105,68 @@ export default function StationDetail() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#f0fbfb] to-white">
+    <div className="bg-[#f5fcfc]">
       {/* MAP */}
-      <div className="w-full h-64 md:h-96 relative rounded-b-3xl overflow-hidden shadow-lg">
+      <div className="w-full h-[260px] md:h-[340px] overflow-hidden shadow">
         <iframe
           title="Google Map"
-          width="100%"
-          height="100%"
+          className="w-full h-full"
           style={{ border: 0 }}
           loading="lazy"
           src={mapUrl}
         />
       </div>
 
-      <div className="p-6 space-y-6">
+      <div className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {/* Station Info */}
-        <div className="bg-white rounded-2xl p-6 shadow-md">
-          <h1 className="text-3xl font-bold text-gray-800">{station.name}</h1>
-          <p className="text-gray-600">📍 {station.address}</p>
+        <div className="bg-white rounded-xl p-5 shadow-sm">
+          <h1 className="text-2xl font-bold text-gray-800">{station.name}</h1>
+          <p className="text-sm text-gray-600 mt-1">📍 {station.address}</p>
+          <p className="text-sm text-gray-600 mt-1">
+            ⭐ {station?.avgRating || "Chưa có đánh giá"}
+          </p>
         </div>
 
-        <div className="bg-white rounded-2xl p-4 shadow-md">
-          <h2 className="text-xl font-bold mb-3 text-gray-800">
-            ⚡ Thông tin pin
+        {/* Battery Section */}
+        <div className="bg-white rounded-xl p-5 shadow-sm">
+          <h2 className="text-lg font-semibold text-gray-800 mb-4 flex items-center gap-2">
+            <BatteryCharging className="text-[#38A3A5]" size={20} />
+            Thông tin pin
           </h2>
 
           {/* Tổng pin */}
-          <div className="flex items-center bg-[#e0f7fa] p-2 rounded-lg mb-2">
-            <span className="font-semibold text-gray-700 text-sm">
+          <div className="flex justify-between items-center bg-[#E6F7F7] px-4 py-2 rounded-lg mb-3">
+            <div className="flex items-center gap-2 text-sm font-medium text-gray-700">
+              <Zap size={16} className="text-[#38A3A5]" />
               Tổng pin khả dụng
-            </span>
-            <span className="text-white bg-[#38A3A5] px-2 py-0.5 rounded-full text-sm font-semibold ml-2">
+            </div>
+            <span className="bg-[#38A3A5] text-white px-3 py-1 text-sm rounded-full font-semibold">
               {totalAvailable}
             </span>
           </div>
 
-          {/* Chi tiết từng loại pin */}
-          <div className="space-y-1">
+          {/* Danh sách loại pin */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {Object.values(batteryTypeMap).map((type: any, index) => (
               <div
                 key={index}
-                className="flex items-center justify-start bg-[#f0fdfd] p-2 rounded-lg hover:bg-[#e0f7fa] transition"
+                className="flex items-center justify-between bg-[#f8ffff] px-4 py-2 rounded-md border text-sm"
               >
-                <span className="text-gray-700 text-sm font-medium flex items-center">
-                  🔋 {type.name} -
-                  <span className="ml-2 text-[#38A3A5] font-semibold">
-                    {type.count}
-                  </span>
-                </span>
+                <div className="flex items-center gap-2 text-gray-700">
+                  <BatteryFull size={16} className="text-[#38A3A5]" />
+                  {type.name}
+                </div>
+                <span className="text-[#38A3A5] font-bold">{type.count}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Booking Button */}
-        <div className="text-right">
+        <div className="flex justify-end">
           <button
             onClick={handleBooking}
-            className="px-8 py-3 bg-gradient-to-r from-[#38A3A5] to-[#2e827f] text-white font-semibold rounded-full shadow-lg hover:scale-105 transition transform"
+            className="px-7 py-3 bg-[#38A3A5] hover:bg-[#2e827f] text-white font-semibold rounded-full shadow-md transition"
           >
             Đặt lịch ngay
           </button>
@@ -169,4 +174,5 @@ export default function StationDetail() {
       </div>
     </div>
   );
+
 }
