@@ -114,7 +114,7 @@ export function Step2CheckPin({
         { withCredentials: true }
       );
       console.log("invoiceID", res.data);
-      onUpdate("invoiceId", res.data?.invoice?.id);
+      onUpdate("invoiceId", res.data.data.invoiceId);
       toast.success("Đã gửi danh sách hư hại thành công!");
       onNext?.();
     } catch (err) {
