@@ -226,7 +226,7 @@ export default function InvoiceDetail({
                     <Button
                         className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c] px-6 py-2 text-base"
                         onClick={() =>
-                            navigate("/payment", {
+                            navigate("/home/payment", {
                                 state: {
                                     amount: Number(invoice.amountTotal),
                                     invoiceId: invoice.id,
