@@ -6,18 +6,18 @@ import api from "@/lib/api";
 import { CheckCircle, XCircle, Loader2, AlertTriangle } from "lucide-react";
 
 /**
- * 💳 PaymentResult.tsx (3 mã trạng thái: 200, 400, 500)
+ * 💳 PaymentResult.tsx (3 trạng thái: 200 / 400 / 500)
  * - Phát hiện gateway tự động
  * - Xác minh thanh toán qua API
- * - Hiển thị giao diện theo 3 trạng thái chính
+ * - Điều hướng: 
+ *   ✅ Thành công → Xem lịch sử giao dịch / Trang chủ
+ *   ⚠️ Thất bại → Quay lại lịch sử giao dịch
  */
 export default function PaymentResult() {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const [status, setStatus] = useState<"loading" | "success" | "fail" | "error">(
-        "loading"
-    );
+    const [status, setStatus] = useState<"loading" | "success" | "fail" | "error">("loading");
     const [gateway, setGateway] = useState<string>("unknown");
     const [invoiceId, setInvoiceId] = useState<string>("");
 
@@ -27,7 +27,7 @@ export default function PaymentResult() {
                 const query = location.search;
                 console.log("📩 [PAYMENT RESULT] Query:", query);
 
-                // 🔍 Tự phát hiện gateway
+                // 🔍 Phát hiện gateway
                 let endpoint = "";
                 if (query.includes("vnp_")) {
                     endpoint = `/payments/vnpay/verify${query}`;
@@ -44,20 +44,16 @@ export default function PaymentResult() {
                     return;
                 }
 
-                // Lấy invoiceId (nếu có)
                 const params = new URLSearchParams(location.search);
                 const inv = params.get("invoiceId");
                 if (inv) setInvoiceId(inv);
 
-                // Gọi API xác minh
+                // 🔗 Gọi API xác minh
                 const res = await api.get(endpoint);
                 console.log("✅ [VERIFY RESPONSE]", res.status, res.data);
 
-                const msg = (res.data?.message || res.data?.data || "")
-                    .toString()
-                    .toLowerCase();
+                const msg = (res.data?.message || res.data?.data || "").toString().toLowerCase();
 
-                // Chỉ 3 trường hợp
                 if (res.status === 200 && msg.includes("success")) {
                     setStatus("success");
                     toast.success("Thanh toán thành công!");
@@ -122,16 +118,17 @@ export default function PaymentResult() {
                     </div>
 
                     <div className="flex gap-3 mt-6">
-                        {invoiceId && (
-                            <Button
-                                className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
-                                onClick={() => navigate(`/home/invoice/${invoiceId}`)}
-                            >
-                                Xem hóa đơn
-                            </Button>
-                        )}
-                        <Button variant="outline" onClick={() => navigate("/home/invoices")}>
-                            Về danh sách
+                        <Button
+                            className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
+                            onClick={() => navigate("/home/transaction-history")}
+                        >
+                            Xem lịch sử giao dịch
+                        </Button>
+                        <Button
+                            variant="outline"
+                            onClick={() => navigate("/home")}
+                        >
+                            Về trang chủ
                         </Button>
                     </div>
                 </div>
@@ -149,17 +146,12 @@ export default function PaymentResult() {
                     </p>
 
                     <div className="flex gap-3 mt-6">
-                        <Button variant="outline" onClick={() => navigate("/home/invoices")}>
-                            Thử lại
+                        <Button
+                            className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
+                            onClick={() => navigate("/home/transaction-history")}
+                        >
+                            Về lịch sử giao dịch
                         </Button>
-                        {invoiceId && (
-                            <Button
-                                className="bg-[#38A3A5] text-white"
-                                onClick={() => navigate(`/home/invoice/${invoiceId}`)}
-                            >
-                                Quay lại hóa đơn
-                            </Button>
-                        )}
                     </div>
                 </div>
             )}
@@ -168,24 +160,17 @@ export default function PaymentResult() {
             {status === "error" && (
                 <div className="flex flex-col items-center gap-4 animate-fade-in">
                     <AlertTriangle className="text-red-500 w-20 h-20 mb-2" />
-                    <h2 className="text-2xl font-bold text-red-600">
-                        Lỗi máy chủ ❌
-                    </h2>
+                    <h2 className="text-2xl font-bold text-red-600">Lỗi máy chủ ❌</h2>
                     <p className="text-gray-600">
                         Có sự cố xảy ra trong quá trình xác minh thanh toán.
                     </p>
                     <div className="flex gap-3 mt-6">
-                        <Button variant="outline" onClick={() => navigate("/home/invoices")}>
-                            Quay lại danh sách
+                        <Button
+                            className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
+                            onClick={() => navigate("/home/transaction-history")}
+                        >
+                            Về lịch sử giao dịch
                         </Button>
-                        {invoiceId && (
-                            <Button
-                                className="bg-[#38A3A5] text-white"
-                                onClick={() => navigate(`/home/invoice/${invoiceId}`)}
-                            >
-                                Kiểm tra hóa đơn
-                            </Button>
-                        )}
                     </div>
                 </div>
             )}
