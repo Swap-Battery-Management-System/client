@@ -10,22 +10,28 @@ import {
   LogOut,
   UserCheck,
   RefreshCcw,
+  Box,
+  Bell,
+  Users,
+  MessageSquare,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import logo from "/png.png";
-export default function StaffLayout() {
+
+export default function ManagerLayout() {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
+
   const handleLogout = () => {
-    logout(() => {
-      navigate("/");
-    })
+    logout(() => navigate("/"));
   };
+
   const links = [
+    { name: "Dashboard", path: "/manager", icon: <LayoutDashboard size={18} /> },
     {
-      name: "Dashboard",
-      path: "/staff",
-      icon: <LayoutDashboard size={18} />,
+      name: "Quản lý nhân viên",
+      path: "manage-users",
+      icon: <Users size={18} />,
     },
     {
       name: "Quản lý pin",
@@ -38,25 +44,18 @@ export default function StaffLayout() {
       icon: <CalendarCheck size={18} />,
     },
     {
-      name: "Check-in tại trạm",
-      path: "walkin-swap",
-      icon: <UserCheck size={18} />,
-    },
-    {
       name: "Quản lý Swap Session",
       path: "swap-session",
       icon: <RefreshCcw size={18} />,
     },
     { name: "Báo cáo trạm", path: "reports", icon: <FileBarChart size={18} /> },
-    {
-      name: "Sự cố & kiểm tra an toàn",
-      path: "safety",
-      icon: <ShieldCheck size={18} />,
-    },
+    { name: "Trung tâm hỗ trợ", path: "support", icon: <MessageSquare size={18} /> },
+
+    { name: "Thông báo", path: "notifications", icon: <Bell size={18} /> },
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex bg-gray-50">
       {/* Sidebar */}
       <aside className="fixed left-0 top-0 h-screen w-64 bg-white border-r shadow-sm flex flex-col">
         <div className="p-6 border-b">
@@ -67,9 +66,9 @@ export default function StaffLayout() {
               className="h-14 w-auto object-contain hover:opacity-90 transition"
             />
           </NavLink>
-
           <p className="text-sm mt-1 text-gray-600">
-            Hello, <span className="font-semibold">Staff Name</span>
+            Hello,{" "}
+            <span className="font-semibold">{user?.fullName || "Staff"}</span>
           </p>
         </div>
 
@@ -79,7 +78,7 @@ export default function StaffLayout() {
             <NavLink
               key={link.path}
               to={link.path}
-              end={link.path === "/staff"}
+              end={link.path === "/manager"}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-2 rounded-md font-medium transition-all duration-200
                 ${
@@ -121,8 +120,8 @@ export default function StaffLayout() {
         </div>
       </aside>
 
-      {/* Nội dung chính */}
-      <main className="flex-1 ml-64 p-4">
+      {/* Main content */}
+      <main className="flex-1 ml-64 p-8">
         <div className="max-w-6xl mx-auto w-full">
           <Outlet />
         </div>

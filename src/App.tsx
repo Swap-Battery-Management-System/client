@@ -49,6 +49,7 @@ import InvoiceDetail from "./pages/InvoiceDetail";
 import PaymentPage from "./pages/PaymentPage";
 import TransactionHistoryPage from "./pages/TransactionHistoryPage";
 import PaymentResult from "./pages/PaymentResult";
+import ManagerLayout from "./layout/ManagerLayout";
 
 function App() {
   return (
@@ -152,10 +153,35 @@ function App() {
             path="vehicle-models"
             element={<AdminVehicleModelManagement />}
           />
+          <Route path="manage-battery" element={<BatteryManagement />} />
+        </Route>
+      </Routes>
+
+      <Routes>
+        <Route
+          path="/manager"
+          element={
+            <ProtectedRoute roles={["manager"]}>
+              <ManagerLayout />
+            </ProtectedRoute>
+          }
+        >
+          {/* Dashboard */}
+          <Route index element={<StaffDashboard />} />
+          <Route path="manage-users" element={<AdminUserManagement />} />
+          <Route path="manage-battery" element={<BatteryManagement />} />
+          <Route path="manage-booking" element={<StaffBookingManagement />} />
+          <Route path="swap-session" element={<SwapSessionManager />} />
+          <Route path="support-tickets" element={<AdminSupportTickets />} />
+          <Route path="support" element={<AdminSupport />} />
+          <Route path="notifications" element={<NotificationPage />} />
           <Route
-            path="manage-battery"
-            element={<BatteryManagement />}
+            path="manage-subscription"
+            element={<AdminSubscriptionManagement />}
           />
+          <Route path="damage-fee" element={<AdminDamageFeeManagement />} />
+
+          {/* Staff components */}
         </Route>
       </Routes>
 

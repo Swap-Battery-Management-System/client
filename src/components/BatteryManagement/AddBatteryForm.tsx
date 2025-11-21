@@ -1,4 +1,4 @@
-import React from "react";
+
 import type { BatteryType } from "@/types/batteryType";
 import type { Station } from "@/types/station";
 interface NewBattery {
