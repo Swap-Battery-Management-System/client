@@ -1,123 +1,144 @@
 import { useEffect, useState } from "react";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import axios from "axios";
 import { toast } from "sonner";
+import api from "@/lib/api";
+import { CheckCircle, XCircle, Loader2 } from "lucide-react";
 
+/**
+ * 🌐 SwapNet PaymentResult Page
+ * - Tự động nhận query từ redirect URL sau khi thanh toán
+ * - Gọi API xác minh: /payments/{gateway}/verify
+ * - Hiển thị kết quả thanh toán
+ */
 export default function PaymentResult() {
-    const [params] = useSearchParams();
+    const location = useLocation();
     const navigate = useNavigate();
-    const API_URL = import.meta.env.VITE_API_URL;
-
-    const [loading, setLoading] = useState(true);
-    const [success, setSuccess] = useState<boolean | null>(null);
+    const [status, setStatus] = useState<"loading" | "success" | "fail">("loading");
+    const [gateway, setGateway] = useState<string>("unknown");
     const [invoiceId, setInvoiceId] = useState<string>("");
-    const [amount, setAmount] = useState<number>(0);
-    const [message, setMessage] = useState<string>("");
 
     useEffect(() => {
         const verifyPayment = async () => {
             try {
-                const query = window.location.search;
+                const query = location.search; // ?vnp_Amount=90000&vnp_ResponseCode=00&...
+                console.log("📩 [PAYMENT RESULT] Query:", query);
 
-                // Detect gateway
-                const path = window.location.pathname.toLowerCase();
-                const gateway =
-                    path.includes("momo") ? "momo" :
-                        path.includes("payos") ? "payos" :
-                            "vnpay";
+                // 🔍 Tự phát hiện gateway
+                let endpoint = "";
+                if (query.includes("vnp_")) {
+                    endpoint = `/payments/vnpay/verify${query}`;
+                    setGateway("VNPay");
+                } else if (query.includes("orderCode") || query.includes("status=PAID")) {
+                    endpoint = `/payments/payos/verify${query}`;
+                    setGateway("PayOS");
+                } else if (query.includes("resultCode") || query.includes("momo")) {
+                    endpoint = `/payments/momo/verify${query}`;
+                    setGateway("MoMo");
+                } else {
+                    toast.error("Không xác định được cổng thanh toán!");
+                    setStatus("fail");
+                    return;
+                }
 
-                // Verify = public → dùng axios thường
-                const res = await axios.get(
-                    `${API_URL}/payments/${gateway}/verify${query}`
-                );
+                // 🔗 Thử lấy invoiceId từ query nếu có
+                const params = new URLSearchParams(location.search);
+                const inv = params.get("invoiceId");
+                if (inv) setInvoiceId(inv);
 
-                const data = res.data;
+                console.log(`🚀 [VERIFY] Calling ${endpoint}`);
+                const res = await api.get(endpoint);
 
-                // Fallback invoice
-                const fallbackInvoice =
-                    data.data?.invoiceId && data.data.invoiceId !== "unknown"
-                        ? data.data.invoiceId
-                        : params.get("vnp_TxnRef") ||
-                        params.get("orderCode") ||
-                        params.get("invoiceId") ||
-                        "";
+                console.log("✅ [VERIFY RESPONSE]", res.data);
 
-                // Fallback amount
-                const fallbackAmount =
-                    data.data?.amountTotal ||
-                    Number(params.get("vnp_Amount")) / 100 ||
-                    Number(params.get("amount")) ||
-                    0;
-
-                setInvoiceId(fallbackInvoice);
-                setAmount(fallbackAmount);
-                setSuccess(data.success);
-                setMessage(data.message);
-
-                if (data.success) toast.success("Thanh toán thành công!");
-                else toast.error("Thanh toán thất bại!");
-
-            } catch (err) {
-                console.error("❌ Lỗi verify:", err);
-                toast.error("Không thể xác minh giao dịch!");
-                setSuccess(false);
-            } finally {
-                setLoading(false);
+                if (res.data?.success) {
+                    setStatus("success");
+                    toast.success("Thanh toán thành công!");
+                } else {
+                    setStatus("fail");
+                    toast.error("Thanh toán thất bại hoặc bị hủy.");
+                }
+            } catch (err: any) {
+                console.error("❌ [VERIFY ERROR]", err);
+                setStatus("fail");
+                toast.error("Lỗi xác minh thanh toán");
             }
         };
 
         verifyPayment();
     }, []);
 
-    if (loading)
-        return <p className="text-center mt-10 text-gray-500">⏳ Đang xác minh giao dịch...</p>;
-
+    // ================= UI =================
     return (
-        <div className="max-w-lg mx-auto p-6 text-center bg-white shadow-md mt-10 rounded-xl">
-            {success ? (
-                <>
-                    <h2 className="text-2xl text-green-600 font-bold mb-3">
-                        🎉 Thanh toán thành công!
-                    </h2>
-                    <p>Mã hóa đơn: <b>{invoiceId || "Không xác định"}</b></p>
-                    <p>Số tiền: <b>{amount.toLocaleString("vi-VN")}₫</b></p>
-                    <p className="text-gray-500 mt-2">{message}</p>
+        <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
+            {/* ====== LOADING ====== */}
+            {status === "loading" && (
+                <div className="flex flex-col items-center gap-3 text-gray-500">
+                    <Loader2 className="w-10 h-10 animate-spin text-[#38A3A5]" />
+                    <p className="text-lg font-medium">Đang xác minh giao dịch...</p>
+                </div>
+            )}
 
-                    <Button
-                        className="mt-5 bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
-                        onClick={() => navigate(`/home/invoice/${invoiceId}`)}
-                    >
-                        Xem hóa đơn
-                    </Button>
-                </>
-            ) : (
-                <>
-                    <h2 className="text-2xl text-red-600 font-bold mb-3">
-                        ❌ Giao dịch thất bại
+            {/* ====== SUCCESS ====== */}
+            {status === "success" && (
+                <div className="flex flex-col items-center gap-4 animate-fade-in">
+                    <CheckCircle className="text-green-500 w-20 h-20 mb-2" />
+                    <h2 className="text-2xl font-bold text-green-600">
+                        Thanh toán thành công 🎉
                     </h2>
-
-                    <p className="text-gray-600 mb-4">
-                        {message || "Không xác định được thông tin thanh toán."}
+                    <p className="text-gray-600">
+                        Cảm ơn bạn đã sử dụng dịch vụ SwapNet!
                     </p>
 
-                    <div className="flex justify-center gap-4 mt-5">
-                        <Button variant="outline" onClick={() => navigate(`/home/invoice/${invoiceId}`)}>
-                            🔍 Xem hóa đơn
-                        </Button>
+                    <div className="mt-3 space-y-1 text-sm">
+                        <p>Cổng thanh toán: <b>{gateway}</b></p>
+                        {invoiceId && (
+                            <p>
+                                Mã hóa đơn:&nbsp;
+                                <b className="text-[#38A3A5]">{invoiceId.slice(0, 8).toUpperCase()}</b>
+                            </p>
+                        )}
+                    </div>
 
+                    <div className="flex gap-3 mt-6">
                         <Button
                             className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
-                            onClick={() =>
-                                navigate("/home/payment", {
-                                    state: { invoiceId, amount },
-                                })
-                            }
+                            onClick={() => navigate(`/home/invoice/${invoiceId}`)}
                         >
-                            💳 Chọn lại phương thức thanh toán
+                            Xem hóa đơn
+                        </Button>
+                        <Button variant="outline" onClick={() => navigate("/home/invoices")}>
+                            Về danh sách
                         </Button>
                     </div>
-                </>
+                </div>
+            )}
+
+            {/* ====== FAIL ====== */}
+            {status === "fail" && (
+                <div className="flex flex-col items-center gap-4 animate-fade-in">
+                    <XCircle className="text-red-500 w-20 h-20 mb-2" />
+                    <h2 className="text-2xl font-bold text-red-600">
+                        Thanh toán thất bại ❌
+                    </h2>
+                    <p className="text-gray-600">
+                        Giao dịch của bạn không thành công hoặc đã bị hủy.
+                    </p>
+
+                    <div className="flex gap-3 mt-6">
+                        <Button variant="outline" onClick={() => navigate("/home/invoices")}>
+                            Thử lại sau
+                        </Button>
+                        {invoiceId && (
+                            <Button
+                                className="bg-[#38A3A5] text-white"
+                                onClick={() => navigate(`/home/invoice/${invoiceId}`)}
+                            >
+                                Quay lại hóa đơn
+                            </Button>
+                        )}
+                    </div>
+                </div>
             )}
         </div>
     );
