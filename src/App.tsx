@@ -172,6 +172,11 @@ function App() {
           <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="manage-booking" element={<StaffBookingManagement />} />
           <Route path="swap-session" element={<SwapSessionManager />} />
+          <Route
+            path="manage-subscription"
+            element={<AdminSubscriptionManagement />}
+          />
+          <Route path="damage-fee" element={<AdminDamageFeeManagement />} />
           <Route path="support-tickets" element={<AdminSupportTickets />} />
           <Route path="support" element={<AdminSupport />} />
           <Route path="notifications" element={<NotificationPage />} />

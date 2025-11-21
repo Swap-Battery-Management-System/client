@@ -14,6 +14,8 @@ import {
   Bell,
   Users,
   MessageSquare,
+  FileText,
+  CreditCard,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import logo from "/png.png";
@@ -27,7 +29,11 @@ export default function ManagerLayout() {
   };
 
   const links = [
-    { name: "Dashboard", path: "/manager", icon: <LayoutDashboard size={18} /> },
+    {
+      name: "Dashboard",
+      path: "/manager",
+      icon: <LayoutDashboard size={18} />,
+    },
     {
       name: "Quản lý nhân viên",
       path: "manage-users",
@@ -48,8 +54,28 @@ export default function ManagerLayout() {
       path: "swap-session",
       icon: <RefreshCcw size={18} />,
     },
+    {
+      name: "Báo cáo doanh thu",
+      path: "revenue-reports",
+      icon: <CreditCard size={18} />,
+    },
+    {
+      name: "Gói thuê bao",
+      path: "manage-subscription",
+      icon: <FileText size={18} />,
+    },
+    {
+      name: "Bảng phí",
+      path: "damage-fee",
+      icon: <FileText size={18} />,
+    },
+
     { name: "Báo cáo trạm", path: "reports", icon: <FileBarChart size={18} /> },
-    { name: "Trung tâm hỗ trợ", path: "support", icon: <MessageSquare size={18} /> },
+    {
+      name: "Trung tâm hỗ trợ",
+      path: "support",
+      icon: <MessageSquare size={18} />,
+    },
 
     { name: "Thông báo", path: "notifications", icon: <Bell size={18} /> },
   ];
