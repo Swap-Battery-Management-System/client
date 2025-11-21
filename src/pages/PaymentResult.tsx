@@ -3,25 +3,28 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import api from "@/lib/api";
-import { CheckCircle, XCircle, Loader2 } from "lucide-react";
+import { CheckCircle, XCircle, Loader2, AlertTriangle } from "lucide-react";
 
 /**
- * 🌐 SwapNet PaymentResult Page
- * - Tự động nhận query từ redirect URL sau khi thanh toán
- * - Gọi API xác minh: /payments/{gateway}/verify
- * - Hiển thị kết quả thanh toán
+ * 💳 PaymentResult.tsx (3 mã trạng thái: 200, 400, 500)
+ * - Phát hiện gateway tự động
+ * - Xác minh thanh toán qua API
+ * - Hiển thị giao diện theo 3 trạng thái chính
  */
 export default function PaymentResult() {
     const location = useLocation();
     const navigate = useNavigate();
-    const [status, setStatus] = useState<"loading" | "success" | "fail">("loading");
+
+    const [status, setStatus] = useState<"loading" | "success" | "fail" | "error">(
+        "loading"
+    );
     const [gateway, setGateway] = useState<string>("unknown");
     const [invoiceId, setInvoiceId] = useState<string>("");
 
     useEffect(() => {
         const verifyPayment = async () => {
             try {
-                const query = location.search; // ?vnp_Amount=90000&vnp_ResponseCode=00&...
+                const query = location.search;
                 console.log("📩 [PAYMENT RESULT] Query:", query);
 
                 // 🔍 Tự phát hiện gateway
@@ -37,31 +40,47 @@ export default function PaymentResult() {
                     setGateway("MoMo");
                 } else {
                     toast.error("Không xác định được cổng thanh toán!");
-                    setStatus("fail");
+                    setStatus("error");
                     return;
                 }
 
-                // 🔗 Thử lấy invoiceId từ query nếu có
+                // Lấy invoiceId (nếu có)
                 const params = new URLSearchParams(location.search);
                 const inv = params.get("invoiceId");
                 if (inv) setInvoiceId(inv);
 
-                console.log(`🚀 [VERIFY] Calling ${endpoint}`);
+                // Gọi API xác minh
                 const res = await api.get(endpoint);
+                console.log("✅ [VERIFY RESPONSE]", res.status, res.data);
 
-                console.log("✅ [VERIFY RESPONSE]", res.data);
+                const msg = (res.data?.message || res.data?.data || "")
+                    .toString()
+                    .toLowerCase();
 
-                if (res.data?.success) {
+                // Chỉ 3 trường hợp
+                if (res.status === 200 && msg.includes("success")) {
                     setStatus("success");
                     toast.success("Thanh toán thành công!");
+                } else if (res.status === 400) {
+                    setStatus("fail");
+                    toast.error("Thanh toán thất bại hoặc bị hủy!");
+                } else if (res.status === 500) {
+                    setStatus("error");
+                    toast.error("Lỗi máy chủ khi xác minh thanh toán!");
                 } else {
                     setStatus("fail");
-                    toast.error("Thanh toán thất bại hoặc bị hủy.");
+                    toast.error("Không xác định kết quả thanh toán!");
                 }
             } catch (err: any) {
                 console.error("❌ [VERIFY ERROR]", err);
-                setStatus("fail");
-                toast.error("Lỗi xác minh thanh toán");
+                const code = err.response?.status || 500;
+                if (code === 400) {
+                    setStatus("fail");
+                    toast.error("Thanh toán thất bại hoặc bị hủy!");
+                } else {
+                    setStatus("error");
+                    toast.error("Lỗi máy chủ khi xác minh thanh toán!");
+                }
             }
         };
 
@@ -71,7 +90,7 @@ export default function PaymentResult() {
     // ================= UI =================
     return (
         <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
-            {/* ====== LOADING ====== */}
+            {/* LOADING */}
             {status === "loading" && (
                 <div className="flex flex-col items-center gap-3 text-gray-500">
                     <Loader2 className="w-10 h-10 animate-spin text-[#38A3A5]" />
@@ -79,34 +98,38 @@ export default function PaymentResult() {
                 </div>
             )}
 
-            {/* ====== SUCCESS ====== */}
+            {/* SUCCESS */}
             {status === "success" && (
                 <div className="flex flex-col items-center gap-4 animate-fade-in">
                     <CheckCircle className="text-green-500 w-20 h-20 mb-2" />
                     <h2 className="text-2xl font-bold text-green-600">
                         Thanh toán thành công 🎉
                     </h2>
-                    <p className="text-gray-600">
-                        Cảm ơn bạn đã sử dụng dịch vụ SwapNet!
-                    </p>
+                    <p className="text-gray-600">Cảm ơn bạn đã sử dụng dịch vụ SwapNet!</p>
 
-                    <div className="mt-3 space-y-1 text-sm">
-                        <p>Cổng thanh toán: <b>{gateway}</b></p>
+                    <div className="mt-3 text-sm">
+                        <p>
+                            Cổng thanh toán: <b>{gateway}</b>
+                        </p>
                         {invoiceId && (
                             <p>
-                                Mã hóa đơn:&nbsp;
-                                <b className="text-[#38A3A5]">{invoiceId.slice(0, 8).toUpperCase()}</b>
+                                Mã hóa đơn:{" "}
+                                <b className="text-[#38A3A5]">
+                                    {invoiceId.slice(0, 8).toUpperCase()}
+                                </b>
                             </p>
                         )}
                     </div>
 
                     <div className="flex gap-3 mt-6">
-                        <Button
-                            className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
-                            onClick={() => navigate(`/home/invoice/${invoiceId}`)}
-                        >
-                            Xem hóa đơn
-                        </Button>
+                        {invoiceId && (
+                            <Button
+                                className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
+                                onClick={() => navigate(`/home/invoice/${invoiceId}`)}
+                            >
+                                Xem hóa đơn
+                            </Button>
+                        )}
                         <Button variant="outline" onClick={() => navigate("/home/invoices")}>
                             Về danh sách
                         </Button>
@@ -114,20 +137,20 @@ export default function PaymentResult() {
                 </div>
             )}
 
-            {/* ====== FAIL ====== */}
+            {/* FAIL */}
             {status === "fail" && (
                 <div className="flex flex-col items-center gap-4 animate-fade-in">
-                    <XCircle className="text-red-500 w-20 h-20 mb-2" />
-                    <h2 className="text-2xl font-bold text-red-600">
-                        Thanh toán thất bại ❌
+                    <XCircle className="text-orange-500 w-20 h-20 mb-2" />
+                    <h2 className="text-2xl font-bold text-orange-600">
+                        Thanh toán thất bại ⚠️
                     </h2>
                     <p className="text-gray-600">
-                        Giao dịch của bạn không thành công hoặc đã bị hủy.
+                        Giao dịch không thành công hoặc đã bị hủy.
                     </p>
 
                     <div className="flex gap-3 mt-6">
                         <Button variant="outline" onClick={() => navigate("/home/invoices")}>
-                            Thử lại sau
+                            Thử lại
                         </Button>
                         {invoiceId && (
                             <Button
@@ -135,6 +158,32 @@ export default function PaymentResult() {
                                 onClick={() => navigate(`/home/invoice/${invoiceId}`)}
                             >
                                 Quay lại hóa đơn
+                            </Button>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* ERROR */}
+            {status === "error" && (
+                <div className="flex flex-col items-center gap-4 animate-fade-in">
+                    <AlertTriangle className="text-red-500 w-20 h-20 mb-2" />
+                    <h2 className="text-2xl font-bold text-red-600">
+                        Lỗi máy chủ ❌
+                    </h2>
+                    <p className="text-gray-600">
+                        Có sự cố xảy ra trong quá trình xác minh thanh toán.
+                    </p>
+                    <div className="flex gap-3 mt-6">
+                        <Button variant="outline" onClick={() => navigate("/home/invoices")}>
+                            Quay lại danh sách
+                        </Button>
+                        {invoiceId && (
+                            <Button
+                                className="bg-[#38A3A5] text-white"
+                                onClick={() => navigate(`/home/invoice/${invoiceId}`)}
+                            >
+                                Kiểm tra hóa đơn
                             </Button>
                         )}
                     </div>
