@@ -106,6 +106,9 @@ export default function StaffBookingManagement() {
     const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
+    const [currentPage, setCurrentPage] = useState(1);
+    const ITEMS_PER_PAGE = 10;
+
     const navigate = useNavigate();
 
     const handleStatusClick = (status: Booking["status"]) => {
@@ -218,23 +221,47 @@ export default function StaffBookingManagement() {
         fetchData();
     }, []);
 
-    const filteredBookings = bookings.filter(b => {
+    const filteredBookings = bookings
+      .filter((b) => {
+        // Filter theo search (booking id hoặc email user)
         const search = searchCode.replace(/\s+/g, "").toLowerCase();
         const codeNormalized = b.id.replace(/\s+/g, "").toLowerCase();
         const userEmail = usersMap.get(b.userId)?.toLowerCase() || "";
         const matchesSearch =
-            codeNormalized.includes(search) || userEmail.includes(search);
-        const matchesStatus = filterStatus === "all" || b.status === filterStatus;
+          codeNormalized.includes(search) || userEmail.includes(search);
 
+        //Filter theo trạng thái
+        const matchesStatus =
+          filterStatus === "all" || b.status === filterStatus;
+
+        //Filter theo ngày
         const bookingDate = new Date(b.scheduleTime);
         const afterStart =
-            !startDate || bookingDate >= new Date(startDate + "T00:00:00");
+          !startDate || bookingDate >= new Date(startDate + "T00:00:00");
         const beforeEnd =
-            !endDate || bookingDate <= new Date(endDate + "T23:59:59");
+          !endDate || bookingDate <= new Date(endDate + "T23:59:59");
         const matchesDate = afterStart && beforeEnd;
 
         return matchesSearch && matchesStatus && matchesDate;
-    });
+      })
+      // Sort theo scheduleTime tăng dần (sớm nhất lên trước)
+      .sort(
+        (a, b) =>
+          new Date(b.scheduleTime).getTime() -
+          new Date(a.scheduleTime).getTime()
+      );
+
+
+    // 🔹 Tính tổng trang
+    const totalPages = Math.ceil(filteredBookings.length / ITEMS_PER_PAGE) || 1;
+
+    // 🔹 Lấy dữ liệu hiện tại
+    const currentBookings = filteredBookings.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE
+    );
+
+
 
     const handleCheckin = async (bookingId: string) => {
         navigate(`/staff/battery-process/booking/${bookingId}`);
@@ -331,6 +358,21 @@ export default function StaffBookingManagement() {
                             />
                         </div>
 
+                        {/* 🔹 Nút Clear */}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            className="ml-2"
+                            onClick={() => {
+                                setSearchCode("");
+                                setFilterStatus("all");
+                                setStartDate("");
+                                setEndDate("");
+                            }}
+                        >
+                            Clear
+                        </Button>
+
                         <span className="ml-auto font-semibold text-sm">
                             Số lượng: {filteredBookings.length}
                         </span>
@@ -353,7 +395,7 @@ export default function StaffBookingManagement() {
                                 </tr>
                             </thead>
                             <tbody>
-                                {filteredBookings.map(b => {
+                                {currentBookings.map(b => {
                                     const vehicle = vehiclesMap.get(b.vehicleId);
                                     return (
                                         <tr key={b.id} className="border-b hover:bg-gray-50">
@@ -397,6 +439,38 @@ export default function StaffBookingManagement() {
                             </tbody>
 
                         </table>
+                    </div>
+
+                    {/* Pagination */}
+                    <div className="flex justify-center mt-4 gap-2">
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === 1}
+                            onClick={() => setCurrentPage(prev => prev - 1)}
+                        >
+                            Trước
+                        </Button>
+
+                        {Array.from({ length: totalPages }, (_, i) => (
+                            <Button
+                                key={i + 1}
+                                variant={currentPage === i + 1 ? "default" : "outline"}
+                                size="sm"
+                                onClick={() => setCurrentPage(i + 1)}
+                            >
+                                {i + 1}
+                            </Button>
+                        ))}
+
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={currentPage === totalPages}
+                            onClick={() => setCurrentPage(prev => prev + 1)}
+                        >
+                            Tiếp
+                        </Button>
                     </div>
 
                     {/* 🔹 Modal xem chi tiết booking */}

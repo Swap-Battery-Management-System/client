@@ -3,50 +3,22 @@ import { useNavigate, useParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
 
-interface InvoiceDamageFee {
-    id: string;
-    amountOriginal: string;
-    amountDiscount: string;
-    amountFinal: string;
-    damageFee: {
-        name: string;
-        severity: string;
-        type: string;
-        amount: string;
-    };
+interface InvoiceDetailProps {
+    invoiceId?: string; // có thể truyền từ ngoài
+    staffMode?: boolean; // bật chế độ staff/payment
+    swapSessionId?: string; // check socket
+    onPaid?: () => void; // callback khi thanh toán xong
 }
 
-interface InvoiceData {
-    id: string;
-    status: string;
-    createdAt: string;
-    amountOrigin: string;
-    amountDiscount: string;
-    amountFee: string;
-    amountFeeDiscount: string;
-    amountTotal: string;
-
-    user: {
-        fullName: string;
-        email: string;
-        address?: string;
-    };
-
-    swapSession?: {
-        station?: {
-            name: string;
-            address: string;
-        };
-    };
-
-    invoiceDamageFees: InvoiceDamageFee[];
-}
-
-export default function InvoiceDetail() {
-    const { id } = useParams();
+export default function InvoiceDetail({
+    invoiceId: propInvoiceId,
+    staffMode = false,
+}: InvoiceDetailProps) {
+    const { id: paramId } = useParams();
+    const id = propInvoiceId || paramId; // ưu tiên prop nếu có
     const navigate = useNavigate();
 
-    const [invoice, setInvoice] = useState<InvoiceData | null>(null);
+    const [invoice, setInvoice] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -54,6 +26,7 @@ export default function InvoiceDetail() {
             try {
                 const res = await api.get(`/invoices/${id}`);
                 setInvoice(res.data.data.invoice);
+                console.log("invoice", res.data);
             } catch (err) {
                 console.error("❌ Lỗi tải hóa đơn:", err);
             } finally {
@@ -65,26 +38,30 @@ export default function InvoiceDetail() {
 
     if (loading)
         return <p className="text-center mt-10 text-gray-500">⏳ Đang tải...</p>;
-
     if (!invoice)
-        return <p className="text-center mt-10 text-gray-500">Không tìm thấy hóa đơn.</p>;
+        return (
+            <p className="text-center mt-10 text-gray-500">Không tìm thấy hóa đơn.</p>
+        );
 
-    const totalService = Number(invoice.amountOrigin) - Number(invoice.amountDiscount);
-    const totalDamage = Number(invoice.amountFee) - Number(invoice.amountFeeDiscount);
+    const totalService =
+        Number(invoice.amountOrigin) - Number(invoice.amountDiscount);
+    const totalDamage =
+        Number(invoice.amountFee) - Number(invoice.amountFeeDiscount);
 
     return (
         <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-xl p-6 border border-gray-200">
-
             {/* 🔙 NÚT QUAY LẠI */}
-            <div className="mb-3">
-                <Button
-                    variant="outline"
-                    className="px-4 py-2"
-                    onClick={() => navigate("/home/transaction-history")}
-                >
-                    ⬅ Quay lại
-                </Button>
-            </div>
+            {!staffMode && (
+                <div className="mb-3">
+                    <Button
+                        variant="outline"
+                        className="px-4 py-2"
+                        onClick={() => navigate(-1)}
+                    >
+                        ⬅ Quay lại
+                    </Button>
+                </div>
+            )}
 
             {/* ================= HEADER ================= */}
             <div className="flex justify-between border-b pb-3 mb-4">
@@ -98,7 +75,9 @@ export default function InvoiceDetail() {
 
             {/* ================= KHÁCH HÀNG ================= */}
             <section className="border-b pb-3 mb-3">
-                <h3 className="font-semibold text-gray-700 mb-2">THÔNG TIN KHÁCH HÀNG</h3>
+                <h3 className="font-semibold text-gray-700 mb-2">
+                    THÔNG TIN KHÁCH HÀNG
+                </h3>
                 <p>- Họ tên: {invoice.user?.fullName}</p>
                 <p>- Email: {invoice.user?.email}</p>
                 {invoice.user?.address && <p>- Địa chỉ: {invoice.user.address}</p>}
@@ -106,7 +85,9 @@ export default function InvoiceDetail() {
 
             {/* ================= TRẠM ================= */}
             <section className="border-b pb-3 mb-3">
-                <h3 className="font-semibold text-gray-700 mb-2">THÔNG TIN TRẠM HOẠT ĐỘNG</h3>
+                <h3 className="font-semibold text-gray-700 mb-2">
+                    THÔNG TIN TRẠM HOẠT ĐỘNG
+                </h3>
                 <p>- Tên trạm: {invoice.swapSession?.station?.name || "—"}</p>
                 <p>- Địa điểm: {invoice.swapSession?.station?.address || "—"}</p>
             </section>
@@ -162,7 +143,9 @@ export default function InvoiceDetail() {
 
             {/* ================= BẢNG 2: PHÍ HƯ HỎNG ================= */}
             <section className="border-b pb-3 mb-3">
-                <h3 className="font-semibold text-gray-700 mb-2">CHI TIẾT PHÍ HƯ HỎNG</h3>
+                <h3 className="font-semibold text-gray-700 mb-2">
+                    CHI TIẾT PHÍ HƯ HỎNG
+                </h3>
 
                 <table className="w-full text-sm border border-gray-300">
                     <thead className="bg-gray-100">
@@ -179,7 +162,7 @@ export default function InvoiceDetail() {
 
                     <tbody>
                         {invoice.invoiceDamageFees.length > 0 ? (
-                            invoice.invoiceDamageFees.map((fee, index) => (
+                            invoice.invoiceDamageFees.map((fee: any, index: number) => (
                                 <tr key={fee.id}>
                                     <td className="border text-center">{index + 1}</td>
                                     <td className="border px-2">
@@ -188,7 +171,9 @@ export default function InvoiceDetail() {
                                             : "Bên ngoài"}
                                     </td>
                                     <td className="border px-2">{fee.damageFee.name}</td>
-                                    <td className="border text-center">{fee.damageFee.severity}</td>
+                                    <td className="border text-center">
+                                        {fee.damageFee.severity}
+                                    </td>
                                     <td className="border text-right">
                                         {Number(fee.amountOriginal).toLocaleString("vi-VN")}
                                     </td>
@@ -235,8 +220,8 @@ export default function InvoiceDetail() {
                 </p>
             </section>
 
-            {/* ================= NÚT THANH TOÁN ================= */}
-            {invoice.status === "pending" && (
+            {/* NÚT THANH TOÁN BÌNH THƯỜNG */}
+            {!staffMode && invoice.status === "processing" && (
                 <div className="flex justify-end mt-6">
                     <Button
                         className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c] px-6 py-2 text-base"
@@ -249,7 +234,7 @@ export default function InvoiceDetail() {
                             })
                         }
                     >
-                        💳 THANH TOÁN
+                        THANH TOÁN
                     </Button>
                 </div>
             )}

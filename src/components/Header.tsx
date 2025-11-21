@@ -35,7 +35,7 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const navigate = useNavigate();
   const token = useAuthStore((state) => state.accessToken);
 
-  // 🧠 Dùng Zustand store thay vì useState
+  //  Dùng Zustand store thay vì useState
   const unreadCount = useNotificationStore((state) => state.unreadCount);
   const setUnreadCount = useNotificationStore((state) => state.setUnreadCount);
   const decreaseUnread = useNotificationStore((state) => state.decreaseUnread);
@@ -48,12 +48,12 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const [selectedNoti, setSelectedNoti] = useState<NotificationItem | null>(null);
   const [openModal, setOpenModal] = useState(false);
 
-  // 🧭 Logout
+  // Logout
   const handleLogout = () => {
     logout(() => navigate("/", { replace: true }));
   };
 
-  // 👁️ Xem chi tiết thông báo
+  // Xem chi tiết thông báo
   const handleViewDetail = async (id: string) => {
     try {
       const res = await api.get(`/notifications/${id}`);

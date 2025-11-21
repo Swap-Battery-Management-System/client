@@ -24,7 +24,7 @@ export default function StaffLayout() {
   const links = [
     {
       name: "Dashboard",
-      path: "dashboard",
+      path: "/staff",
       icon: <LayoutDashboard size={18} />,
     },
     {
@@ -58,7 +58,7 @@ export default function StaffLayout() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r shadow-sm flex flex-col">
+      <aside className="fixed left-0 top-0 h-screen w-64 bg-white border-r shadow-sm flex flex-col">
         <div className="p-6 border-b">
           <NavLink to="/" className="flex items-center gap-2 ml-1">
             <img
@@ -79,11 +79,13 @@ export default function StaffLayout() {
             <NavLink
               key={link.path}
               to={link.path}
+              end={link.path === "/staff"}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-2 rounded-md font-medium transition-all duration-200
-                ${isActive
-                  ? "bg-[#E6F7F7] text-[#38A3A5] border-l-4 border-[#38A3A5]"
-                  : "text-gray-700 hover:bg-[#E6F7F7] hover:text-[#38A3A5]"
+                ${
+                  isActive
+                    ? "bg-[#E6F7F7] text-[#38A3A5] border-l-4 border-[#38A3A5]"
+                    : "text-gray-700 hover:bg-[#E6F7F7] hover:text-[#38A3A5]"
                 }`
               }
             >
@@ -120,7 +122,7 @@ export default function StaffLayout() {
       </aside>
 
       {/* Nội dung chính */}
-      <main className="flex-1 p-8">
+      <main className="ml-64 p-8">
         <Outlet />
       </main>
     </div>
