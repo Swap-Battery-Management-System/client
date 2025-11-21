@@ -1,107 +1,95 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
-import { toast } from "sonner";
-import api from "@/lib/api";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-
-interface VerifyResponse {
-    status: string;
-    invoiceId: string;
-    transactionId: string;
-    message?: string;
-}
+import axios from "axios";
+import { toast } from "sonner";
 
 export default function PaymentResult() {
+    const [params] = useSearchParams();
     const navigate = useNavigate();
-    const location = useLocation();
-    const { method } = useParams();
+    const API_URL = import.meta.env.VITE_API_URL;
 
     const [loading, setLoading] = useState(true);
-    const [verifyData, setVerifyData] = useState<VerifyResponse | null>(null);
     const [success, setSuccess] = useState<boolean | null>(null);
+    const [invoiceId, setInvoiceId] = useState<string>("");
+    const [amount, setAmount] = useState<number>(0);
+    const [message, setMessage] = useState<string>("");
 
-    // ================= VERIFY PAYMENT =================
     useEffect(() => {
         const verifyPayment = async () => {
             try {
-                // Lấy toàn bộ query params trả về từ cổng thanh toán
-                const queryParams = Object.fromEntries(new URLSearchParams(location.search));
+                const query = window.location.search;
 
-                console.log("📥 [VERIFY] Query nhận từ gateway:", queryParams);
+                // Detect gateway từ URL
+                const path = window.location.pathname.toLowerCase();
+                const gateway = path.includes("momo")
+                    ? "momo"
+                    : path.includes("payos")
+                        ? "payos"
+                        : "vnpay";
 
-                // Gửi lên BE để xác nhận thật
-                const res = await api.post(`/payments/${method}/verify`, {
-                    query: queryParams,
-                });
+                // ❗verify là public → phải dùng axios thường, không dùng api instance
+                const res = await axios.get(
+                    `${API_URL}/payments/${gateway}/verify${query}`
+                );
 
-                console.log("📦 [VERIFY] Backend trả về:", res.data);
+                const data = res.data;
 
-                const data = res.data?.data || {};
-                setVerifyData(data);
+                // Fallback invoice
+                const fallbackInvoice =
+                    data.data?.invoiceId && data.data.invoiceId !== "unknown"
+                        ? data.data.invoiceId
+                        : params.get("vnp_TxnRef") ||
+                        params.get("orderCode") ||
+                        params.get("invoiceId") ||
+                        "";
 
-                if (data.status === "paid") {
-                    setSuccess(true);
-                    toast.success("Thanh toán thành công!");
-                } else {
-                    setSuccess(false);
-                    toast.error("Thanh toán thất bại hoặc bị hủy!");
-                }
-            } catch (err: any) {
-                console.error("❌ [VERIFY] Error:", err);
+                // Fallback amount
+                const fallbackAmount =
+                    data.data?.amountTotal ||
+                    Number(params.get("vnp_Amount")) / 100 ||
+                    Number(params.get("amount")) ||
+                    0;
+
+                setInvoiceId(fallbackInvoice);
+                setAmount(fallbackAmount);
+                setSuccess(data.success);
+                setMessage(data.message);
+
+                if (data.success) toast.success("Thanh toán thành công!");
+                else toast.error("Thanh toán thất bại!");
+            } catch (err) {
+                console.error("❌ Lỗi verify:", err);
+                toast.error("Không thể xác minh thanh toán!");
                 setSuccess(false);
-                toast.error(err.response?.data?.message || "Lỗi xác thực giao dịch");
             } finally {
                 setLoading(false);
             }
         };
 
         verifyPayment();
-    }, [location.search, method]);
+    }, []);
 
-    // ================= UI HIỂN THỊ =================
-    if (loading) {
-        return (
-            <div className="max-w-lg mx-auto mt-16 bg-white shadow-md rounded-xl p-6 text-center">
-                <h2 className="text-xl font-bold text-[#38A3A5] mb-4">🔄 Đang xác nhận giao dịch...</h2>
-                <p>Vui lòng chờ trong giây lát...</p>
-            </div>
-        );
-    }
-
-    const invoiceId = verifyData?.invoiceId || "unknown";
-    const transactionId = verifyData?.transactionId || "unknown";
+    if (loading)
+        return <p className="text-center mt-10 text-gray-500">⏳ Đang xác minh giao dịch...</p>;
 
     return (
-        <div className="max-w-lg mx-auto mt-16 bg-white shadow-md rounded-xl p-6 text-center">
+        <div className="max-w-lg mx-auto p-6 text-center bg-white shadow-md mt-10 rounded-xl">
             {success ? (
                 <>
                     <h2 className="text-2xl text-green-600 font-bold mb-3">
-                        🎉 Giao dịch thành công
+                        🎉 Thanh toán thành công!
                     </h2>
+                    <p>Mã hóa đơn: <b>{invoiceId || "Không xác định"}</b></p>
+                    <p>Số tiền: <b>{amount.toLocaleString("vi-VN")}₫</b></p>
+                    <p className="text-gray-500 mt-2">{message}</p>
 
-                    <p className="mb-2">
-                        Mã hóa đơn hệ thống: <b>{invoiceId}</b>
-                    </p>
-                    <p className="mb-4">
-                        Mã giao dịch cổng thanh toán: <b>{transactionId}</b>
-                    </p>
-
-                    <div className="flex flex-col gap-3">
-                        <Button
-                            className="bg-[#38A3A5] text-white w-full"
-                            onClick={() => navigate("/home")}
-                        >
-                            🏠 Về trang chủ
-                        </Button>
-
-                        <Button
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => navigate("/home/invoices")}
-                        >
-                            📜 Xem lịch sử hóa đơn
-                        </Button>
-                    </div>
+                    <Button
+                        className="mt-5 bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
+                        onClick={() => navigate(`/home/invoice/${invoiceId}`)}
+                    >
+                        Xem hóa đơn
+                    </Button>
                 </>
             ) : (
                 <>
@@ -109,31 +97,27 @@ export default function PaymentResult() {
                         ❌ Giao dịch thất bại
                     </h2>
 
-                    <p className="mb-2">
-                        Mã hóa đơn hệ thống: <b>{invoiceId}</b>
-                    </p>
-                    <p className="mb-4">
-                        Mã giao dịch cổng thanh toán: <b>{transactionId}</b>
+                    <p className="text-gray-600 mb-4">
+                        {message || "Không xác định được thông tin thanh toán."}
                     </p>
 
-                    <div className="flex flex-col gap-3">
+                    <div className="flex justify-center gap-4 mt-5">
                         <Button
-                            className="bg-[#38A3A5] text-white w-full"
-                            onClick={() =>
-                                navigate("/payment", {
-                                    state: { invoiceId },
-                                })
-                            }
+                            variant="outline"
+                            onClick={() => navigate(`/home/invoice/${invoiceId}`)}
                         >
-                            🔁 Chọn lại phương thức thanh toán
+                            🔍 Xem hóa đơn
                         </Button>
 
                         <Button
-                            variant="outline"
-                            className="w-full"
-                            onClick={() => navigate("/home")}
+                            className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
+                            onClick={() =>
+                                navigate("/home/payment", {
+                                    state: { invoiceId, amount },
+                                })
+                            }
                         >
-                            ❌ Hủy & quay lại trang chủ
+                            💳 Chọn lại phương thức thanh toán
                         </Button>
                     </div>
                 </>
