@@ -72,7 +72,7 @@ export default function PaymentPage() {
 
             console.log("🔗 paymentUrl nhận từ BE:", paymentUrl);
 
-            // CASE 1 — CASH (không có URL)
+            // CASE 1 — CASH
             if (!paymentUrl) {
                 console.log("💵 Thanh toán tiền mặt — không redirect");
                 toast.success("Đã thanh toán tiền mặt");
@@ -80,14 +80,10 @@ export default function PaymentPage() {
                 return;
             }
 
-            // ================= IMPORTANT FIX =================
-            // GẮN invoiceId để lúc PayOS redirect về không mất ID
-            const redirectUrl =
-                `${paymentUrl}${paymentUrl.includes("?") ? "&" : "?"}invoiceId=${invoiceId}`;
+            // ❗ KHÔNG append invoiceId
+            console.log("🌐 Redirecting to:", paymentUrl);
+            window.location.href = paymentUrl;
 
-            console.log("🌐 Redirecting to:", redirectUrl);
-
-            window.location.href = redirectUrl;
         } catch (err: any) {
             console.error("❌ [PAYMENT] Error:", err);
             toast.error(err.response?.data?.message || "Lỗi thanh toán");

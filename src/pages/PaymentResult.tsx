@@ -20,15 +20,14 @@ export default function PaymentResult() {
             try {
                 const query = window.location.search;
 
-                // Detect gateway từ URL
+                // Detect gateway
                 const path = window.location.pathname.toLowerCase();
-                const gateway = path.includes("momo")
-                    ? "momo"
-                    : path.includes("payos")
-                        ? "payos"
-                        : "vnpay";
+                const gateway =
+                    path.includes("momo") ? "momo" :
+                        path.includes("payos") ? "payos" :
+                            "vnpay";
 
-                // ❗verify là public → phải dùng axios thường, không dùng api instance
+                // Verify = public → dùng axios thường
                 const res = await axios.get(
                     `${API_URL}/payments/${gateway}/verify${query}`
                 );
@@ -58,9 +57,10 @@ export default function PaymentResult() {
 
                 if (data.success) toast.success("Thanh toán thành công!");
                 else toast.error("Thanh toán thất bại!");
+
             } catch (err) {
                 console.error("❌ Lỗi verify:", err);
-                toast.error("Không thể xác minh thanh toán!");
+                toast.error("Không thể xác minh giao dịch!");
                 setSuccess(false);
             } finally {
                 setLoading(false);
@@ -102,10 +102,7 @@ export default function PaymentResult() {
                     </p>
 
                     <div className="flex justify-center gap-4 mt-5">
-                        <Button
-                            variant="outline"
-                            onClick={() => navigate(`/home/invoice/${invoiceId}`)}
-                        >
+                        <Button variant="outline" onClick={() => navigate(`/home/invoice/${invoiceId}`)}>
                             🔍 Xem hóa đơn
                         </Button>
 
