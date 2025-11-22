@@ -47,6 +47,9 @@ export default function Login() {
       case "driver":
         navigate("/home");
         break;
+      case "manager":
+        navigate("/manager");
+        break;
     }
   };
 
