@@ -9,6 +9,7 @@ import {
   LifeBuoy,
   LogOut,
   UserCheck,
+  RefreshCcw,
 } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import logo from "/png.png";
@@ -23,7 +24,7 @@ export default function StaffLayout() {
   const links = [
     {
       name: "Dashboard",
-      path: "dashboard",
+      path: "/staff",
       icon: <LayoutDashboard size={18} />,
     },
     {
@@ -40,6 +41,11 @@ export default function StaffLayout() {
       name: "Check-in tại trạm",
       path: "walkin-swap",
       icon: <UserCheck size={18} />,
+    },
+    {
+      name: "Quản lý Swap Session",
+      path: "swap-session",
+      icon: <RefreshCcw size={18} />,
     },
     { name: "Báo cáo trạm", path: "reports", icon: <FileBarChart size={18} /> },
     {
@@ -73,11 +79,13 @@ export default function StaffLayout() {
             <NavLink
               key={link.path}
               to={link.path}
+              end={link.path === "/staff"}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-2 rounded-md font-medium transition-all duration-200
-                ${isActive
-                  ? "bg-[#E6F7F7] text-[#38A3A5] border-l-4 border-[#38A3A5]"
-                  : "text-gray-700 hover:bg-[#E6F7F7] hover:text-[#38A3A5]"
+                ${
+                  isActive
+                    ? "bg-[#E6F7F7] text-[#38A3A5] border-l-4 border-[#38A3A5]"
+                    : "text-gray-700 hover:bg-[#E6F7F7] hover:text-[#38A3A5]"
                 }`
               }
             >

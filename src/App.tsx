@@ -2,7 +2,6 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import OtpVerify from "./pages/OtpVerify";
 import RegisterInfo from "./pages/RegisterInfo";
-// import RegisterLayout from "./layout/RegisterLayout";
 import { Route, Routes } from "react-router";
 import { Toaster } from "sonner";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -41,15 +40,21 @@ import AdminVehicleModelManagement from "./pages/ManageModels";
 import NotificationPage from "./pages/NotificationPage";
 import SupportTicketForm from "./pages/SupportTicketForm";
 import AdminSupportTickets from "./pages/AdminSupportTickets";
-import WalkinSwap from "./pages/WalkinSwap";
 
 import SupportHistoryPage from "./pages/SupportHistoryPage";
 import CreateInvoice from "./pages/CreateInvoice";
+import SwapSessionManager from "./pages/SwapSessionManagement";
+import AdminSupport from "./pages/AdminSupport";
+import InvoiceDetail from "./pages/InvoiceDetail";
+import PaymentPage from "./pages/PaymentPage";
+import TransactionHistoryPage from "./pages/TransactionHistoryPage";
+import PaymentResult from "./pages/PaymentResult";
+
 function App() {
   return (
     <>
       <Routes>
-        {/* Trang công khai */}
+        {/* PUBLIC ROUTES */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/login/reset-password" element={<ResetPassword />} />
@@ -57,8 +62,15 @@ function App() {
         <Route path="/register/verify" element={<OtpVerify />} />
         <Route path="/register/info" element={<RegisterInfo />} />
         <Route path="/register/password" element={<RegisterPassword />} />
-        <Route path="/create-invoice" element={<CreateInvoice />} />
-        {/* Layout người dùng */}
+
+        {/* 🔥 PAYMENT ROUTES — luôn ở ROOT */}
+        <Route path="/payment" element={<PaymentPage />} />
+        <Route path="/payment/:method/result" element={<PaymentResult />} />
+
+        {/* INVOICE PUBLIC (OPTIONAL) */}
+        <Route path="/invoice-detail" element={<InvoiceDetail />} />
+
+        {/* USER HOME LAYOUT */}
         <Route
           path="/home"
           element={
@@ -82,10 +94,17 @@ function App() {
           <Route path="my-subscription-packages" element={<MySubcription />} />
           <Route path="support" element={<SupportTicketForm />} />
           <Route path="support-history" element={<SupportHistoryPage />} />
-          <Route path="pricing" element={<DamageFee />} />
+          <Route
+            path="transaction-history"
+            element={<TransactionHistoryPage />}
+          />
+          <Route path="invoice/:id" element={<InvoiceDetail />} />
+          <Route path="payment" element={<PaymentPage />} />
 
+          <Route path="pricing" element={<DamageFee />} />
         </Route>
-        {/* === Staff Routes === */}
+
+        {/* STAFF ROUTES */}
         <Route
           path="/staff"
           element={
@@ -94,21 +113,18 @@ function App() {
             </ProtectedRoute>
           }
         >
+          <Route index element={<StaffDashboard />} />
           <Route path="manage-battery" element={<BatteryManagement />} />
-          <Route
-            path="swap-battery-process/:bookingId"
-            element={<BatteryProcess />}
-          />
-          <Route path="walkin-swap" element={<WalkinSwap />} />
-          <Route path="manage-battery" element={<BatteryManagement />} />
+          <Route path="battery-process">
+            <Route path="booking/:bookingId" element={<BatteryProcess />} />
+            <Route path="swap/:swapSessionId" element={<BatteryProcess />} />
+          </Route>
+          <Route path="walkin-swap" element={<BatteryProcess />} />
+          <Route path="swap-session" element={<SwapSessionManager />} />
           <Route path="manage-booking" element={<StaffBookingManagement />} />
-          <Route path="dashboard" element={<StaffDashboard />} />
-          {/* <Route index element={<StaffDashboard />} />
-         
-          <Route path="booking" element={<StaffBooking />} />
-          <Route path="report" element={<StaffReport />} />
-          <Route path="safety" element={<StaffSafety />} /> */}
         </Route>
+
+        {/* ADMIN ROUTES */}
         <Route
           path="/admin"
           element={
@@ -117,6 +133,7 @@ function App() {
             </ProtectedRoute>
           }
         >
+          <Route index element={<AdminDashboard />} />
           <Route path="manage-users" element={<AdminUserManagement />} />
           <Route path="manage-stations" element={<AdminStationManagement />} />
           <Route path="manage-vehicles" element={<AdminVehicleManagement />} />
@@ -125,11 +142,8 @@ function App() {
             element={<AdminSubscriptionManagement />}
           />
           <Route path="damage-fee" element={<AdminDamageFeeManagement />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-
-
           <Route path="support-tickets" element={<AdminSupportTickets />} />
-          <Route path="manage-battery" element={<BatteryManagement />} />
+          <Route path="support" element={<AdminSupport />} />
           <Route
             path="battery-types"
             element={<AdminBatteryTypeManagement />}
@@ -138,8 +152,13 @@ function App() {
             path="vehicle-models"
             element={<AdminVehicleModelManagement />}
           />
+          <Route
+            path="manage-battery"
+            element={<BatteryManagement />}
+          />
         </Route>
       </Routes>
+
       <Toaster richColors position="top-center" />
     </>
   );

@@ -74,13 +74,13 @@ export default function Login() {
       : { username: form.identifier.trim(), password: form.password };
 
     try {
-       const res = await api.post("/auth/login", payload, {
-         withCredentials: true,
-         headers: { "skip-auth-refresh": "true" },
-       });
+      const res = await api.post("/auth/login", payload, {
+        withCredentials: true,
+        headers: { "skip-auth-refresh": "true" },
+      });
       useAuthStore.getState().setAccessToken(res.data.data.accessToken);
       const userData = await api.get("auth/me", { withCredentials: true });
-      
+
       const user = userData.data.data.user;
       console.log("login", userData.data);
       setUser(user);
@@ -114,17 +114,22 @@ export default function Login() {
       const res = await api.post(
         `/auth/google`,
         { credential },
-        { withCredentials: true }
+        { withCredentials: true, headers: { "skip-auth-refresh": "true" } }
       );
       useAuthStore.getState().setAccessToken(res.data.data.accessToken);
       const user = res.data.data.user;
-      console.log("gg:", res.data);
+      console.log("gg:", user);
 
       setUser(user);
 
       setType("success");
       setMessage(successMessage[res.status]);
-      setTimeout(() => redirectByRole(user.role.name), 2000);
+      console.log("role", user.role);
+      if (user.status === "active") {
+        setTimeout(() => redirectByRole(user.role.name), 2000);
+      } else if (user.status === "pending") {
+        setTimeout(() =>navigate("/register/info"), 2000);
+      }
     } catch (err: any) {
       setType("error");
       if (err.response) {

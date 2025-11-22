@@ -5,71 +5,33 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import api from "@/lib/api";
 
-interface Vehicle {
-  id: string;
-  licensePlates: string;
-  VIN: string;
-  model: { id: string; name: string; batteryTypeId: string };
-  batteryTypeId: string;
-  status?: string; // thêm status
-
-}
-
-interface User {
-  id: string;
-  fullName: string;
-  username: string;
-  email: string;
-  phoneNumber: string;
-  address: string;
-  vehicles?: Vehicle[];
-}
-
-interface Station {
-  id: string;
-  name: string;
-}
-
-interface Battery {
-  id: string;
-  code: string;
-  currentCapacity: number;
-  cycleCount: number;
-  soc: number;
-  batteryTypeId: string;
-  status: string;
-}
-
-interface Step1WalkinCheckInProps {
-  onNext: () => void;
-  onUpdate: (key: string, value: any) => void;
-}
-
 export default function WalkinSwap({
   onNext,
   onUpdate,
-}: Step1WalkinCheckInProps) {
-  const [step, setStep] = useState<1 | 2>(1);
+  onCheckinSuccess,
+}: any) {
+  const [step, setStep] = useState(1);
   const [searchInput, setSearchInput] = useState("");
-  const [user, setUser] = useState<User | null>(null);
-  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
-  const [stations, setStations] = useState<Station[]>([]);
+  const [user, setUser] = useState<any>(null);
+  const [vehicles, setVehicles] = useState<any[]>([]);
+  const [stations, setStations] = useState<any[]>([]);
   const [selectedVehicleId, setSelectedVehicleId] = useState("");
   const [selectedStationId, setSelectedStationId] = useState("");
-  const [batteryStatus, setBatteryStatus] = useState<
-    "checking" | "ok" | "none" | null
-  >(null);
+  const [batteryStatus, setBatteryStatus] = useState<any>(null);
+  const [batteryTypeName, setBatteryTypeName] = useState<string>("");
+  const [currentBattery, setCurrentBattery] = useState<any>(null);
+  const [submitting, setSubmitting] = useState(false);
 
-  // Load stations khi mount
+  const selectedVehicle = vehicles.find((v: any) => v.id === selectedVehicleId);
+
+  // Lấy danh sách trạm
   useEffect(() => {
     const fetchStations = async () => {
       try {
         const res = await api.get("/stations", { withCredentials: true });
         const data = res.data?.data?.stations;
-
-        const list: Station[] = Array.isArray(data) ? data : data ? [data] : [];
+        const list = Array.isArray(data) ? data : data ? [data] : [];
         setStations(list);
-
         if (list.length === 1) setSelectedStationId(list[0].id);
       } catch (err) {
         console.error("Lỗi khi lấy danh sách trạm:", err);
@@ -91,22 +53,17 @@ export default function WalkinSwap({
       });
 
       const data = res.data?.data?.users;
-      const foundUser: User = Array.isArray(data) ? data[0] : data;
-      console.log("foundUser", res.data);
+      const foundUser = Array.isArray(data) ? data[0] : data;
+      console.log("founderUser", foundUser);
+
       if (foundUser) {
-        // Chỉ lấy xe active
-       
         const activeVehicles = (foundUser.vehicles ?? []).filter(
-          (v) => v.status === "active"
+          (v: any) => v.status === "active"
         );
         setUser(foundUser);
         setVehicles(activeVehicles);
-
-        // Nếu chỉ có 1 xe, auto chọn
-        if (activeVehicles.length === 1) {
+        if (activeVehicles.length === 1)
           setSelectedVehicleId(activeVehicles[0].id);
-        }
-
         setStep(2);
         toast.success("Tìm thấy người dùng ✅");
         onUpdate("user", foundUser);
@@ -121,24 +78,60 @@ export default function WalkinSwap({
     }
   };
 
-  // Step 2: Kiểm tra xe & pin
+  // Khi chọn xe → lấy loại pin & pin hiện tại
+  useEffect(() => {
+    const fetchBatteryInfo = async () => {
+      if (!selectedVehicle) {
+        setBatteryTypeName("");
+        setCurrentBattery(null);
+        return;
+      }
+
+      try {
+        // 1 Lấy tên loại pin
+        const resType = await api.get(
+          `/battery-types/${selectedVehicle.model.batteryTypeId}`,
+          { withCredentials: true }
+        );
+        console.log("batteryType",resType.data)
+        setBatteryTypeName(resType.data?.data?.batteryType.name || "Không xác định");
+        // 2️ Nếu xe đang gắn pin, lấy thông tin pin
+        if (selectedVehicle.batteryId) {
+          const resBattery = await api.get(
+            `/batteries/${selectedVehicle.batteryId}`,
+            { withCredentials: true }
+          );
+          setCurrentBattery(resBattery.data?.data || null);
+        } else {
+          setCurrentBattery(null);
+        }
+      } catch (err) {
+        console.error("Lỗi khi lấy thông tin pin:", err);
+        setBatteryTypeName("Không xác định");
+      }
+    };
+
+    fetchBatteryInfo();
+  }, [selectedVehicleId]);
+
+  // Step 2: Kiểm tra pin tại trạm
   const handleCheckVehicle = async () => {
     if (!user || !selectedVehicleId) return toast.error("Vui lòng chọn xe!");
     if (!selectedStationId) return toast.error("Vui lòng chọn trạm!");
 
-    const vehicle = vehicles.find((v) => v.id === selectedVehicleId);
+    const vehicle = selectedVehicle;
     if (!vehicle) return toast.error("Xe không hợp lệ!");
 
     try {
       const res = await api.get(`/batteries/station/${selectedStationId}`, {
         withCredentials: true,
       });
-      console.log("battery",res);
-      const batteries: Battery[] = res.data?.data?.batteries ?? [];
+      const batteries = res.data?.data?.batteries ?? [];
 
       const compatible = batteries.some(
-        (b) =>
-          b.batteryTypeId === vehicle.model.batteryTypeId && b.status === "available"
+        (b: any) =>
+          b.batteryTypeId === vehicle.model.batteryTypeId &&
+          b.status === "available"
       );
 
       if (compatible) {
@@ -150,7 +143,7 @@ export default function WalkinSwap({
       }
 
       onUpdate("vehicle", vehicle);
-      const station = stations.find((s) => s.id === selectedStationId);
+      const station = stations.find((s: any) => s.id === selectedStationId);
       onUpdate("station", station);
     } catch (err) {
       console.error("Lỗi khi kiểm tra pin:", err);
@@ -159,21 +152,35 @@ export default function WalkinSwap({
     }
   };
 
-  // Step 3: Tạo swap session
-  const handleNext = () => {
-    if (!user || !selectedVehicleId || batteryStatus !== "ok") {
-      return toast.error("Vui lòng hoàn tất check-in trước khi tiếp tục!");
+  // Step 3: Check-in
+  const handleCheckin = async () => {
+    const vehicle = selectedVehicle;
+    const station = stations.find((s: any) => s.id === selectedStationId);
+    if (!user || !vehicle || !station)
+      return toast.error("Thiếu thông tin cần thiết!");
+
+    try {
+      setSubmitting(true);
+      const res = await api.post(
+        `/stations/${station.id}/checkin`,
+        { userId: user.id, isWalkin: true, vehicleId: vehicle.id },
+        { withCredentials: true }
+      );
+
+      const swapSession = res.data?.data?.swapSession;
+      if (swapSession?.id) {
+        onUpdate("swapSession", swapSession);
+        toast.success("Check-in thành công!");
+        onCheckinSuccess ? onCheckinSuccess(swapSession) : onNext();
+      } else {
+        toast.error("Không lấy được swapSession.");
+      }
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err?.response?.data?.message || "Check-in thất bại!");
+    } finally {
+      setSubmitting(false);
     }
-    const swapSession = {
-      id: "swap001",
-      userId: user.id,
-      vehicleId: selectedVehicleId,
-      stationId: selectedStationId,
-      isWalkin: true,
-    };
-    onUpdate("swapSession", swapSession);
-    toast.success("Swap session đã được tạo!");
-    onNext();
   };
 
   return (
@@ -183,7 +190,7 @@ export default function WalkinSwap({
           Check-in Walk-in
         </h2>
 
-        {/* Step 1: Tìm user */}
+        {/* Step 1 */}
         {step === 1 && (
           <div className="flex gap-2">
             <input
@@ -202,9 +209,10 @@ export default function WalkinSwap({
           </div>
         )}
 
-        {/* Step 2: Hiển thị thông tin user và chọn xe */}
+        {/* Step 2 */}
         {step === 2 && user && (
           <>
+            {/* Thông tin user */}
             <div className="bg-gray-50 p-4 rounded space-y-2 border border-[#38A3A5]/20">
               <p>
                 <strong>Họ tên:</strong> {user.fullName}
@@ -218,11 +226,9 @@ export default function WalkinSwap({
               <p>
                 <strong>Số điện thoại:</strong> {user.phoneNumber}
               </p>
-              <p>
-                <strong>Địa chỉ:</strong> {user.address}
-              </p>
             </div>
 
+            {/* Chọn xe */}
             <div className="flex gap-2 mt-3">
               <select
                 className="flex-1 border p-2 rounded"
@@ -231,9 +237,9 @@ export default function WalkinSwap({
               >
                 <option value="">-- Chọn xe của khách hàng --</option>
                 {vehicles.length > 0 ? (
-                  vehicles.map((v) => (
+                  vehicles.map((v: any) => (
                     <option key={v.id} value={v.id}>
-                      {v.model.name} | {v.licensePlates}
+                      {v.model?.name} | {v.licensePlates}
                     </option>
                   ))
                 ) : (
@@ -250,6 +256,43 @@ export default function WalkinSwap({
               </Button>
             </div>
 
+            {/* Thông tin xe chi tiết */}
+            {selectedVehicle && (
+              <div className="bg-gray-100 mt-4 p-4 rounded border text-sm space-y-1">
+                <p>
+                  <strong>Tên xe:</strong> {selectedVehicle.model?.name}
+                </p>
+                <p>
+                  <strong>Biển số:</strong> {selectedVehicle.licensePlates}
+                </p>
+                <p>
+                  <strong>VIN:</strong> {selectedVehicle.VIN}
+                </p>
+                <p>
+                  <strong>Loại pin:</strong> {batteryTypeName}
+                </p>
+                <p>
+                  <strong>Trạng thái xe:</strong> {selectedVehicle.status}
+                </p>
+
+                {currentBattery ? (
+                  <>
+                    <p>
+                      <strong>Mã pin:</strong> {currentBattery.code}
+                    </p>
+                    <p>
+                      <strong>Dung lượng:</strong>{" "}
+                      {currentBattery.currentCapacity} kWh
+                    </p>
+                  </>
+                ) : (
+                  <p className="italic text-gray-600">
+                    Xe chưa từng đổi pin trước đây
+                  </p>
+                )}
+              </div>
+            )}
+
             {batteryStatus && (
               <p
                 className={`mt-3 font-semibold ${
@@ -264,10 +307,11 @@ export default function WalkinSwap({
 
             {batteryStatus === "ok" && (
               <Button
+                disabled={submitting}
                 className="w-full mt-4 bg-[#38A3A5] hover:bg-[#2D8688] text-white"
-                onClick={handleNext}
+                onClick={handleCheckin}
               >
-                Tạo Swap Session & Tiếp tục
+                {submitting ? "Đang xử lý..." : "Tạo Swap Session & Tiếp tục"}
               </Button>
             )}
           </>

@@ -351,7 +351,7 @@ export default function BatteryTable({
                             )}
                           </>
                         )}
-                        {role === "staff" && pin.id && (
+                        {role === "staff" && pin.id && pin.status!="faulty" &&(
                           <button
                             onClick={() => markFaulty(pin.id as string)}
                             className="text-orange-500 flex items-center gap-1"

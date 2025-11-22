@@ -6,6 +6,8 @@ import {
   CalendarCheck,
   CreditCard,
   User,
+  CheckCircle,
+  Trash2,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,7 +24,9 @@ import {
   DialogTitle,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { CheckCircle, Trash2 } from "lucide-react";
+import { toast } from "sonner";
+import { useNotificationStore } from "@/stores/notificationStore";
+
 interface Notification {
   notification_id: string;
   message: string;
@@ -33,15 +37,23 @@ interface Notification {
 
 export default function NotificationPage() {
   const { user } = useAuth();
-  const token = useAuthStore((state) => state.accessToken); // hook nằm ở top-level
+  const token = useAuthStore((state) => state.accessToken);
 
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState("All");
   const [loading, setLoading] = useState(true);
   const [socket, setSocket] = useState<Socket | null>(null);
+  const [detail, setDetail] = useState<any>(null);
+  const [open, setOpen] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const { setUnreadCount,
+    decreaseUnread,
+    increaseUnread,
+    resetUnread } = useNotificationStore();
 
   const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "https://api.swapnet.io.vn";
 
+  // Biểu tượng theo loại thông báo
   const typeIcons: Record<string, React.ReactNode> = {
     Booking: <CalendarCheck className="w-5 h-5 text-emerald-500" />,
     Battery: <Battery className="w-5 h-5 text-cyan-500" />,
@@ -49,13 +61,10 @@ export default function NotificationPage() {
     Alert: <AlertCircle className="w-5 h-5 text-rose-500" />,
     Payment: <CreditCard className="w-5 h-5 text-amber-500" />,
   };
-  const [selected, setSelected] = useState<Notification | null>(null);
-  const [detail, setDetail] = useState<any>(null);
-  const [open, setOpen] = useState(false);
 
-
-  // Nhận thông báo realtime
+  // 📩 Nhận thông báo realtime
   const handleNewNotification = useCallback((data: any) => {
+    increaseUnread();
     console.log("📩 Nhận thông báo mới từ socket:", data);
     const newItem: Notification = {
       notification_id: data.id || Date.now().toString(),
@@ -63,19 +72,15 @@ export default function NotificationPage() {
       type: data.type || "Alert",
       created_date: new Date().toISOString(),
       status: "Unread",
+
     };
+
     setNotifications((prev) => [newItem, ...prev]);
   }, []);
 
-  // Kết nối socket
+  // 🔌 Kết nối socket
   useEffect(() => {
-    if (!user?.id) {
-      console.log("⏳ Chưa có user, chưa connect socket...");
-      return;
-    }
-
-    console.log("🔌 Đang kết nối Socket.IO đến:", SOCKET_URL);
-    console.log("🔑 Token hiện tại:", token || localStorage.getItem("accessToken"));
+    if (!user?.id) return;
 
     const authToken = token || localStorage.getItem("accessToken");
     if (!authToken) {
@@ -83,6 +88,7 @@ export default function NotificationPage() {
       return;
     }
 
+    console.log("🔌 Kết nối Socket.IO:", SOCKET_URL);
     const newSocket = io(SOCKET_URL, {
       transports: ["websocket"],
       auth: { token: authToken },
@@ -100,7 +106,7 @@ export default function NotificationPage() {
 
     newSocket.on("notification", handleNewNotification);
     newSocket.on("disconnect", (reason) => console.warn("⚠️ Socket disconnected:", reason));
-    newSocket.on("connect_error", (err) => console.error("❌ Lỗi kết nối socket:", err.message));
+    newSocket.on("connect_error", (err) => console.error("❌ Lỗi socket:", err.message));
 
     return () => {
       console.log("🧹 Ngắt kết nối socket...");
@@ -108,67 +114,78 @@ export default function NotificationPage() {
     };
   }, [user, token, handleNewNotification]);
 
-  useEffect(() => {
-    const fetchNotifications = async () => {
-      if (!user?.id) return;
+  // 📦 Hàm tải danh sách thông báo
+  const fetchNotifications = useCallback(async () => {
+    if (!user?.id) return;
+    setLoading(true);
+    try {
+      const res = await api.get(`/notifications?userId=${user.id}`);
+      const raw = res?.data?.data?.notifications || [];
 
-      try {
-        console.log("📡 Gọi API /notifications?userId=" + user.id);
-        const res = await api.get(`/notifications?userId=${user.id}`);
+      if (Array.isArray(raw)) {
+        const formatted = raw
+          .map((n: any) => ({
+            notification_id: n.id || n.notification_id,
+            message: n.message,
+            type: n.type || "Alert",
+            created_date: n.createdAt || n.created_date,
+            status: n.isRead === true || n.status === "Read" ? "Read" : "Unread",
+          }))
+          .sort(
+            (a, b) =>
+              new Date(b.created_date).getTime() -
+              new Date(a.created_date).getTime()
+          );
+        setNotifications(formatted);
+        const unread = formatted.filter((n) => n.status === "Unread").length;
+        setUnreadCount(unread);
 
-        // Đúng cấu trúc của BE SwapNet
-        const raw = res?.data?.data?.notifications || [];
-        console.log("API trả về:", raw);
-
-        if (Array.isArray(raw)) {
-          const formatted = raw
-            .map((n: any) => ({
-              notification_id: n.id || n.notification_id,
-              message: n.message,
-              type: n.type || "Alert",
-              created_date: n.createdAt || n.created_date,
-              // Đồng bộ trạng thái đọc từ BE
-              status:
-                n.isRead === true || n.status === "Read"
-                  ? "Read"
-                  : "Unread",
-            }))
-            .sort(
-              (a, b) =>
-                new Date(b.created_date).getTime() -
-                new Date(a.created_date).getTime()
-            );
-
-          setNotifications(formatted);
-        }
-        else {
-          console.warn("⚠️ Dữ liệu không phải array:", res.data);
-          setNotifications([]);
-        }
-      } catch (err) {
-        console.error("❌ Lỗi khi tải thông báo:", err);
-      } finally {
-        setLoading(false);
+      } else {
+        setNotifications([]);
       }
-    };
-
-    fetchNotifications();
+    } catch (err) {
+      console.error("❌ Lỗi khi tải thông báo:", err);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
 
+  useEffect(() => {
+    fetchNotifications();
+  }, [fetchNotifications]);
 
-  // Đánh dấu tất cả là đã đọc
-  const markAllRead = async () => {
+
+  // 🟡 Xem chi tiết thông báo
+  const handleViewDetail = async (id: string) => {
     try {
-      console.log("📨 PATCH /notifications/read-all cho user:", user?.id);
-      await api.patch("/notifications/read-all");
-      setNotifications((prev) => prev.map((n) => ({ ...n, status: "Read" })));
-      console.log("✅ Đã đánh dấu tất cả là Read");
+      const res = await api.get(`/notifications/${id}`);
+      const detailData = res.data?.data?.notification;
+      setDetail(detailData);
+      setOpen(true);
+
+      // Đánh dấu đã đọc khi mở chi tiết
+      await api.patch(`/notifications/${id}/read`);
+      await fetchNotifications();
     } catch (err) {
-      console.error("❌ Lỗi khi cập nhật trạng thái:", err);
+      console.error("❌ Lỗi khi lấy chi tiết:", err);
     }
   };
 
-  //  Lọc danh sách
+  // 🔴 Xóa thông báo
+  const handleDelete = async (id: string) => {
+    if (!confirm("Bạn có chắc muốn xóa thông báo này?")) return;
+    try {
+      await api.delete(`/notifications/${id}`);
+      toast.success("Đã xóa thông báo");
+      setOpen(false);
+      await fetchNotifications();
+    } catch (err) {
+      toast.error("Không thể xóa thông báo!");
+      console.error("❌ Lỗi khi xóa:", err);
+    }
+  };
+
+  // 📋 Lọc danh sách
   const filtered =
     filter === "All"
       ? notifications
@@ -176,7 +193,7 @@ export default function NotificationPage() {
         ? notifications.filter((n) => n.status === "Unread")
         : notifications.filter((n) => n.status === "Read");
 
-  //  Loading
+  // 🕐 Hiển thị khi đang tải
   if (loading) {
     return (
       <div className="flex justify-center items-center h-80">
@@ -184,38 +201,8 @@ export default function NotificationPage() {
       </div>
     );
   }
-  const handleViewDetail = async (id: string) => {
-    try {
-      // Gọi API chi tiết
-      const res = await api.get(`/notifications/${id}`);
-      const detailData = res.data?.data?.notification;
-      setDetail(detailData);
-      setOpen(true);
 
-
-      await api.patch(`/notifications/${id}/read`);
-      setNotifications(prev =>
-        prev.map(n =>
-          n.notification_id === id ? { ...n, status: "Read" } : n
-        )
-      );
-    } catch (err) {
-      console.error("❌ Lỗi khi lấy chi tiết thông báo:", err);
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Bạn có chắc muốn xóa thông báo này?")) return;
-    try {
-      await api.delete(`/notifications/${id}`);
-      setNotifications(prev => prev.filter(n => n.notification_id !== id));
-      setOpen(false);
-    } catch (err) {
-      console.error("❌ Lỗi khi xóa thông báo:", err);
-    }
-  };
-
-  // UI
+  // 🧩 Giao diện chính
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
       <div className="flex items-center justify-between mb-6">
@@ -226,13 +213,15 @@ export default function NotificationPage() {
         <Button
           variant="outline"
           size="sm"
-          onClick={markAllRead}
+          onClick={() => setConfirmOpen(true)}
           className="border-emerald-400 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 transition"
         >
           Đánh dấu tất cả đã đọc
         </Button>
+
       </div>
 
+      {/* Bộ lọc */}
       <div className="flex gap-2 mb-4">
         {["All", "Unread", "Read"].map((f) => (
           <Button
@@ -253,6 +242,7 @@ export default function NotificationPage() {
 
       <Separator className="my-4" />
 
+      {/* Danh sách */}
       {filtered.length === 0 ? (
         <div className="text-center py-20">
           <Bell className="w-10 h-10 text-gray-300 mx-auto mb-3" />
@@ -276,8 +266,7 @@ export default function NotificationPage() {
               <div>{typeIcons[n.type] || <AlertCircle className="w-5 h-5 text-gray-400" />}</div>
 
               <div className="flex-1">
-                <p className="text-sm text-gray-800 leading-snug">
-                  {n.message}</p>
+                <p className="text-sm text-gray-800 leading-snug">{n.message}</p>
                 <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
                   <span className="capitalize">{n.type}</span>
                   <span>{new Date(n.created_date).toLocaleString("vi-VN")}</span>
@@ -293,6 +282,8 @@ export default function NotificationPage() {
           ))}
         </div>
       )}
+
+      {/* Dialog chi tiết */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-md rounded-2xl shadow-2xl border border-emerald-100 bg-white/95 backdrop-blur-sm">
           <DialogHeader className="space-y-1">
@@ -327,22 +318,69 @@ export default function NotificationPage() {
             </Button>
 
             <Button
-              onClick={() => {
-                if (detail?.id)
-                  api.patch(`/notifications/${detail.id}/read`).then(() => {
-                    setNotifications(prev =>
-                      prev.map(n =>
-                        n.notification_id === detail.id
-                          ? { ...n, status: "Read" }
-                          : n
-                      )
-                    );
-                  });
+              disabled={detail?.isRead}
+              onClick={async () => {
+                if (detail?.id) {
+                  await api.patch(`/notifications/${detail.id}/read`);
+                  decreaseUnread();
+                  toast.success("Đã đánh dấu thông báo là đã đọc");
+                  await fetchNotifications();
+                }
                 setOpen(false);
               }}
-              className="bg-gradient-to-r from-cyan-500 to-emerald-500 text-white hover:from-cyan-600 hover:to-emerald-600 flex items-center gap-2 shadow-md transition"
+              className={cn(
+                "flex items-center gap-2 shadow-md transition",
+                detail?.isRead
+                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                  : "bg-gradient-to-r from-cyan-500 to-emerald-500 text-white hover:from-cyan-600 hover:to-emerald-600"
+              )}
             >
-              <CheckCircle className="w-4 h-4" /> Đã đọc
+              <CheckCircle className="w-4 h-4" />
+              Đã đọc
+            </Button>
+
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="max-w-sm rounded-2xl border border-emerald-100 bg-white shadow-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-gray-800">
+              <CheckCircle className="w-5 h-5 text-emerald-500" />
+              Xác nhận hành động
+            </DialogTitle>
+            <DialogDescription className="text-gray-500 text-sm">
+              Bạn có chắc chắn muốn đánh dấu <b>tất cả</b> thông báo là <b>đã đọc</b> không?
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+
+            <Button
+              variant="outline"
+              onClick={() => setConfirmOpen(false)}
+              className="border-gray-300 text-gray-600 hover:bg-gray-50"
+            >
+              Hủy
+            </Button>
+
+            <Button
+              onClick={async () => {
+                try {
+                  await api.patch("/notifications/read");
+                  resetUnread();
+                  toast.success("Tất cả thông báo đã được đánh dấu là đã đọc");
+                  setConfirmOpen(false);
+                  await fetchNotifications();
+                } catch (err) {
+                  toast.error("Không thể đánh dấu thông báo đã đọc!");
+                  console.error("❌ Lỗi khi cập nhật:", err);
+                }
+              }}
+              className="bg-gradient-to-r from-cyan-500 to-emerald-500 text-white shadow hover:from-cyan-600 hover:to-emerald-600"
+            >
+              Xác nhận
             </Button>
           </div>
         </DialogContent>

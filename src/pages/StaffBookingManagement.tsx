@@ -221,23 +221,36 @@ export default function StaffBookingManagement() {
         fetchData();
     }, []);
 
-    const filteredBookings = bookings.filter(b => {
+    const filteredBookings = bookings
+      .filter((b) => {
+        // Filter theo search (booking id hoặc email user)
         const search = searchCode.replace(/\s+/g, "").toLowerCase();
         const codeNormalized = b.id.replace(/\s+/g, "").toLowerCase();
         const userEmail = usersMap.get(b.userId)?.toLowerCase() || "";
         const matchesSearch =
-            codeNormalized.includes(search) || userEmail.includes(search);
-        const matchesStatus = filterStatus === "all" || b.status === filterStatus;
+          codeNormalized.includes(search) || userEmail.includes(search);
 
+        //Filter theo trạng thái
+        const matchesStatus =
+          filterStatus === "all" || b.status === filterStatus;
+
+        //Filter theo ngày
         const bookingDate = new Date(b.scheduleTime);
         const afterStart =
-            !startDate || bookingDate >= new Date(startDate + "T00:00:00");
+          !startDate || bookingDate >= new Date(startDate + "T00:00:00");
         const beforeEnd =
-            !endDate || bookingDate <= new Date(endDate + "T23:59:59");
+          !endDate || bookingDate <= new Date(endDate + "T23:59:59");
         const matchesDate = afterStart && beforeEnd;
 
         return matchesSearch && matchesStatus && matchesDate;
-    });
+      })
+      // Sort theo scheduleTime tăng dần (sớm nhất lên trước)
+      .sort(
+        (a, b) =>
+          new Date(b.scheduleTime).getTime() -
+          new Date(a.scheduleTime).getTime()
+      );
+
 
     // 🔹 Tính tổng trang
     const totalPages = Math.ceil(filteredBookings.length / ITEMS_PER_PAGE) || 1;
@@ -251,7 +264,7 @@ export default function StaffBookingManagement() {
 
 
     const handleCheckin = async (bookingId: string) => {
-        navigate(`/staff/swap-battery-process/${bookingId}`);
+        navigate(`/staff/battery-process/booking/${bookingId}`);
     };
 
     return (

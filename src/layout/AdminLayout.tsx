@@ -32,7 +32,7 @@ export default function AdminLayout() {
     // Nhóm 1: Tổng quan & quản lý
     {
       name: "Tổng quan hệ thống",
-      path: "dashboard",
+      path: "/admin",
       icon: <LayoutDashboard size={18} />,
     },
     {
@@ -89,7 +89,7 @@ export default function AdminLayout() {
     },
     {
       name: "Trung tâm hỗ trợ",
-      path: "support-tickets",
+      path: "support",
       icon: <MessageSquare size={18} />,
     },
 

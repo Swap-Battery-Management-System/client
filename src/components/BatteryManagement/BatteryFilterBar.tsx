@@ -69,9 +69,9 @@ export default function BatteryFilterBar({
       >
         <option value="">Tất cả trạng thái</option>
         <option value="available">available</option>
-        <option value="in_use">in_use</option>
-        <option value="in_charged">in_charged</option>
-        <option value="in_transit">in_transit</option>
+        <option value="in-use">in-use</option>
+        <option value="in-charged">in-charged</option>
+        <option value="in-transit">in-transit</option>
         <option value="faulty">faulty</option>
         <option value="reserved">reserved</option>
       </select>

@@ -79,14 +79,21 @@ export default function Register() {
       const credential = credentialResponse.credential;
       if (!credential) return;
 
-      const res = await api.post("/auth/google", { credential }, { withCredentials: true });
+      const res = await api.post(
+        "/auth/google",
+        { credential },
+        { withCredentials: true, headers: { "skip-auth-refresh": "true" } }
+      );
+
+      // Lưu token
       useAuthStore.getState().setAccessToken(res.data.data.accessToken);
 
       const user = res.data.data.user;
       setUser(user);
+
       console.log("🟢 Google Register response:", res.data);
 
-      // Nếu user mới (chưa hoàn tất thông tin)
+      // === CASE 1: TÀI KHOẢN GOOGLE MỚI → status = pending hoặc HTTP 201 ===
       if (res.status === 201 || user.status === "pending") {
         toast.success("Tài khoản Google mới được tạo, vui lòng hoàn tất thông tin!");
         navigate("/register/info");
@@ -94,16 +101,18 @@ export default function Register() {
       }
 
       toast.success("Đăng nhập Google thành công!");
-      const role = user.role?.name || "driver";
 
+      const role = user.role?.name;
       if (role === "admin") navigate("/admin");
       else if (role === "staff") navigate("/staff");
-      else navigate("/home");
+      else navigate("/home"); // driver
+
     } catch (err: any) {
       console.error("❌ Lỗi khi đăng ký Google:", err);
       toast.error(err.response?.data?.message || "Không thể đăng ký bằng Google!");
     }
   };
+
   return (
     <div className="flex justify-center items-center min-h-screen bg-gradient-to-br from-emerald-300 via-teal-400 to-cyan-500">
       <Card className="w-[420px] rounded-2xl shadow-lg bg-white p-8">
