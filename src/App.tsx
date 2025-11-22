@@ -47,10 +47,12 @@ import SwapSessionManager from "./pages/SwapSessionManagement";
 import AdminSupport from "./pages/AdminSupport";
 import InvoiceDetail from "./pages/InvoiceDetail";
 import PaymentPage from "./pages/PaymentPage";
-import TransactionHistoryPage from "./pages/TransactionHistoryPage";
+import InvoiceHistoryPage from "./pages/InvoiceHistoryPage";
 import PaymentResult from "./pages/PaymentResult";
 
 import ManagerLayout from "./layout/ManagerLayout";
+import UpdateUserInfo from "./pages/UpdateUserInfo";
+import TransactionHistory from "./pages/TransactionHistory";
 function App() {
   return (
     <>
@@ -91,12 +93,11 @@ function App() {
           <Route path="my-subscription-packages" element={<MySubcription />} />
           <Route path="support" element={<SupportTicketForm />} />
           <Route path="support-history" element={<SupportHistoryPage />} />
-          <Route path="transaction-history" element={<TransactionHistoryPage />} />
+          <Route path="invoice-history" element={<InvoiceHistoryPage />} />
           <Route path="invoice/:id" element={<InvoiceDetail />} />
           <Route path="payment" element={<PaymentPage />} />
           <Route path="payment/:method/result" element={<PaymentResult />} />
-
-
+          <Route path="transaction-history" element={<TransactionHistory />} />
         </Route>
         {/* === Staff Routes === */}
         <Route
@@ -129,10 +130,15 @@ function App() {
           }
         >
           <Route index element={<AdminDashboard />} />
+          <Route path="support" element={<SupportTicketForm />} />
+          <Route path="support-history" element={<SupportHistoryPage />} />
+          <Route path="profile" element={<UpdateUserInfo />} />
           <Route path="manage-users" element={<AdminUserManagement />} />
           <Route path="manage-stations" element={<AdminStationManagement />} />
           <Route path="manage-vehicles" element={<AdminVehicleManagement />} />
           <Route path="revenue-reports" element={<AdminRevenueManagement />} />
+          <Route path="support" element={<SupportTicketForm />} />
+          <Route path="support-history" element={<SupportHistoryPage />} />
           <Route
             path="manage-subscription"
             element={<AdminSubscriptionManagement />}
@@ -149,6 +155,7 @@ function App() {
             element={<AdminVehicleModelManagement />}
           />
           <Route path="manage-battery" element={<BatteryManagement />} />
+          <Route path="profile" element={<UpdateUserInfo />} />
           <Route path="manage-booking" element={<StaffBookingManagement />} />
           {/* <Route index element={<StaffDashboard />} />
          
@@ -167,7 +174,9 @@ function App() {
           }
         >
           <Route path="manage-users" element={<AdminUserManagement />} />
-
+          <Route path="profile" element={<UpdateUserInfo />} />
+          <Route path="support" element={<SupportTicketForm />} />
+          <Route path="support-history" element={<SupportHistoryPage />} />
         </Route>
 
         <Route

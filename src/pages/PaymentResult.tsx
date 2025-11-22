@@ -9,163 +9,104 @@ export default function PaymentResult() {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const [status, setStatus] = useState<"loading" | "success" | "fail" | "error">(
-        "loading"
-    );
-    const [gateway, setGateway] = useState<string>("unknown");
-    const [invoiceId, setInvoiceId] = useState<string>("");
+    const [status, setStatus] = useState<"loading" | "success" | "fail" | "error">("loading");
+    const [gateway, setGateway] = useState("unknown");
+    const [invoiceId, setInvoiceId] = useState("");
 
     useEffect(() => {
-        const verifyPayment = async () => {
+        const verify = async () => {
             try {
-                const query = location.search;
-                console.log("📩 [PAYMENT RESULT] Query:", query);
+                const qs = location.search;
 
-                // Detect gateway
                 let endpoint = "";
-                if (query.includes("vnp_")) {
-                    endpoint = `/payments/vnpay/verify${query}`;
-                    setGateway("VNPay");
-                } else if (query.includes("orderCode") || query.includes("status=PAID")) {
-                    endpoint = `/payments/payos/verify${query}`;
+
+                if (qs.includes("vnp_")) {
+                    endpoint = `/payments/vnpay/verify${qs}`;
+                    setGateway("VNPAY");
+                } else if (qs.includes("orderCode")) {
+                    endpoint = `/payments/payos/verify${qs}`;
                     setGateway("PayOS");
-                } else if (query.includes("resultCode") || query.includes("momo")) {
-                    endpoint = `/payments/momo/verify${query}`;
+                } else if (qs.includes("momo") || qs.includes("resultCode")) {
+                    endpoint = `/payments/momo/verify${qs}`;
                     setGateway("MoMo");
                 } else {
-                    toast.error("Không xác định được cổng thanh toán!");
                     setStatus("error");
+                    toast.error("Không xác định được gateway.");
                     return;
                 }
 
-                const params = new URLSearchParams(location.search);
+                const params = new URLSearchParams(qs);
                 const inv = params.get("invoiceId");
                 if (inv) setInvoiceId(inv);
 
-                // Call BE verify API
                 const res = await api.get(endpoint);
-                console.log("✅ [VERIFY RESPONSE]", res.data);
-
-                /** ===========================
-                 * BE trả về dạng:
-                 * { code: 200 | 400 | 500, message: "...", data: {...} }
-                 * =========================== */
-
                 const code = res.data?.code;
-                const msg = res.data?.message?.toLowerCase?.() || "";
 
-                // SUCCESS =======================
                 if (code === 200) {
                     setStatus("success");
                     toast.success("Thanh toán thành công!");
-                    return;
-                }
-
-                // FAIL ===========================
-                if (code === 400) {
+                } else if (code === 400) {
                     setStatus("fail");
-                    toast.error(res.data?.message || "Thanh toán thất bại hoặc bị hủy!");
-                    return;
-                }
-
-                // ERROR ==========================
-                if (code === 500) {
+                    toast.error(res.data?.message || "Thanh toán thất bại.");
+                } else {
                     setStatus("error");
-                    toast.error("Lỗi máy chủ khi xác minh thanh toán!");
-                    return;
+                    toast.error("Lỗi máy chủ khi xử lý thanh toán.");
                 }
-
-                // UNKNOWN ========================
-                setStatus("fail");
-                toast.error("Không xác định kết quả thanh toán!");
-            } catch (err: any) {
-                console.error("❌ [VERIFY ERROR]", err);
+            } catch (err) {
+                console.error(err);
                 setStatus("error");
-                toast.error("Không thể xác minh giao dịch!");
+                toast.error("Không thể xác minh giao dịch.");
             }
         };
 
-        verifyPayment();
+        verify();
     }, []);
 
     return (
-        <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
+        <div className="flex flex-col items-center justify-center min-h-[70vh]">
             {status === "loading" && (
-                <div className="flex flex-col items-center gap-3 text-gray-500">
+                <div className="text-gray-600 flex flex-col items-center gap-3">
                     <Loader2 className="w-10 h-10 animate-spin text-[#38A3A5]" />
-                    <p className="text-lg font-medium">Đang xác minh giao dịch...</p>
+                    <p>Đang xác minh giao dịch...</p>
                 </div>
             )}
 
             {status === "success" && (
-                <div className="flex flex-col items-center gap-4 animate-fade-in">
-                    <CheckCircle className="text-green-500 w-20 h-20 mb-2" />
-                    <h2 className="text-2xl font-bold text-green-600">
-                        Thanh toán thành công 🎉
-                    </h2>
+                <div className="text-center">
+                    <CheckCircle className="w-20 h-20 text-green-500 mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold text-green-600">Thanh toán thành công!</h2>
 
-                    <p className="text-gray-600">
-                        Cảm ơn bạn đã sử dụng dịch vụ SwapNet!
-                    </p>
+                    <p className="mt-2">Cổng thanh toán: <b>{gateway}</b></p>
 
-                    <div className="mt-3 text-sm">
-                        <p>
-                            Cổng thanh toán: <b>{gateway}</b>
-                        </p>
-                        {invoiceId && (
-                            <p>
-                                Mã hóa đơn:{" "}
-                                <b className="text-[#38A3A5]">
-                                    {invoiceId.slice(0, 8).toUpperCase()}
-                                </b>
-                            </p>
-                        )}
-                    </div>
-
-                    <div className="flex gap-3 mt-6">
-                        <Button
-                            className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
-                            onClick={() => navigate("/home/transaction-history")}
-                        >
-                            Xem lịch sử giao dịch
+                    <div className="mt-6 flex gap-4 justify-center">
+                        <Button onClick={() => navigate("/home/invoice-history")} className="bg-[#38A3A5] text-white">
+                            Lịch sử giao dịch
                         </Button>
                         <Button variant="outline" onClick={() => navigate("/home")}>
-                            Về trang chủ
+                            Trang chủ
                         </Button>
                     </div>
                 </div>
             )}
 
             {status === "fail" && (
-                <div className="flex flex-col items-center gap-4 animate-fade-in">
-                    <XCircle className="text-orange-500 w-20 h-20 mb-2" />
-                    <h2 className="text-2xl font-bold text-orange-600">
-                        Thanh toán thất bại ⚠️
-                    </h2>
-                    <p className="text-gray-600">
-                        Giao dịch không thành công hoặc đã bị hủy.
-                    </p>
+                <div className="text-center">
+                    <XCircle className="w-20 h-20 text-orange-500 mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold text-orange-600">Thanh toán thất bại!</h2>
 
-                    <Button
-                        className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
-                        onClick={() => navigate("/home/transaction-history")}
-                    >
-                        Về lịch sử giao dịch
+                    <Button onClick={() => navigate("/home/invoice-history")} className="mt-6 bg-[#38A3A5] text-white">
+                        Lịch sử giao dịch
                     </Button>
                 </div>
             )}
 
             {status === "error" && (
-                <div className="flex flex-col items-center gap-4 animate-fade-in">
-                    <AlertTriangle className="text-red-500 w-20 h-20 mb-2" />
-                    <h2 className="text-2xl font-bold text-red-600">Lỗi máy chủ ❌</h2>
-                    <p className="text-gray-600">Không thể xác minh giao dịch.</p>
+                <div className="text-center">
+                    <AlertTriangle className="w-20 h-20 text-red-500 mx-auto mb-4" />
+                    <h2 className="text-2xl font-bold text-red-600">Lỗi hệ thống</h2>
 
-                    <Button
-                        className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
-                        onClick={() => navigate("/home/transaction-history")}
-                    >
-                        Về lịch sử giao dịch
+                    <Button onClick={() => navigate("/home/invoice-history")} className="mt-6 bg-[#38A3A5] text-white">
+                        Lịch sử giao dịch
                     </Button>
                 </div>
             )}

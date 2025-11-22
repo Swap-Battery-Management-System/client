@@ -93,7 +93,7 @@ export default function AdminLayout() {
   const footerLinks = [
     {
       name: "Hồ sơ quản trị",
-      path: "/profile",
+      path: "profile",
       icon: <UserCog size={16} />,
     },
     {
@@ -128,10 +128,9 @@ export default function AdminLayout() {
               end={link.path === "/admin"}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-2 rounded-md font-medium transition
-                ${
-                  isActive
-                    ? "bg-[#E6F7F7] text-[#38A3A5] border-l-4 border-[#38A3A5]"
-                    : "text-gray-700 hover:bg-[#E6F7F7] hover:text-[#38A3A5]"
+                ${isActive
+                  ? "bg-[#E6F7F7] text-[#38A3A5] border-l-4 border-[#38A3A5]"
+                  : "text-gray-700 hover:bg-[#E6F7F7] hover:text-[#38A3A5]"
                 }`
               }
             >
@@ -148,10 +147,9 @@ export default function AdminLayout() {
               to={link.path}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-2 rounded-md font-medium transition
-                ${
-                  isActive
-                    ? "bg-[#E6F7F7] text-[#38A3A5] border-l-4 border-[#38A3A5]"
-                    : "text-gray-700 hover:bg-[#E6F7F7] hover:text-[#38A3A5]"
+                ${isActive
+                  ? "bg-[#E6F7F7] text-[#38A3A5] border-l-4 border-[#38A3A5]"
+                  : "text-gray-700 hover:bg-[#E6F7F7] hover:text-[#38A3A5]"
                 }`
               }
             >

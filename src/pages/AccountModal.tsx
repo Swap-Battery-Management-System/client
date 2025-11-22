@@ -3,6 +3,7 @@ import { useState } from "react";
 import ResetPassword from "./ResetPassword";
 import UpdateUserInfo from "./UpdateUserInfo";
 import MyVehicles from "./MyVehicles";
+import { useEffect } from "react";
 
 interface Props {
     type: string | null;
@@ -11,6 +12,9 @@ interface Props {
 
 export default function AccountModal({ type, onClose }: Props) {
     const [activeTab, setActiveTab] = useState("profile");
+    useEffect(() => {
+        if (type) setActiveTab(type);
+    }, [type]);
 
     if (!type) return null;
 
