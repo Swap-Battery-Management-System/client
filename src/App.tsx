@@ -54,6 +54,7 @@ import ManagerLayout from "./layout/ManagerLayout";
 import ManagerRevenueManagement from "./pages/ManagerRevenueManagement";
 import ManagerSubscriptionManagement from "./pages/ManagerSubscriptionManagement";
 import ManagerDamageFeeManagement from "./pages/ManagerDamageFeeManagement";
+import ManagerDashboard from "./pages/ManagerDashboard";
 
 function App() {
   return (
@@ -173,7 +174,7 @@ function App() {
           }
         >
           {/* Dashboard */}
-          <Route index element={<StaffDashboard />} />
+          <Route index element={<ManagerDashboard />} />
           <Route path="manage-users" element={<AdminUserManagement />} />
           <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="manage-booking" element={<StaffBookingManagement />} />

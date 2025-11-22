@@ -1,16 +1,22 @@
 "use client";
 
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { RefreshCcw } from "lucide-react";
 import api from "@/lib/api";
+import dayjs, { Dayjs } from "dayjs";
+import utc from "dayjs/plugin/utc";
+import isSameOrBefore from "dayjs/plugin/isSameOrBefore";
+
+dayjs.extend(utc);
+dayjs.extend(isSameOrBefore);
+
 import {
   ResponsiveContainer,
-  BarChart,
-  Bar,
+  LineChart,
+  Line,
   XAxis,
   YAxis,
   CartesianGrid,
@@ -18,102 +24,111 @@ import {
   Legend,
 } from "recharts";
 
-interface Station {
-  id: string;
-  name: string;
-}
-
-interface Booking {
-  id: string;
-  stationId: string;
-}
-
-interface Invoice {
-  id: string;
-  bookingId: string;
-}
-
 interface Transaction {
   id: string;
   invoiceId: string;
-  totalAmount: string;
-  status: string;
+  totalAmount: number;
+  status: "processing" | "completed" | "failed";
+  updatedAt: string;
 }
 
 export default function ManagerRevenueManagement() {
-  const [stations, setStations] = useState<Station[]>([]);
   const [transactions, setTransactions] = useState<Transaction[]>([]);
-  const [invoices, setInvoices] = useState<Invoice[]>([]);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [revenueView, setRevenueView] = useState<"day" | "month" | "year">("day");
 
-  const [stationRevenue, setStationRevenue] = useState<{ station: string; revenue: number }[]>([]);
-
-  const fetchRevenueData = async () => {
+  // ==================== Fetch transactions ====================
+  const fetchTransactions = async () => {
     try {
       setLoading(true);
+      console.log("Bắt đầu fetch transactions...");
 
-      // Fetch dữ liệu đồng thời
-      const [stationsRes, transactionsRes, invoicesRes, bookingsRes] = await Promise.all([
-        api.get("/stations", { withCredentials: true }),
-        api.get("/transactions", { withCredentials: true }),
-        api.get("/invoices", { withCredentials: true }),
-        api.get("/bookings", { withCredentials: true }),
-      ]);
+      const res = await api.get("/transactions", { withCredentials: true });
+      const data: Transaction[] = res.data?.data?.transactions || [];
 
-      const stationsApi: Station[] = stationsRes.data?.data?.stations || [];
-      const transactionsApi: Transaction[] = transactionsRes.data?.data?.transactions || [];
-      const invoicesApi: Invoice[] = invoicesRes.data?.data?.invoices || [];
-      const bookingsApi: Booking[] = bookingsRes.data?.data?.bookings || [];
+      // Lọc completed và chuyển totalAmount sang number
+      const completed = data
+        .filter(tx => tx.status === "completed")
+        .map(tx => ({
+          ...tx,
+          totalAmount: Number(tx.totalAmount),
+          updatedAt: tx.updatedAt,
+        }));
 
-      setStations(stationsApi);
-      setTransactions(transactionsApi);
-      setInvoices(invoicesApi);
-      setBookings(bookingsApi);
-
-      // Map invoiceId -> booking
-      const invoiceIdToBooking: Record<string, Booking> = {};
-      invoicesApi.forEach(inv => {
-        const booking = bookingsApi.find(b => b.id === inv.bookingId);
-        if (booking) invoiceIdToBooking[inv.id] = booking;
-      });
-
-      // Tính doanh thu theo station
-      const revenueMap: Record<string, number> = {};
-      transactionsApi.forEach(tx => {
-        if (tx.status.toLowerCase() !== "completed") return;
-        const booking = invoiceIdToBooking[tx.invoiceId];
-        if (!booking) return;
-        const station = stationsApi.find(s => s.id === booking.stationId);
-        if (!station) return;
-        revenueMap[station.name] = (revenueMap[station.name] || 0) + Number(tx.totalAmount);
-      });
-
-      const revenueArray = Object.entries(revenueMap).map(([station, revenue]) => ({
-        station,
-        revenue,
-      }));
-
-      setStationRevenue(revenueArray);
+      setTransactions(completed);
+      console.log("Transactions completed:", completed);
     } catch (err) {
-      console.error("Failed to fetch revenue data:", err);
-      toast.error("Không thể tải dữ liệu doanh thu!");
+      console.error("Lỗi khi fetch transactions:", err);
+      toast.error("Không thể tải dữ liệu!");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchRevenueData();
+    fetchTransactions();
   }, []);
 
+  // ==================== Tổng doanh thu ====================
+  const totalRevenue = useMemo(
+    () => transactions.reduce((sum, t) => sum + t.totalAmount, 0),
+    [transactions]
+  );
+
+  // ==================== Dữ liệu LineChart ====================
+  const revenueData = useMemo(() => {
+    if (!transactions.length) return [];
+
+    const counts: Record<string, number> = {};
+    transactions.forEach(tx => {
+      const key =
+        revenueView === "day"
+          ? dayjs.utc(tx.updatedAt).format("DD/MM/YYYY")
+          : revenueView === "month"
+            ? dayjs.utc(tx.updatedAt).format("MM/YYYY")
+            : dayjs.utc(tx.updatedAt).format("YYYY");
+      counts[key] = (counts[key] || 0) + tx.totalAmount;
+    });
+
+    const dates = transactions.map(tx => dayjs.utc(tx.updatedAt));
+    const firstDate: Dayjs = dates.reduce((min, d) => (d.isBefore(min) ? d : min), dates[0]).startOf(revenueView);
+    const lastDate: Dayjs = dates.reduce((max, d) => (d.isAfter(max) ? d : max), dates[0]).endOf(revenueView);
+
+    const result: { name: string; revenue: number }[] = [];
+    let current = firstDate;
+
+    while (current.isSameOrBefore(lastDate, revenueView)) {
+      const key =
+        revenueView === "day"
+          ? current.format("DD/MM/YYYY")
+          : revenueView === "month"
+            ? current.format("MM/YYYY")
+            : current.format("YYYY");
+
+      result.push({ name: key, revenue: counts[key] || 0 });
+
+      current =
+        revenueView === "day"
+          ? current.add(1, "day")
+          : revenueView === "month"
+            ? current.add(1, "month")
+            : current.add(1, "year");
+    }
+
+    return result;
+  }, [transactions, revenueView]);
+
+  // ==================== Render ====================
   return (
     <div className="min-h-screen bg-gray-50 p-6 md:p-12">
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-[#5B21B6]">Báo cáo doanh thu theo trạm</h1>
+      {/* Header */}
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl md:text-5xl font-bold text-purple-700">
+          Báo cáo doanh thu
+        </h1>
         <Button
-          onClick={fetchRevenueData}
-          className="bg-[#6D28D9] hover:bg-[#5B21B6] text-white flex items-center gap-2"
+          className="bg-purple-600 hover:bg-purple-700 text-white flex items-center gap-2 shadow-md"
+          onClick={fetchTransactions}
         >
           <RefreshCcw size={16} /> Làm mới
         </Button>
@@ -121,28 +136,62 @@ export default function ManagerRevenueManagement() {
 
       {loading ? (
         <div className="text-center text-gray-500 mt-24 animate-pulse text-lg">
-          Đang tải dữ liệu doanh thu...
-        </div>
-      ) : stationRevenue.length === 0 ? (
-        <div className="text-center text-gray-400 mt-24 text-lg">
-          Chưa có dữ liệu doanh thu
+          Đang tải dữ liệu...
         </div>
       ) : (
-        <Card className="p-6 bg-white rounded-2xl shadow-lg">
-          <ResponsiveContainer width="100%" height={400}>
-            <BarChart
-              data={stationRevenue}
-              margin={{ top: 20, right: 30, left: 20, bottom: 50 }}
-            >
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="station" angle={-45} textAnchor="end" interval={0} />
-              <YAxis />
-              <Tooltip formatter={(value: number) => new Intl.NumberFormat("vi-VN", { style: "currency", currency: "VND" }).format(value)} />
-              <Legend />
-              <Bar dataKey="revenue" fill="#4ADE80" name="Doanh thu" />
-            </BarChart>
-          </ResponsiveContainer>
-        </Card>
+        <>
+          {/* Tổng doanh thu */}
+          <Card className="p-6 md:p-8 bg-white rounded-2xl shadow-lg border border-gray-100 mb-8">
+            <h2 className="text-xl font-semibold text-purple-700 mb-4">Tổng quan</h2>
+            <p className="text-gray-500">Tổng doanh thu:</p>
+            <p className="text-3xl font-bold text-green-600">
+              {totalRevenue.toLocaleString("vi-VN", { maximumFractionDigits: 0 })} VND
+            </p>
+          </Card>
+
+          {/* LineChart */}
+          <Card className="p-6 md:p-8 bg-white rounded-2xl shadow-lg border border-gray-100 mb-8">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-lg font-semibold text-purple-700">
+                Doanh thu theo {revenueView}
+              </h2>
+              <div className="flex gap-2">
+                {(["day", "month", "year"] as const).map(view => (
+                  <Button
+                    key={view}
+                    variant={revenueView === view ? "default" : "outline"}
+                    className={
+                      revenueView === view
+                        ? "bg-purple-600 text-white"
+                        : "border-purple-600 text-purple-600"
+                    }
+                    onClick={() => setRevenueView(view)}
+                  >
+                    {view === "day" ? "Ngày" : view === "month" ? "Tháng" : "Năm"}
+                  </Button>
+                ))}
+              </div>
+            </div>
+
+            <ResponsiveContainer width="100%" height={300}>
+              <LineChart data={revenueData}>
+                <CartesianGrid strokeDasharray="3 3" />
+                <XAxis dataKey="name" />
+                <YAxis />
+                <Tooltip formatter={v => `${v.toLocaleString("vi-VN", { maximumFractionDigits: 0 })} VND`} />
+                <Legend />
+                <Line
+                  type="monotone"
+                  dataKey="revenue"
+                  name="Doanh thu"
+                  stroke="#10B981"
+                  strokeWidth={3}
+                  dot={{ r: 4, strokeWidth: 2, fill: "#10B981" }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </Card>
+        </>
       )}
     </div>
   );
