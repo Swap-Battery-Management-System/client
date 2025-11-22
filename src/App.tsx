@@ -55,6 +55,7 @@ import ManagerRevenueManagement from "./pages/ManagerRevenueManagement";
 import ManagerSubscriptionManagement from "./pages/ManagerSubscriptionManagement";
 import ManagerDamageFeeManagement from "./pages/ManagerDamageFeeManagement";
 import ManagerDashboard from "./pages/ManagerDashboard";
+import ManagerFeedbackManagement from "./pages/ManagerFeedbackManagement";
 
 function App() {
   return (
@@ -161,10 +162,9 @@ function App() {
           />
           <Route path="manage-battery" element={<BatteryManagement />} />
         </Route>
-      </Routes>
 
-      {/* Manager ROUTES */}
-      <Routes>
+
+        {/* Manager ROUTES */}
         <Route
           path="/manager"
           element={
@@ -187,14 +187,9 @@ function App() {
           <Route path="damage-fee" element={<ManagerDamageFeeManagement />} />
           <Route path="support-tickets" element={<AdminSupportTickets />} />
           <Route path="support" element={<AdminSupport />} />
+          <Route path="manage-feedback" element={<ManagerFeedbackManagement />} />
           <Route path="notifications" element={<NotificationPage />} />
-          <Route
-            path="manage-subscription"
-            element={<AdminSubscriptionManagement />}
-          />
-          <Route path="damage-fee" element={<AdminDamageFeeManagement />} />
 
-          {/* Staff components */}
         </Route>
       </Routes>
 
