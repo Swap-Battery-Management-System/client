@@ -51,6 +51,9 @@ import PaymentPage from "./pages/PaymentPage";
 import TransactionHistoryPage from "./pages/TransactionHistoryPage";
 import PaymentResult from "./pages/PaymentResult";
 import ManagerLayout from "./layout/ManagerLayout";
+import ManagerRevenueManagement from "./pages/ManagerRevenueManagement";
+import ManagerSubscriptionManagement from "./pages/ManagerSubscriptionManagement";
+import ManagerDamageFeeManagement from "./pages/ManagerDamageFeeManagement";
 
 function App() {
   return (
@@ -159,6 +162,7 @@ function App() {
         </Route>
       </Routes>
 
+      {/* Manager ROUTES */}
       <Routes>
         <Route
           path="/manager"
@@ -174,11 +178,12 @@ function App() {
           <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="manage-booking" element={<StaffBookingManagement />} />
           <Route path="swap-session" element={<SwapSessionManager />} />
+          <Route path="revenue-reports" element={<ManagerRevenueManagement />} />
           <Route
             path="manage-subscription"
-            element={<AdminSubscriptionManagement />}
+            element={<ManagerSubscriptionManagement />}
           />
-          <Route path="damage-fee" element={<AdminDamageFeeManagement />} />
+          <Route path="damage-fee" element={<ManagerDamageFeeManagement />} />
           <Route path="support-tickets" element={<AdminSupportTickets />} />
           <Route path="support" element={<AdminSupport />} />
           <Route path="notifications" element={<NotificationPage />} />
