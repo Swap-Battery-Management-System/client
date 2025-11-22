@@ -94,7 +94,7 @@ function App() {
           <Route path="transaction-history" element={<TransactionHistoryPage />} />
           <Route path="invoice/:id" element={<InvoiceDetail />} />
           <Route path="payment" element={<PaymentPage />} />
-          <Route path="payment/result" element={<PaymentResult />} />
+          <Route path="payment/:method/result" element={<PaymentResult />} />
 
 
         </Route>
