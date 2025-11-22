@@ -11,93 +11,78 @@ import {
   DropdownMenuTrigger,
 } from "./ui/dropdown-menu";
 import { useAuth } from "@/context/AuthContext";
-import { io, Socket } from "socket.io-client";
-import { cn } from "@/lib/utils";
 import logo from "/svg.svg";
 import api from "@/lib/api";
 import { toast } from "sonner";
-import { useAuthStore } from "@/stores/authStores";
-import { useNotificationStore } from "@/stores/notificationStore"; // ✅ Thêm dòng này
-
-interface NotificationItem {
-  id: string;
-  title?: string;
-  message: string;
-  type: string;
-  createdAt?: string;
-  createdDate?: string;
-  isRead?: boolean;
-  status?: string;
-}
+import { useNotificationStore } from "@/stores/notificationStore";
+import { useSocket } from "@/components/SocketProvider";
+import { cn } from "@/lib/utils";
 
 export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
   const { logout, user } = useAuth();
   const navigate = useNavigate();
-  const token = useAuthStore((state) => state.accessToken);
+  const { socket } = useSocket();
 
-  //  Dùng Zustand store thay vì useState
-  const unreadCount = useNotificationStore((state) => state.unreadCount);
-  const setUnreadCount = useNotificationStore((state) => state.setUnreadCount);
-  const decreaseUnread = useNotificationStore((state) => state.decreaseUnread);
-  const increaseUnread = useNotificationStore((state) => state.increaseUnread);
+  // ⭐ Store Zustand
+  const unreadCount = useNotificationStore((s) => s.unreadCount);
+  const setUnreadCount = useNotificationStore((s) => s.setUnreadCount);
+  const increaseUnread = useNotificationStore((s) => s.increaseUnread);
+  const updateOneAsRead = useNotificationStore((s) => s.updateOneAsRead);
 
+  const latestNotifications = useNotificationStore((s) => s.latestNotifications);
+  const setLatestNotifications = useNotificationStore((s) => s.setLatestNotifications);
+
+  // UI local
   const [activeModal, setActiveModal] = useState<string | null>(null);
-  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
-  const [socket, setSocket] = useState<Socket | null>(null);
-  const SOCKET_URL = import.meta.env.VITE_SOCKET_URL;
-  const [selectedNoti, setSelectedNoti] = useState<NotificationItem | null>(null);
+  const [selectedNoti, setSelectedNoti] = useState<any>(null);
   const [openModal, setOpenModal] = useState(false);
 
-  // Logout
+  // ⭐ Logout
   const handleLogout = () => {
     logout(() => navigate("/", { replace: true }));
   };
 
-  // Xem chi tiết thông báo
+  // ⭐ Xem chi tiết thông báo
   const handleViewDetail = async (id: string) => {
     try {
       const res = await api.get(`/notifications/${id}`);
       const detail = res.data?.data?.notification;
 
-      if (detail) {
-        setSelectedNoti(detail);
-        setOpenModal(true);
-      }
+      setSelectedNoti(detail);
+      setOpenModal(true);
 
+      // Gọi BE
       await api.patch(`/notifications/${id}/read`);
-      setNotifications((prev) =>
-        prev.map((n) => (n.id === id ? { ...n, status: "Read", isRead: true } : n))
-      );
 
-      decreaseUnread(); // ✅ Đồng bộ toàn app
+      // Sync Zustand
+      updateOneAsRead(id); // đổi status thành Read
+      setUnreadCount(unreadCount - 1); // giảm 1
     } catch (err) {
-      console.error("❌ Lỗi khi mở chi tiết thông báo:", err);
+      console.error("❌ Lỗi khi mở chi tiết:", err);
     }
   };
 
-  // 🔔 Lấy thông báo mới nhất
+  // ⭐ Lấy 5 thông báo mới nhất cho Header
   const fetchNotifications = async () => {
     if (!user?.id) return;
     try {
       const res = await api.get(`/notifications?userId=${user.id}`);
       const list = res.data?.data?.notifications || [];
 
-      const sorted = [...list].sort(
-        (a, b) =>
+      const sorted = list.sort(
+        (a: any, b: any) =>
           new Date(b.createdDate || b.createdAt).getTime() -
           new Date(a.createdDate || a.createdAt).getTime()
       );
 
-      setNotifications(sorted.slice(0, 5));
+      setLatestNotifications(sorted.slice(0, 5));
 
       const unread = list.filter(
         (n: any) => n.isRead === false || n.status === "Unread"
       ).length;
-
-      setUnreadCount(unread); // ✅ cập nhật store
+      setUnreadCount(unread);
     } catch (err) {
-      console.error("❌ Lỗi khi tải thông báo:", err);
-      toast.error("Không thể tải thông báo!");
+      console.error("❌ Lỗi tải thông báo:", err);
     }
   };
 
@@ -105,66 +90,39 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
     fetchNotifications();
   }, [user]);
 
-  // 🔌 Socket realtime
+  // ⭐ Socket realtime
   useEffect(() => {
-    if (!user?.id) return;
-    if (!token) {
-      console.warn("⚠️ Không có token, bỏ qua kết nối socket.");
-      return;
-    }
+    if (!socket) return;
 
-    console.log("🔌 Header kết nối Socket.IO:", SOCKET_URL);
-    const newSocket = io(SOCKET_URL, {
-      transports: ["websocket"],
-      auth: { token },
-      reconnectionAttempts: 5,
-      reconnectionDelay: 2000,
-      secure: true,
-    });
+    socket.on("notification", (data: any) => {
+      console.log("📩 Header realtime:", data);
 
-    setSocket(newSocket);
-
-    newSocket.on("connect", () => {
-      console.log("✅ Socket connected:", newSocket.id);
-      newSocket.emit("register", user.id);
-    });
-
-    newSocket.on("notification", (data) => {
-      console.log("📩 Nhận thông báo mới (Header):", data);
-
-      const newItem: NotificationItem = {
-        id: data.id || Date.now().toString(),
-        title: data.title || "",
-        message: data.message || "Thông báo mới từ hệ thống.",
-        type: data.type || "Alert",
-        createdAt: new Date().toISOString(),
+      const newItem = {
+        notification_id: data.id,
+        message: data.message,
+        type: data.type,
+        created_date: new Date().toISOString(),
         status: "Unread",
       };
 
-      setNotifications((prev) => [newItem, ...prev].slice(0, 5));
-      increaseUnread(); // ✅ Đồng bộ toàn app
-      toast.info("🔔 " + (data.title || "Bạn có thông báo mới!"));
+      // Thêm vào store (chỉ 5 item)
+      setLatestNotifications((prev: any[]) =>
+        [newItem, ...prev].slice(0, 5)
+      );
+
+      increaseUnread();
+      toast.info("🔔 " + data.message);
     });
 
-    newSocket.on("disconnect", (reason) =>
-      console.warn("⚠️ Socket disconnected:", reason)
-    );
+    return () => socket.off("notification");
+  }, [socket]);
 
-    newSocket.on("connect_error", (err) =>
-      console.error("❌ Lỗi socket Header:", err.message)
-    );
-
-    return () => {
-      console.log("🧹 Ngắt kết nối socket Header...");
-      newSocket.disconnect();
-    };
-  }, [user, token]);
-
-  // ================== JSX ==================
+  // ========================== JSX ==========================
   return (
     <>
       <header className="bg-white px-8 py-4 flex justify-center">
         <div className="bg-white border border-[#38A3A5] w-full max-w-8xl rounded-full px-6 py-3 flex items-center justify-between">
+
           {/* Logo + Menu */}
           <div className="flex items-center gap-3">
             <button
@@ -173,12 +131,9 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
             >
               <Menu className="w-6 h-6" />
             </button>
+
             <NavLink to="/" className="flex items-center gap-2 ml-1">
-              <img
-                src={logo}
-                alt="EV Battery Swap Logo"
-                className="h-14 w-auto object-contain hover:opacity-90 transition"
-              />
+              <img src={logo} className="h-14 w-auto" />
             </NavLink>
           </div>
 
@@ -195,7 +150,6 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
               <NavLink
                 key={path}
                 to={path}
-                state={path === "find-station" ? { openShowModal: true } : null}
                 end={path === ""}
                 className={({ isActive }) =>
                   `hover:text-[#38A3A5] transition ${isActive ? "font-bold text-[#38A3A5]" : ""
@@ -207,59 +161,52 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
             ))}
           </nav>
 
-          {/* 🔔 Notifications + 👤 Account */}
+          {/* 🔔 Notifications */}
           <div className="flex items-center gap-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="relative text-[#38A3A5] hover:text-[#2d898a] transition">
                   <Bell className="w-6 h-6" />
                   {unreadCount > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full px-1.5 py-[1px] min-w-[16px] flex items-center justify-center">
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-[10px] font-semibold rounded-full px-1.5">
                       {unreadCount > 9 ? "9+" : unreadCount}
                     </span>
                   )}
                 </button>
               </DropdownMenuTrigger>
 
-              <DropdownMenuContent align="end" className="w-80 p-0 overflow-hidden">
+              <DropdownMenuContent className="w-80 p-0 overflow-hidden">
                 <DropdownMenuLabel className="px-4 py-2 font-semibold text-[#38A3A5]">
                   Thông báo mới nhất
                 </DropdownMenuLabel>
-                <DropdownMenuSeparator />
 
                 <div className="max-h-60 overflow-y-auto">
-                  {notifications.length === 0 ? (
-                    <div className="text-center text-gray-500 py-4 text-sm">
-                      Không có thông báo nào.
-                    </div>
+                  {latestNotifications.length === 0 ? (
+                    <p className="text-center py-4 text-gray-500">Không có thông báo.</p>
                   ) : (
-                    notifications.map((item, i) => {
-                      const date = new Date(item.createdDate || item.createdAt || "");
-                      const formatted = isNaN(date.getTime())
-                        ? "—"
-                        : date.toLocaleString("vi-VN");
-                      const isUnread = item.status === "Unread" || item.isRead === false;
+                    latestNotifications.map((item: any, i: number) => {
+                      const date = new Date(item.created_date);
+                      const formatted = date.toLocaleString("vi-VN");
+                      const unread = item.status === "Unread";
 
                       return (
                         <DropdownMenuItem
                           key={i}
-                          onClick={() => handleViewDetail(item.id)}
+                          onClick={() => handleViewDetail(item.notification_id)}
                           className={cn(
-                            "flex flex-col items-start py-2 px-4 gap-1 cursor-pointer transition-all border-l-4",
-                            isUnread
-                              ? "bg-emerald-50 border-l-emerald-400 hover:bg-emerald-100"
-                              : "bg-white border-l-transparent hover:bg-gray-50"
+                            "flex flex-col items-start py-2 px-4 gap-1 border-l-4 cursor-pointer",
+                            unread
+                              ? "bg-emerald-50 border-l-emerald-400"
+                              : "bg-white border-l-transparent"
                           )}
                         >
                           <p
                             className={cn(
                               "text-sm line-clamp-2",
-                              isUnread
-                                ? "font-semibold text-emerald-700"
-                                : "text-gray-800"
+                              unread ? "font-semibold text-emerald-700" : "text-gray-800"
                             )}
                           >
-                            {item.title || item.message}
+                            {item.message}
                           </p>
                           <span className="text-xs text-gray-500">{formatted}</span>
                         </DropdownMenuItem>
@@ -269,10 +216,11 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
                 </div>
 
                 <DropdownMenuSeparator />
+
                 <DropdownMenuItem asChild>
                   <NavLink
                     to="/home/notifications"
-                    className="w-full text-center text-[#38A3A5] py-2 hover:underline"
+                    className="w-full text-center py-2 text-[#38A3A5]"
                   >
                     Xem tất cả thông báo
                   </NavLink>
@@ -280,50 +228,25 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* 👤 Account menu */}
+            {/* 👤 Account */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button className="text-[#38A3A5] hover:text-[#2d898a] transition">
                   <User className="w-6 h-6" />
                 </button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuLabel>Tài khoản</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setActiveModal("profile")}>
-                  Thông tin cá nhân
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActiveModal("vehicles")}>
-                  Phương tiện của tôi
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActiveModal("security")}>
-                  Cài đặt bảo mật
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => setActiveModal("subscription")}>
-                  Gói thuê bao của tôi
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem
-                  onClick={handleLogout}
-                  className="text-red-500 cursor-pointer hover:bg-red-50"
-                >
-                  Đăng xuất
-                </DropdownMenuItem>
-              </DropdownMenuContent>
             </DropdownMenu>
           </div>
         </div>
       </header>
 
-      <AccountModal type={activeModal} onClose={() => setActiveModal(null)} />
-
-      {/* Modal chi tiết thông báo */}
+      {/* Modal chi tiết */}
       {openModal && selectedNoti && (
-        <div className="fixed inset-0 bg-black/40 flex justify-center items-center z-50">
-          <div className="bg-white rounded-2xl shadow-xl w-[400px] max-w-[90%] p-6 relative">
+        <div className="fixed inset-0 bg-black/40 z-50 flex items-center justify-center">
+          <div className="bg-white rounded-2xl shadow-xl w-[380px] p-6 relative">
             <button
               onClick={() => setOpenModal(false)}
-              className="absolute top-2 right-3 text-gray-400 hover:text-gray-600"
+              className="absolute right-3 top-2 text-gray-400 hover:text-gray-600"
             >
               ✕
             </button>
@@ -331,18 +254,19 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
             <h3 className="text-lg font-bold text-emerald-600 mb-2">
               {selectedNoti.title || "Chi tiết thông báo"}
             </h3>
-            <p className="text-sm text-gray-700 mb-4 whitespace-pre-line">
+
+            <p className="text-sm text-gray-700 whitespace-pre-line">
               {selectedNoti.message}
             </p>
 
-            <div className="text-xs text-gray-500 text-right">
-              {new Date(selectedNoti.createdAt || "").toLocaleString("vi-VN")}
+            <div className="text-xs text-gray-500 text-right mt-3">
+              {new Date(selectedNoti.createdAt).toLocaleString("vi-VN")}
             </div>
 
-            <div className="mt-4 flex justify-end">
+            <div className="text-right mt-4">
               <button
                 onClick={() => setOpenModal(false)}
-                className="bg-emerald-500 text-white px-4 py-1.5 rounded-lg hover:bg-emerald-600"
+                className="px-4 py-1.5 bg-emerald-500 text-white rounded-lg"
               >
                 Đóng
               </button>
