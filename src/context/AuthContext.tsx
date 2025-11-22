@@ -27,7 +27,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const fetchUser = async () => {
       try {
         const res = await api.get("auth/me", { withCredentials: true });
-        console.log("useAuth:", res.data);
         const userData = res.data.data.user;
         const user: User = {
           id: userData.id,
@@ -44,7 +43,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           googleId: userData.googleId,
           createdAt: userData.createdAt,
         };
-        console.log("user: ", user);
         setUser(user);
       } catch {
         setUser(null);

@@ -113,7 +113,6 @@ export function Step2CheckPin({
         { damageFeeIds },
         { withCredentials: true }
       );
-      console.log("invoiceID", res.data);
       onUpdate("invoiceId", res.data.data.invoiceId);
       toast.success("Đã gửi danh sách hư hại thành công!");
       onNext?.();

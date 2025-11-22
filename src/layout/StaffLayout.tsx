@@ -56,36 +56,39 @@ export default function StaffLayout() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-white border-r shadow-sm flex flex-col">
+      <aside className="fixed left-0 top-0 h-screen w-64 bg-white border-r shadow-sm flex flex-col">
+        {/* Logo */}
         <div className="p-6 border-b">
-          <NavLink to="/" className="flex items-center gap-2 ml-1">
+          <NavLink to="/" className="flex items-center gap-2">
             <img
               src={logo}
               alt="EV Battery Swap Logo"
-              className="h-14 w-auto object-contain hover:opacity-90 transition"
+              className="h-12 w-auto object-contain"
             />
           </NavLink>
 
-          <p className="text-sm mt-1 text-gray-600">
-            Hello, <span className="font-semibold">Staff Name</span>
+          <p className="text-sm mt-2 text-gray-600">
+            Hello,{" "}
+            <span className="font-semibold">{user?.fullName || "Staff"}</span>
           </p>
         </div>
 
-        {/* Navigation */}
-        <nav className="flex-1 p-4 space-y-1">
+        {/* Menu */}
+        <nav className="flex-1 p-3 space-y-1">
           {links.map((link) => (
             <NavLink
               key={link.path}
               to={link.path}
               end={link.path === "/staff"}
               className={({ isActive }) =>
-                `flex items-center gap-3 px-4 py-2 rounded-md font-medium transition-all duration-200
-                ${isActive
-                  ? "bg-[#E6F7F7] text-[#38A3A5] border-l-4 border-[#38A3A5]"
-                  : "text-gray-700 hover:bg-[#E6F7F7] hover:text-[#38A3A5]"
-                }`
+                `flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition
+               ${
+                 isActive
+                   ? "bg-[#E6F7F7] text-[#38A3A5]"
+                   : "text-gray-700 hover:bg-[#F0FAFA] hover:text-[#38A3A5]"
+               }`
               }
             >
               {link.icon}
@@ -94,25 +97,27 @@ export default function StaffLayout() {
           ))}
         </nav>
 
-        {/* Footer Links */}
-        <div className="mt-auto p-4 border-t text-sm space-y-2">
+        {/* Footer */}
+        <div className="p-4 border-t text-sm space-y-2">
           <NavLink
             to="/settings"
-            className="flex items-center gap-2 text-[#38A3A5] hover:underline"
+            className="flex items-center gap-2 text-gray-600 hover:text-[#38A3A5]"
           >
             <Settings size={16} />
             Cài đặt cá nhân
           </NavLink>
+
           <NavLink
             to="/support"
-            className="flex items-center gap-2 text-[#38A3A5] hover:underline"
+            className="flex items-center gap-2 text-gray-600 hover:text-[#38A3A5]"
           >
             <LifeBuoy size={16} />
             Hỗ trợ kỹ thuật
           </NavLink>
+
           <button
-            className="flex items-center gap-2 text-[#38A3A5] hover:underline"
             onClick={handleLogout}
+            className="flex items-center gap-2 text-red-500 hover:underline"
           >
             <LogOut size={16} />
             Đăng xuất
@@ -120,12 +125,13 @@ export default function StaffLayout() {
         </div>
       </aside>
 
-      {/* Nội dung chính */}
-      <main className="flex-1 ml-64 p-4">
-        <div className="max-w-6xl mx-auto w-full">
+      {/* Main content */}
+      <main className="flex-1 ml-64 p-6">
+        <div className="max-w-7xl mx-auto">
           <Outlet />
         </div>
       </main>
     </div>
   );
+
 }

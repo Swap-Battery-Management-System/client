@@ -25,14 +25,11 @@ export default function PaymentPage() {
 
     // ================= LOAD PAYMENT METHODS =================
     useEffect(() => {
-        console.log("📥 [PAYMENT PAGE] Nhận dữ liệu:", { amount, invoiceId });
 
         const fetchMethods = async () => {
             try {
                 const res = await api.get("/payment-methods");
                 const list: PaymentMethod[] = res.data?.data || [];
-
-                console.log("💳 [PAYMENT PAGE] Methods:", list);
                 setMethods(list);
                 if (list.length > 0) setSelected(list[0].id);
 
@@ -52,36 +49,25 @@ export default function PaymentPage() {
             return;
         }
 
-        console.log("🚀 [PAYMENT] Thanh toán bắt đầu");
-        console.log("➡ invoiceId:", invoiceId);
-        console.log("➡ totalAmount:", amount);
-        console.log("➡ method:", selected);
-
         try {
             const res = await api.post(`/invoices/${invoiceId}/pay`, {
                 methodId: selected,
                 totalAmount: amount,
             });
 
-            console.log("📦 [PAYMENT] API response:", res.data);
-
             const paymentUrl =
                 res.data?.data?.paymentUrl ||
                 res.data?.paymentUrl ||
                 res.data?.checkoutUrl;
 
-            console.log("🔗 paymentUrl nhận từ BE:", paymentUrl);
-
             // CASE 1 — CASH
             if (!paymentUrl) {
-                console.log("💵 Thanh toán tiền mặt — không redirect");
                 toast.success("Đã thanh toán tiền mặt");
                 navigate(`/home/invoice/${invoiceId}`);
                 return;
             }
 
             // ❗ KHÔNG append invoiceId
-            console.log("🌐 Redirecting to:", paymentUrl);
             window.location.href = paymentUrl;
 
         } catch (err: any) {

@@ -104,10 +104,8 @@ export default function UpdateUserInfo({ onSuccess }: { onSuccess?: () => void }
         if (!userId || provinces.length === 0) return;
         (async () => {
             try {
-                console.log("🔍 Fetch user:", `/users/${userId}`);
                 const res = await api.get(`/users/${userId}`, { withCredentials: true });
                 const u = res.data.data?.user || res.data.data || res.data;
-                console.log("✅ User data:", u);
 
                 // Tách địa chỉ
                 let detailAddress = "",
@@ -342,7 +340,6 @@ export default function UpdateUserInfo({ onSuccess }: { onSuccess?: () => void }
                 { withCredentials: true }
             );
 
-            console.log("✅ PATCH response:", res.data);
             toast.success("Cập nhật thông tin thành công!");
             if (onSuccess) onSuccess();
 

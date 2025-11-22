@@ -54,7 +54,6 @@ export default function WalkinSwap({
 
       const data = res.data?.data?.users;
       const foundUser = Array.isArray(data) ? data[0] : data;
-      console.log("founderUser", foundUser);
 
       if (foundUser) {
         const activeVehicles = (foundUser.vehicles ?? []).filter(
@@ -93,7 +92,6 @@ export default function WalkinSwap({
           `/battery-types/${selectedVehicle.model.batteryTypeId}`,
           { withCredentials: true }
         );
-        console.log("batteryType",resType.data)
         setBatteryTypeName(resType.data?.data?.batteryType.name || "Không xác định");
         // 2️ Nếu xe đang gắn pin, lấy thông tin pin
         if (selectedVehicle.batteryId) {

@@ -85,12 +85,10 @@ export default function Login() {
       const userData = await api.get("auth/me", { withCredentials: true });
 
       const user = userData.data.data.user;
-      console.log("login", userData.data);
       setUser(user);
 
       setType("success");
       setMessage("Đăng nhập thành công!");
-      console.log(user.role.name);
       setTimeout(() => redirectByRole(user.role.name), 2000);
     } catch (err: any) {
       console.error("Lỗi đăng nhập:", err);
@@ -103,7 +101,6 @@ export default function Login() {
         setMessage("⚠️ Không thể kết nối đến máy chủ.");
       }
     } finally {
-      console.log("finally");
       setLoading(false);
     }
   };
@@ -121,13 +118,11 @@ export default function Login() {
       );
       useAuthStore.getState().setAccessToken(res.data.data.accessToken);
       const user = res.data.data.user;
-      console.log("gg:", user);
 
       setUser(user);
 
       setType("success");
       setMessage(successMessage[res.status]);
-      console.log("role", user.role);
       if (user.status === "active") {
         setTimeout(() => redirectByRole(user.role.name), 2000);
       } else if (user.status === "pending") {

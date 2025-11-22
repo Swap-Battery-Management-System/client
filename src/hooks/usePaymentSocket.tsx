@@ -2,8 +2,7 @@ import { useEffect, useState, useCallback } from "react";
 import { io, Socket } from "socket.io-client";
 import { useAuth } from "@/context/AuthContext";
 import { useAuthStore } from "@/stores/authStores";
-import { toast } from "sonner";
-import api from "@/lib/api";
+
 
 export interface PaymentStatusData {
   transaction?: {

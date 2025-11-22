@@ -64,7 +64,6 @@ export default function ResetPassword() {
 
       if (!token) return toast.error("Không nhận được resetToken từ server!");
 
-      console.log("Reset token từ API:", token);
       setResetToken(token);
 
       toast.success(" OTP xác thực thành công!");

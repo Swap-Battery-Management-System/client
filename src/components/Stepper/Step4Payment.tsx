@@ -46,7 +46,6 @@ export function Step4Payment({ data }: Step4PaymentProps) {
         `/transactions/${transaction.id}/confirm`,
         {}
       );
-      console.log("confirm transaction", transactionRes.data);
       setPaid(true);
       setTransaction(null);
     } catch (err) {
