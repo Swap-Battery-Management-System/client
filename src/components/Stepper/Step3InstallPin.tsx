@@ -6,19 +6,13 @@ import api from "@/lib/api";
 import { toast } from "sonner";
 import { ConfirmModal } from "../ConfirmModal";
 
-interface Step3InstallPinProps {
-  onNext: () => void;
-  onPrev: () => void;
-  data: any; // processData từ cha truyền xuống
-  onCancelProcess: () => Promise<void>;
-}
 
 export function Step3InstallPin({
   onNext,
   onPrev,
   data,
   onCancelProcess,
-}: Step3InstallPinProps) {
+}: any) {
   const [confirming, setConfirming] = useState(false);
 
   const battery = data?.newBattery;

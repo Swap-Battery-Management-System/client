@@ -42,7 +42,7 @@ export default function SwapSessionManager() {
         setLoading(true);
         const res = await api.get("/swap-sessions/", { withCredentials: true });
         const data = res.data.data;
-
+        console.log("list swapsession", res.data);
         const enrichedSessions = await Promise.all(
           data.map(async (s: SwapSession) => {
             const [userRes, stationRes, vehicleRes] = await Promise.all([
@@ -93,12 +93,11 @@ export default function SwapSessionManager() {
 
             // Hóa đơn
             let invoice = null;
-            if (s.invoiceId) {
+            if (s.invoice) {
               try {
-                const invoiceRes = await api.get(`/invoices/${s.invoiceId}`, {
+                const invoiceRes = await api.get(`/invoices/${s.invoice.id}`, {
                   withCredentials: true,
                 });
-                console.log("invoice",invoiceRes.data);
                 invoice = invoiceRes.data.data.invoice;
               } catch {
                 invoice = null;
@@ -145,16 +144,11 @@ export default function SwapSessionManager() {
     navigate(`/staff/battery-process/swap/${sessionId}`);
   };
 
-  const formatDateTime = (iso: string) =>
-    new Date(iso).toLocaleString([], {
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
-      second: "2-digit",
-      hour12: false,
-    });
+ const formatDateTime = (iso: string) => {
+   const [date, time] = iso.split("T");
+   const timePart = time.split(".")[0]; // loại bỏ phần milliseconds
+   return `${date} ${timePart}`;
+ };
 
   return (
     <div className="p-6">
@@ -185,8 +179,6 @@ export default function SwapSessionManager() {
                 <th className="px-4 py-2 text-left">Email</th>
                 <th className="px-4 py-2 text-left">Trạm</th>
                 <th className="px-4 py-2 text-left">Xe</th>
-                <th className="px-4 py-2 text-left">Pin cũ</th>
-                <th className="px-4 py-2 text-left">Pin mới</th>
                 <th className="px-4 py-2 text-left">Type</th>
                 <th className="px-4 py-2 text-left">Ngày cập nhật</th>
                 <th className="px-4 py-2 text-left">Status</th>
@@ -202,8 +194,6 @@ export default function SwapSessionManager() {
                   <td className="px-4 py-2">{s.user?.email}</td>
                   <td className="px-4 py-2">{s.station?.name}</td>
                   <td className="px-4 py-2">{s.vehicle?.name || "-"}</td>
-                  <td className="px-4 py-2">{s.batteryOld?.code || "-"}</td>
-                  <td className="px-4 py-2">{s.batteryNew?.code || "-"}</td>
                   <td className="px-4 py-2">{s.type}</td>
                   <td className="px-4 py-2">
                     {formatDateTime(s.updatedAt || s.createdAt)}
@@ -331,7 +321,7 @@ export default function SwapSessionManager() {
                 </p>
                 <p>
                   <strong>Tổng tiền:</strong>{" "}
-                  {selectedSession.invoice.totalAmount}₫
+                  {selectedSession.invoice.amountTotal}₫
                 </p>
                 <p>
                   <strong>Trạng thái:</strong> {selectedSession.invoice.status}

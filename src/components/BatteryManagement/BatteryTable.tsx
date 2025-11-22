@@ -333,38 +333,40 @@ export default function BatteryTable({
                       </div>
                     ) : (
                       <div className="flex justify-center gap-2">
-                        {role === "admin" && (
-                          <>
-                            <button
-                              onClick={() => setEditingBattery(pin)}
-                              className="text-blue-500 flex items-center gap-1"
-                            >
-                              <FaEdit /> Sửa
-                            </button>
-                            {pin.id && (
+                        {role === "admin" ||
+                          (role === "manager" && (
+                            <>
                               <button
-                                onClick={() => handleDelete(pin.id as string)}
-                                className="text-red-600 flex items-center gap-1"
+                                onClick={() => setEditingBattery(pin)}
+                                className="text-blue-500 flex items-center gap-1"
                               >
-                                <FaTrash /> Xóa
+                                <FaEdit /> Sửa
                               </button>
-                            )}
-                          </>
-                        )}
-                        {role === "staff" && pin.id && pin.status!="faulty" &&(
+                            </>
+                          ))}
+                        {pin.id && role==="admin" && (
                           <button
-                            onClick={() => markFaulty(pin.id as string)}
-                            className="text-orange-500 flex items-center gap-1"
+                            onClick={() => handleDelete(pin.id as string)}
+                            className="text-red-600 flex items-center gap-1"
                           >
-                            <FaTimes /> Đánh dấu lỗi
+                            <FaTrash /> Xóa
                           </button>
                         )}
+                        {role === "staff" &&
+                          pin.id &&
+                          pin.status != "faulty" && (
+                            <button
+                              onClick={() => markFaulty(pin.id as string)}
+                              className="text-orange-500 flex items-center gap-1"
+                            >
+                              <FaTimes /> Đánh dấu lỗi
+                            </button>
+                          )}
                       </div>
                     )}
                   </td>
                 </tr>
 
-                {/* details row removed */}
               </React.Fragment>
             );
           })}

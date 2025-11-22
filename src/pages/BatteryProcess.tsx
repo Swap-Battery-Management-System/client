@@ -226,59 +226,65 @@ export default function BatteryProcess() {
 
   return (
     <div className="p-6">
-      <Stepper
-        currentStep={currentStep}
-        steps={steps}
-        onNext={goToNext}
-        onPrev={goToPrev}
-      />
-      {loading ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#38A3A5] mb-4"></div>
-          <p className="text-[#38A3A5] text-lg font-medium">
-            Hệ thống đang tải dữ liệu...
-          </p>
-        </div>
-      ) : (
-        <div className="mt-6">
-          {currentStep === 0 && bookingId && (
-            <Step1CheckIn
-              onNext={goToNext}
-              onUpdate={handleUpdateData}
-              disabled={!!processData.swapSession}
-              data={processData}
-              onCheckinSuccess={handleCheckinSuccess}
-            />
-          )}
-          {currentStep === 0 && !bookingId && !currentSwapId && (
-            <Step1WalkinCheckIn
-              onNext={goToNext}
-              onUpdate={handleUpdateData}
-              onCheckinSuccess={handleCheckinSuccess}
-            />
-          )}
-          {currentStep === 1 && (
-            <Step2CheckPin
-              onNext={goToNext}
-              onPrev={goToPrev}
-              data={processData}
-              onUpdate={handleUpdateData}
-              onCancelProcess={handleCancelProcess}
-            />
-          )}
-          {currentStep === 2 && (
-            <Step3InstallPin
-              onNext={goToNext}
-              onPrev={goToPrev}
-              data={processData}
-              onCancelProcess={handleCancelProcess}
-            />
-          )}
-          {currentStep === 3 && (
-            <Step4Payment onPrev={goToPrev} data={processData} />
-          )}
-        </div>
-      )}
+      <div className="max-w-6xl mx-auto">
+        <Stepper
+          currentStep={currentStep}
+          steps={steps}
+          onNext={goToNext}
+          onPrev={goToPrev}
+        />
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#38A3A5] mb-4"></div>
+            <p className="text-[#38A3A5] text-lg font-medium">
+              Hệ thống đang tải dữ liệu...
+            </p>
+          </div>
+        ) : (
+          <div className="mt-6">
+            {currentStep === 0 && bookingId && (
+              <Step1CheckIn
+                onNext={goToNext}
+                onUpdate={handleUpdateData}
+                disabled={!!processData.swapSession}
+                data={processData}
+                onCheckinSuccess={handleCheckinSuccess}
+              />
+            )}
+
+            {currentStep === 0 && !bookingId && !currentSwapId && (
+              <Step1WalkinCheckIn
+                onNext={goToNext}
+                onUpdate={handleUpdateData}
+                onCheckinSuccess={handleCheckinSuccess}
+              />
+            )}
+
+            {currentStep === 1 && (
+              <Step2CheckPin
+                onNext={goToNext}
+                data={processData}
+                onUpdate={handleUpdateData}
+                onCancelProcess={handleCancelProcess}
+              />
+            )}
+
+            {currentStep === 2 && (
+              <Step3InstallPin
+                onNext={goToNext}
+                onPrev={goToPrev}
+                data={processData}
+                onCancelProcess={handleCancelProcess}
+              />
+            )}
+
+            {currentStep === 3 && (
+              <Step4Payment onPrev={goToPrev} data={processData} />
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
