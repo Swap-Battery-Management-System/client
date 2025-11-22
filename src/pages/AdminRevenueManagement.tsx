@@ -50,8 +50,10 @@ export default function AdminRevenueManagement() {
             let totalPages = 1;
 
             do {
+                console.log(`Fetching page ${page}...`);
+
                 const res = await api.get("/transactions", {
-                    params: { page, limit: 50 }, // fetch 50 per page, bạn có thể tăng nếu API cho phép
+                    params: { page, limit: 50 },
                     withCredentials: true,
                 });
 
@@ -59,11 +61,17 @@ export default function AdminRevenueManagement() {
                     ? res.data.data.transactions
                     : [];
 
+                console.log(`Page ${page} returned ${dataPage.length} transactions`);
+
                 allTransactions = allTransactions.concat(dataPage);
 
                 totalPages = res.data?.data?.pagination?.totalPages || 1;
+                console.log(`Total pages according to API: ${totalPages}`);
                 page++;
             } while (page <= totalPages);
+
+            console.log(`Fetched a total of ${allTransactions.length} transactions`);
+            console.log("All transactions fetched:", allTransactions);
 
             setTransactions(allTransactions);
 
@@ -71,6 +79,8 @@ export default function AdminRevenueManagement() {
             const total = allTransactions
                 .filter((t) => t.status === "completed")
                 .reduce((sum, t) => sum + Number(t.totalAmount), 0);
+
+            console.log(`Total revenue from completed transactions: ${total}`);
             setTotalRevenue(total);
         } catch (err) {
             console.error("Lỗi khi tải transactions:", err);
@@ -148,7 +158,6 @@ export default function AdminRevenueManagement() {
         setRevenueData(result);
         setSelectedLabel(result[result.length - 1]?.name || null);
     };
-
 
     useEffect(() => {
         fetchTransactions();
