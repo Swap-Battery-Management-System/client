@@ -42,9 +42,8 @@ export function usePaymentSocket(stationId: string) {
 
   //  Kết nối socket
   useEffect(() => {
-    if (!stationId || !user?.id) return;
-
-    const authToken = token || localStorage.getItem("accessToken");
+   if (!user?.id) return; // chỉ cần user id
+   const authToken = token || localStorage.getItem("accessToken");
     if (!authToken) {
       console.warn("⚠ Không có token, bỏ qua kết nối socket.");
       return;
@@ -66,6 +65,7 @@ export function usePaymentSocket(stationId: string) {
       newSocket.emit("register", user.id);
       // Chỉ register station nếu user là staff
       if (user.role?.name === "staff") {
+        if(!stationId) return;
         newSocket.emit("register-station", stationId);
       }
     });
@@ -74,14 +74,17 @@ export function usePaymentSocket(stationId: string) {
     if (user.role?.name === "staff") {
       // Staff nhận confirm khi driver chọn phương thức thanh toán
       newSocket.on("payment:confirm", handleNewPayment);
+       newSocket.on("payment:status", handleNewPayment);
+
     }
 
     // driver nhận thông tin khi có hóa đơn cần thanh toán (pending)
     newSocket.on("payment:pending", handleNewPayment);
 
-    // Staff + tất cả người dùng nhận status khi người dùng thanh toán xong
-    newSocket.on("payment:status", handleNewPayment);
-
+    if(user.role?.name === "driver"){
+      newSocket.on("payment:success",handleNewPayment);
+    }
+   
     newSocket.on("disconnect", (reason) =>
       console.warn("⚠ Payment socket disconnected:", reason)
     );

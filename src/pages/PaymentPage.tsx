@@ -62,14 +62,12 @@ export default function PaymentPage() {
 
             // CASE 1 — CASH
             if (!paymentUrl) {
-                toast.success("Đã thanh toán tiền mặt");
-                navigate(`/home/invoice/${invoiceId}`);
+                navigate(`/home/payment/result`,{state:{method:"cash", invoiceId:`${invoiceId}`}});
                 return;
             }
 
             // ❗ KHÔNG append invoiceId
             window.location.href = paymentUrl;
-
         } catch (err: any) {
             console.error("❌ [PAYMENT] Error:", err);
             toast.error(err.response?.data?.message || "Lỗi thanh toán");
@@ -90,7 +88,7 @@ export default function PaymentPage() {
             <p className="text-lg font-semibold mb-4">
                 Số tiền:&nbsp;
                 <span className="text-[#38A3A5]">
-                    {amount.toLocaleString("vi-VN")}₫
+                    {amount?.toLocaleString("vi-VN")}₫
                 </span>
             </p>
 

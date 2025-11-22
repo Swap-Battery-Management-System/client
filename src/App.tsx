@@ -50,6 +50,8 @@ import PaymentPage from "./pages/PaymentPage";
 import TransactionHistoryPage from "./pages/TransactionHistoryPage";
 import PaymentResult from "./pages/PaymentResult";
 import ManagerLayout from "./layout/ManagerLayout";
+import DriverFeedback from "./pages/DriverFeedback";
+import Feedback from "./pages/Feedback";
 
 function App() {
   return (
@@ -101,7 +103,9 @@ function App() {
           />
           <Route path="invoice/:id" element={<InvoiceDetail />} />
           <Route path="payment" element={<PaymentPage />} />
-
+          <Route path="payment/result" element={<PaymentResult />} />
+          <Route path="feedback/:invoiceId" element={<Feedback />} />
+          <Route path="my-feedback" element={<DriverFeedback />} />
           <Route path="pricing" element={<DamageFee />} />
         </Route>
 

@@ -91,13 +91,6 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
                 }}
                 className="text-red-500 hover:text-red-600"
               />
-              {/* <NavItem
-                to="/logout"
-                icon={<LogOut />}
-                label="Đăng xuất"
-                onClick={onClose}
-                className="text-red-500 hover:text-red-600"
-              /> */}
             </div>
           </div>
 
@@ -168,9 +161,9 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <p className="font-semibold mb-3 text-gray-900">💬 Hỗ trợ</p>
             <div className="ml-3 flex flex-col gap-2 text-sm">
               <NavItem
-                to="report"
+                to="my-feedback"
                 icon={<MessageSquare />}
-                label="Báo cáo sự cố / Feedback"
+                label="Feedback"
                 onClick={onClose}
               />
               <NavItem

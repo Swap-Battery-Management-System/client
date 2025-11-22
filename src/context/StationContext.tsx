@@ -36,6 +36,7 @@ export const StationProvider: React.FC<{ children: React.ReactNode }> = ({
       const stationArray = Array.isArray(data.stations)
         ? data.stations
         : [data.stations]; // ép thành mảng có 1 phần tử
+        console.log("stationList", res.data);
       setStations(stationArray);
     } catch (err) {
       console.error("Lỗi khi lấy danh sách trạm:", err);

@@ -13,8 +13,6 @@ interface Step4PaymentProps {
 }
 
 export function Step4Payment({ data }: Step4PaymentProps) {
-  const navigate = useNavigate();
-  const { user } = useAuth();
   const stationId = data?.station?.id;
   const invoiceId = data?.invoiceId;
   const swapSession = data?.swapSession;
