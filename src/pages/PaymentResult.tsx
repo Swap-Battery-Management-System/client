@@ -125,7 +125,7 @@ export default function PaymentResult() {
                     <div className="flex gap-3 mt-6">
                         <Button
                             className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
-                            onClick={() => navigate("/home/transaction-history")}
+                            onClick={() => navigate("/home/invoice-history")}
                         >
                             Xem lịch sử giao dịch
                         </Button>
@@ -148,7 +148,7 @@ export default function PaymentResult() {
 
                     <Button
                         className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
-                        onClick={() => navigate("/home/transaction-history")}
+                        onClick={() => navigate("/home/invoice-history")}
                     >
                         Về lịch sử giao dịch
                     </Button>
@@ -163,7 +163,7 @@ export default function PaymentResult() {
 
                     <Button
                         className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
-                        onClick={() => navigate("/home/transaction-history")}
+                        onClick={() => navigate("/home/invoice-history")}
                     >
                         Về lịch sử giao dịch
                     </Button>

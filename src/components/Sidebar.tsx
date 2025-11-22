@@ -149,15 +149,15 @@ export default function Sidebar({ isOpen, onClose }: SidebarProps) {
             <p className="font-semibold mb-3 text-gray-900">🧾 Hóa đơn</p>
             <div className="ml-3 flex flex-col gap-2 text-sm">
               <NavItem
-                to="transaction-history"
+                to="invoice-history"
                 icon={<FileText />}
-                label="Lịch sử giao dịch"
+                label="Lịch sử hóa đơn"
                 onClick={onClose}
               />
               <NavItem
-                to="payment-history"
+                to="transaction-history"
                 icon={<FileText />}
-                label="Lịch sử thanh toán"
+                label="Lịch sử giao dịch"
                 onClick={onClose}
               />
             </div>
