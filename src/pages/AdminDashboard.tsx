@@ -53,6 +53,12 @@ export default function AdminDashboard() {
     const [bookingDetails, setBookingDetails] = useState<Booking[]>([]);
     const [loadingBooking, setLoadingBooking] = useState(false);
 
+    const [transactions, setTransactions] = useState<any[]>([]);
+    const [revenueData, setRevenueData] = useState<{ name: string; revenue: number }[]>([]);
+    const [loadingRevenue, setLoadingRevenue] = useState(false);
+    const [revenueView, setRevenueView] = useState<"day" | "month" | "year">("day");
+    const [selectedRevenueLabel, setSelectedRevenueLabel] = useState<string | null>(null);
+
     const [userView, setUserView] = useState<"day" | "month" | "year">("day");
     const [userData, setUserData] = useState<{ name: string; count: number }[]>([]);
     const [topCities, setTopCities] = useState<{ city: string; count: number }[]>([]);
@@ -388,6 +394,79 @@ export default function AdminDashboard() {
         }
     };
 
+    // ==================== Fetch Transactions / Revenue ====================
+    const fetchTransactions = async (range: "day" | "month" | "year") => {
+        try {
+            setLoadingRevenue(true);
+            let allTransactions: any[] = [];
+            let page = 1;
+            let totalPages = 1;
+
+            do {
+                const res = await api.get("/transactions", { params: { page, limit: 50 }, withCredentials: true });
+                const dataPage: any[] = Array.isArray(res.data?.data?.transactions) ? res.data.data.transactions : [];
+                allTransactions = allTransactions.concat(dataPage);
+                totalPages = res.data?.data?.pagination?.totalPages || 1;
+                page++;
+            } while (page <= totalPages);
+
+            setTransactions(allTransactions);
+
+            // Tính doanh thu theo range
+            const counts: Record<string, number> = {};
+            const today = dayjs().utc();
+            const transactionDates: Dayjs[] = allTransactions.map((t) => dayjs.utc(t.createdAt)); // hoặc updatedAt
+            const firstDate = transactionDates.reduce((min, t) => (t.isBefore(min) ? t : min), transactionDates[0]);
+
+            allTransactions.forEach((t) => {
+                if (t.status.toLowerCase() !== "completed") return; // chỉ lấy completed
+                const date = dayjs.utc(t.createdAt);
+                let key = "";
+                switch (range) {
+                    case "day":
+                        key = date.format("DD/MM/YYYY");
+                        break;
+                    case "month":
+                        key = date.format("MM/YYYY");
+                        break;
+                    case "year":
+                        key = date.format("YYYY");
+                        break;
+                }
+                counts[key] = (counts[key] || 0) + Number(t.totalAmount);
+            });
+
+            // Tạo mảng dữ liệu cho chart
+            const result: { name: string; revenue: number }[] = [];
+            let current = firstDate.startOf(range);
+            while (!current.isAfter(today, range)) {
+                let key = "";
+                switch (range) {
+                    case "day":
+                        key = current.format("DD/MM/YYYY");
+                        break;
+                    case "month":
+                        key = current.format("MM/YYYY");
+                        break;
+                    case "year":
+                        key = current.format("YYYY");
+                        break;
+                }
+                result.push({ name: key, revenue: counts[key] || 0 });
+                current = range === "day" ? current.add(1, "day") : range === "month" ? current.add(1, "month") : current.add(1, "year");
+            }
+
+            setRevenueData(result);
+            setSelectedRevenueLabel(result[result.length - 1]?.name || null);
+        } catch (err) {
+            console.error("Lỗi khi tải transactions:", err);
+            toast.error("Không thể tải dữ liệu doanh thu!");
+        } finally {
+            setLoadingRevenue(false);
+        }
+    };
+
+
     useEffect(() => {
         fetchSummary();
     }, []);
@@ -404,6 +483,10 @@ export default function AdminDashboard() {
     useEffect(() => {
         fetchBookingStats(bookingView);
     }, [bookingView]);
+
+    useEffect(() => {
+        fetchTransactions(revenueView);
+    }, [revenueView]);
 
 
     const getMapBBox = () => {
@@ -706,6 +789,62 @@ export default function AdminDashboard() {
                             </div>
                         )}
                     </Card>
+
+                    <Card className="p-6 md:p-8 bg-white rounded-2xl shadow-xl border border-gray-100 mb-8">
+                        <div className="flex justify-between items-center mb-4">
+                            <h2 className="text-lg font-semibold text-[#6D28D9]">Thống kê doanh thu ({revenueView})</h2>
+                            <div className="flex gap-2">
+                                {(["day", "month", "year"] as const).map((view) => (
+                                    <Button
+                                        key={view}
+                                        variant={revenueView === view ? "default" : "outline"}
+                                        className={revenueView === view ? "bg-[#6D28D9] text-white" : "border-[#6D28D9] text-[#6D28D9]"}
+                                        onClick={() => setRevenueView(view)}
+                                        disabled={loadingRevenue}
+                                    >
+                                        {view === "day" ? "Ngày" : view === "month" ? "Tháng" : "Năm"}
+                                    </Button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {loadingRevenue ? (
+                            <div className="text-center text-gray-400 mt-20">Đang tải biểu đồ doanh thu...</div>
+                        ) : (
+                            <div style={{ minWidth: revenueData.length * 80, flex: 1 }}>
+                                <ResponsiveContainer width="100%" height={300}>
+                                    <LineChart
+                                        data={revenueData}
+                                        onClick={(e: any) => e?.activeLabel && setSelectedRevenueLabel(e.activeLabel)}
+                                    >
+                                        <CartesianGrid strokeDasharray="3 3" />
+                                        <XAxis dataKey="name" />
+                                        <YAxis />
+                                        <Tooltip formatter={(value) => [`${value} VND`, "Doanh thu"]} />
+                                        <Legend />
+                                        <Line
+                                            type="monotone"
+                                            dataKey="revenue"
+                                            name="Doanh thu"
+                                            stroke="#10B981"
+                                            strokeWidth={3}
+                                            dot={(props) => {
+                                                const { cx, cy, payload } = props;
+                                                const isSelected = payload.name === selectedRevenueLabel;
+                                                return <circle cx={cx} cy={cy} r={isSelected ? 6 : 4} fill={isSelected ? "#FF5722" : "#10B981"} stroke="#fff" strokeWidth={1} />;
+                                            }}
+                                        />
+                                    </LineChart>
+                                </ResponsiveContainer>
+                                <div className="mt-2 text-sm text-gray-600">
+                                    {selectedRevenueLabel
+                                        ? `Doanh thu: ${revenueData.find((r) => r.name === selectedRevenueLabel)?.revenue || 0} VND`
+                                        : "Chọn ngày/tháng/năm để xem doanh thu"}
+                                </div>
+                            </div>
+                        )}
+                    </Card>
+
 
                     {/* Trạng thái Station + Bản đồ */}
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
