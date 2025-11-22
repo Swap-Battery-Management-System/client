@@ -5,19 +5,13 @@ import { toast } from "sonner";
 import api from "@/lib/api";
 import { CheckCircle, XCircle, Loader2, AlertTriangle } from "lucide-react";
 
-/**
- * 💳 PaymentResult.tsx (3 trạng thái: 200 / 400 / 500)
- * - Phát hiện gateway tự động
- * - Xác minh thanh toán qua API
- * - Điều hướng: 
- *   ✅ Thành công → Xem lịch sử giao dịch / Trang chủ
- *   ⚠️ Thất bại → Quay lại lịch sử giao dịch
- */
 export default function PaymentResult() {
     const location = useLocation();
     const navigate = useNavigate();
 
-    const [status, setStatus] = useState<"loading" | "success" | "fail" | "error">("loading");
+    const [status, setStatus] = useState<"loading" | "success" | "fail" | "error">(
+        "loading"
+    );
     const [gateway, setGateway] = useState<string>("unknown");
     const [invoiceId, setInvoiceId] = useState<string>("");
 
@@ -27,7 +21,7 @@ export default function PaymentResult() {
                 const query = location.search;
                 console.log("📩 [PAYMENT RESULT] Query:", query);
 
-                // 🔍 Phát hiện gateway
+                // Detect gateway
                 let endpoint = "";
                 if (query.includes("vnp_")) {
                     endpoint = `/payments/vnpay/verify${query}`;
@@ -48,45 +42,54 @@ export default function PaymentResult() {
                 const inv = params.get("invoiceId");
                 if (inv) setInvoiceId(inv);
 
-                // 🔗 Gọi API xác minh
+                // Call BE verify API
                 const res = await api.get(endpoint);
-                console.log("✅ [VERIFY RESPONSE]", res.status, res.data);
+                console.log("✅ [VERIFY RESPONSE]", res.data);
 
-                const msg = (res.data?.message || res.data?.data || "").toString().toLowerCase();
+                /** ===========================
+                 * BE trả về dạng:
+                 * { code: 200 | 400 | 500, message: "...", data: {...} }
+                 * =========================== */
 
-                if (res.status === 200 && msg.includes("success")) {
+                const code = res.data?.code;
+                const msg = res.data?.message?.toLowerCase?.() || "";
+
+                // SUCCESS =======================
+                if (code === 200) {
                     setStatus("success");
                     toast.success("Thanh toán thành công!");
-                } else if (res.status === 400) {
-                    setStatus("fail");
-                    toast.error("Thanh toán thất bại hoặc bị hủy!");
-                } else if (res.status === 500) {
-                    setStatus("error");
-                    toast.error("Lỗi máy chủ khi xác minh thanh toán!");
-                } else {
-                    setStatus("fail");
-                    toast.error("Không xác định kết quả thanh toán!");
+                    return;
                 }
-            } catch (err: any) {
-                console.error("❌ [VERIFY ERROR]", err);
-                const code = err.response?.status || 500;
+
+                // FAIL ===========================
                 if (code === 400) {
                     setStatus("fail");
-                    toast.error("Thanh toán thất bại hoặc bị hủy!");
-                } else {
+                    toast.error(res.data?.message || "Thanh toán thất bại hoặc bị hủy!");
+                    return;
+                }
+
+                // ERROR ==========================
+                if (code === 500) {
                     setStatus("error");
                     toast.error("Lỗi máy chủ khi xác minh thanh toán!");
+                    return;
                 }
+
+                // UNKNOWN ========================
+                setStatus("fail");
+                toast.error("Không xác định kết quả thanh toán!");
+            } catch (err: any) {
+                console.error("❌ [VERIFY ERROR]", err);
+                setStatus("error");
+                toast.error("Không thể xác minh giao dịch!");
             }
         };
 
         verifyPayment();
     }, []);
 
-    // ================= UI =================
     return (
         <div className="flex flex-col items-center justify-center min-h-[80vh] text-center px-4">
-            {/* LOADING */}
             {status === "loading" && (
                 <div className="flex flex-col items-center gap-3 text-gray-500">
                     <Loader2 className="w-10 h-10 animate-spin text-[#38A3A5]" />
@@ -94,14 +97,16 @@ export default function PaymentResult() {
                 </div>
             )}
 
-            {/* SUCCESS */}
             {status === "success" && (
                 <div className="flex flex-col items-center gap-4 animate-fade-in">
                     <CheckCircle className="text-green-500 w-20 h-20 mb-2" />
                     <h2 className="text-2xl font-bold text-green-600">
                         Thanh toán thành công 🎉
                     </h2>
-                    <p className="text-gray-600">Cảm ơn bạn đã sử dụng dịch vụ SwapNet!</p>
+
+                    <p className="text-gray-600">
+                        Cảm ơn bạn đã sử dụng dịch vụ SwapNet!
+                    </p>
 
                     <div className="mt-3 text-sm">
                         <p>
@@ -124,17 +129,13 @@ export default function PaymentResult() {
                         >
                             Xem lịch sử giao dịch
                         </Button>
-                        <Button
-                            variant="outline"
-                            onClick={() => navigate("/home")}
-                        >
+                        <Button variant="outline" onClick={() => navigate("/home")}>
                             Về trang chủ
                         </Button>
                     </div>
                 </div>
             )}
 
-            {/* FAIL */}
             {status === "fail" && (
                 <div className="flex flex-col items-center gap-4 animate-fade-in">
                     <XCircle className="text-orange-500 w-20 h-20 mb-2" />
@@ -145,33 +146,27 @@ export default function PaymentResult() {
                         Giao dịch không thành công hoặc đã bị hủy.
                     </p>
 
-                    <div className="flex gap-3 mt-6">
-                        <Button
-                            className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
-                            onClick={() => navigate("/home/transaction-history")}
-                        >
-                            Về lịch sử giao dịch
-                        </Button>
-                    </div>
+                    <Button
+                        className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
+                        onClick={() => navigate("/home/transaction-history")}
+                    >
+                        Về lịch sử giao dịch
+                    </Button>
                 </div>
             )}
 
-            {/* ERROR */}
             {status === "error" && (
                 <div className="flex flex-col items-center gap-4 animate-fade-in">
                     <AlertTriangle className="text-red-500 w-20 h-20 mb-2" />
                     <h2 className="text-2xl font-bold text-red-600">Lỗi máy chủ ❌</h2>
-                    <p className="text-gray-600">
-                        Có sự cố xảy ra trong quá trình xác minh thanh toán.
-                    </p>
-                    <div className="flex gap-3 mt-6">
-                        <Button
-                            className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
-                            onClick={() => navigate("/home/transaction-history")}
-                        >
-                            Về lịch sử giao dịch
-                        </Button>
-                    </div>
+                    <p className="text-gray-600">Không thể xác minh giao dịch.</p>
+
+                    <Button
+                        className="bg-[#38A3A5] text-white hover:bg-[#2e8a8c]"
+                        onClick={() => navigate("/home/transaction-history")}
+                    >
+                        Về lịch sử giao dịch
+                    </Button>
                 </div>
             )}
         </div>
