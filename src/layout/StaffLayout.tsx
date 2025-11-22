@@ -52,7 +52,7 @@ export default function StaffLayout() {
   return (
     <div className="flex min-h-screen bg-gray-50">
       {/* Sidebar */}
-      <aside className="fixed left-0 top-0 h-screen w-64 bg-white border-r shadow-sm flex flex-col">
+      <aside className="w-64 bg-white border-r shadow-sm flex flex-col">
         <div className="p-6 border-b">
           <NavLink to="/" className="flex items-center gap-2 ml-1">
             <img
@@ -114,7 +114,7 @@ export default function StaffLayout() {
       </aside>
 
       {/* Nội dung chính */}
-      <main className="ml-64 p-8">
+      <main className="flex-1 p-8">
         <Outlet />
       </main>
     </div>
