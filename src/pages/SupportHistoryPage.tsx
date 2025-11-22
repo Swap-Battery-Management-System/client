@@ -22,7 +22,7 @@ interface SupportTicket {
     category: string;
     subject: string;
     description: string;
-    status: string; // "opened" | "resolved"
+    status: string; 
     createdAt: string;
     closedAt?: string | null;
     reply?: string;
