@@ -47,7 +47,7 @@ export default function StaffLayout() {
       path: "swap-session",
       icon: <RefreshCcw size={18} />,
     },
-    { name: "Báo cáo trạm", path: "reports", icon: <FileBarChart size={18} /> },
+    { name: "Báo cáo trạm", path: "support", icon: <FileBarChart size={18} /> },
     {
       name: "Sự cố & kiểm tra an toàn",
       path: "safety",
@@ -100,8 +100,8 @@ export default function StaffLayout() {
         {/* Footer */}
         <div className="p-4 border-t text-sm space-y-2">
           <NavLink
-            to="/settings"
-            className="flex items-center gap-2 text-gray-600 hover:text-[#38A3A5]"
+            to="/profile"
+            className="flex items-center gap-2 text-[#38A3A5] hover:underline"
           >
             <Settings size={16} />
             Cài đặt cá nhân

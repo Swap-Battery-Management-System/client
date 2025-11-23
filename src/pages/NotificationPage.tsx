@@ -15,18 +15,16 @@ import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import api from "@/lib/api";
 import { useAuth } from "@/context/AuthContext";
-import { io, Socket } from "socket.io-client";
-import { useAuthStore } from "@/stores/authStores";
+import { toast } from "sonner";
+import { useNotificationStore } from "@/stores/notificationStore";
+import { useSocket } from "@/components/SocketProvider";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
 } from "@/components/ui/dialog";
-import { toast } from "sonner";
-import { useNotificationStore } from "@/stores/notificationStore";
-
 interface Notification {
   notification_id: string;
   message: string;
@@ -37,23 +35,25 @@ interface Notification {
 
 export default function NotificationPage() {
   const { user } = useAuth();
-  const token = useAuthStore((state) => state.accessToken);
-
+  const { socket } = useSocket(); // ⭐ Lấy socket từ provider
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState("All");
   const [loading, setLoading] = useState(true);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [detail, setDetail] = useState<any>(null);
   const [open, setOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const { setUnreadCount,
+
+  const {
+    setUnreadCount,
     decreaseUnread,
     increaseUnread,
-    resetUnread } = useNotificationStore();
+    resetUnread,
+    setLatestNotifications,
+    updateOneAsRead
+  } = useNotificationStore();
 
-  const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || "https://api.swapnet.io.vn";
 
-  // Biểu tượng theo loại thông báo
+  // ⭐ Icon hiển thị từng loại
   const typeIcons: Record<string, React.ReactNode> = {
     Booking: <CalendarCheck className="w-5 h-5 text-emerald-500" />,
     Battery: <Battery className="w-5 h-5 text-cyan-500" />,
@@ -62,87 +62,62 @@ export default function NotificationPage() {
     Payment: <CreditCard className="w-5 h-5 text-amber-500" />,
   };
 
-  // 📩 Nhận thông báo realtime
+  // ⭐ Hàm xử lý socket realtime
   const handleNewNotification = useCallback((data: any) => {
+    console.log("📩 Realtime notification:", data);
     increaseUnread();
-    console.log("📩 Nhận thông báo mới từ socket:", data);
+
     const newItem: Notification = {
       notification_id: data.id || Date.now().toString(),
-      message: data.message || "Thông báo mới từ hệ thống.",
+      message: data.message,
       type: data.type || "Alert",
       created_date: new Date().toISOString(),
       status: "Unread",
-
     };
 
     setNotifications((prev) => [newItem, ...prev]);
   }, []);
 
-  // 🔌 Kết nối socket
+  // ⭐ LISTEN socket — KHÔNG CONNECT
   useEffect(() => {
-    if (!user?.id) return;
+    if (!socket) return;
 
-    const authToken = token || localStorage.getItem("accessToken");
-    if (!authToken) {
-      console.warn("⚠️ Không có token, bỏ qua kết nối socket.");
-      return;
-    }
-
-    console.log("🔌 Kết nối Socket.IO:", SOCKET_URL);
-    const newSocket = io(SOCKET_URL, {
-      transports: ["websocket"],
-      auth: { token: authToken },
-      reconnectionAttempts: 5,
-      reconnectionDelay: 2000,
-      secure: true,
-    });
-
-    setSocket(newSocket);
-
-    newSocket.on("connect", () => {
-      console.log("✅ Socket connected:", newSocket.id);
-      newSocket.emit("register", user.id);
-    });
-
-    newSocket.on("notification", handleNewNotification);
-    newSocket.on("disconnect", (reason) => console.warn("⚠️ Socket disconnected:", reason));
-    newSocket.on("connect_error", (err) => console.error("❌ Lỗi socket:", err.message));
+    socket.on("notification", handleNewNotification);
+    console.log("🔔 NotificationPage: listening for notification...");
 
     return () => {
-      console.log("🧹 Ngắt kết nối socket...");
-      newSocket.disconnect();
+      socket.off("notification", handleNewNotification);
     };
-  }, [user, token, handleNewNotification]);
+  }, [socket, handleNewNotification]);
 
-  // 📦 Hàm tải danh sách thông báo
+  // ⭐ Load lịch sử thông báo
   const fetchNotifications = useCallback(async () => {
     if (!user?.id) return;
+
     setLoading(true);
     try {
       const res = await api.get(`/notifications?userId=${user.id}`);
-      const raw = res?.data?.data?.notifications || [];
+      const raw = res.data?.data?.notifications || [];
 
-      if (Array.isArray(raw)) {
-        const formatted = raw
-          .map((n: any) => ({
-            notification_id: n.id || n.notification_id,
-            message: n.message,
-            type: n.type || "Alert",
-            created_date: n.createdAt || n.created_date,
-            status: n.isRead === true || n.status === "Read" ? "Read" : "Unread",
-          }))
-          .sort(
-            (a, b) =>
-              new Date(b.created_date).getTime() -
-              new Date(a.created_date).getTime()
-          );
-        setNotifications(formatted);
-        const unread = formatted.filter((n) => n.status === "Unread").length;
-        setUnreadCount(unread);
+      const formatted = raw
+        .map((n: any) => ({
+          notification_id: n.id || n.notification_id,
+          message: n.message,
+          type: n.type || "Alert",
+          created_date: n.createdAt || n.created_date,
+          status:
+            n.isRead === true || n.status === "Read" ? "Read" : "Unread",
+        }))
+        .sort(
+          (a: any, b: any) =>
+            new Date(b.created_date).getTime() -
+            new Date(a.created_date).getTime()
+        );
 
-      } else {
-        setNotifications([]);
-      }
+      setNotifications(formatted);
+      setUnreadCount(formatted.filter((x: any) => x.status === "Unread").length);
+      setLatestNotifications(formatted.slice(0, 5));
+
     } catch (err) {
       console.error("❌ Lỗi khi tải thông báo:", err);
     } finally {
@@ -154,16 +129,16 @@ export default function NotificationPage() {
     fetchNotifications();
   }, [fetchNotifications]);
 
-
-  // 🟡 Xem chi tiết thông báo
+  // ⭐ Xem chi tiết
   const handleViewDetail = async (id: string) => {
     try {
       const res = await api.get(`/notifications/${id}`);
       const detailData = res.data?.data?.notification;
+
       setDetail(detailData);
       setOpen(true);
 
-      // Đánh dấu đã đọc khi mở chi tiết
+      // Đánh dấu đã đọc
       await api.patch(`/notifications/${id}/read`);
       await fetchNotifications();
     } catch (err) {
@@ -171,9 +146,8 @@ export default function NotificationPage() {
     }
   };
 
-  // 🔴 Xóa thông báo
+  // ⭐ Xóa thông báo
   const handleDelete = async (id: string) => {
-    if (!confirm("Bạn có chắc muốn xóa thông báo này?")) return;
     try {
       await api.delete(`/notifications/${id}`);
       toast.success("Đã xóa thông báo");
@@ -181,11 +155,10 @@ export default function NotificationPage() {
       await fetchNotifications();
     } catch (err) {
       toast.error("Không thể xóa thông báo!");
-      console.error("❌ Lỗi khi xóa:", err);
     }
   };
 
-  // 📋 Lọc danh sách
+  // ⭐ Lọc danh sách
   const filtered =
     filter === "All"
       ? notifications
@@ -193,16 +166,16 @@ export default function NotificationPage() {
         ? notifications.filter((n) => n.status === "Unread")
         : notifications.filter((n) => n.status === "Read");
 
-  // 🕐 Hiển thị khi đang tải
   if (loading) {
     return (
       <div className="flex justify-center items-center h-80">
-        <span className="text-gray-500 animate-pulse">Đang tải thông báo...</span>
+        <span className="text-gray-500 animate-pulse">
+          Đang tải thông báo...
+        </span>
       </div>
     );
   }
 
-  // 🧩 Giao diện chính
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
       <div className="flex items-center justify-between mb-6">

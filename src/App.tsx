@@ -2,6 +2,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import OtpVerify from "./pages/OtpVerify";
 import RegisterInfo from "./pages/RegisterInfo";
+// import RegisterLayout from "./layout/RegisterLayout";
 import { Route, Routes } from "react-router";
 import { Toaster } from "sonner";
 import { ProtectedRoute } from "./components/ProtectedRoute";
@@ -19,7 +20,6 @@ import MySubcription from "./pages/MySubcription";
 import RegisterPassword from "./pages/SetPassword";
 import RegisterVehicle from "./pages/RegisterVehicle";
 import MyVehicles from "./pages/MyVehicles";
-import DamageFee from "./pages/DamageFee";
 
 import AdminVehicleManagement from "./pages/AdminVehicleManagement";
 import AdminUserManagement from "./pages/AdminUserManagement";
@@ -32,7 +32,6 @@ import AdminRevenueManagement from "./pages/AdminRevenueManagement";
 
 import BatteryManagement from "./pages/BatteryManagement";
 import StaffBookingManagement from "./pages/StaffBookingManagement";
-import StaffDashboard from "./pages/StaffDashboard";
 
 import AdminLayout from "./layout/AdminLayout";
 import ResetPassword from "./pages/ResetPassword";
@@ -47,17 +46,20 @@ import SwapSessionManager from "./pages/SwapSessionManagement";
 import AdminSupport from "./pages/AdminSupport";
 import InvoiceDetail from "./pages/InvoiceDetail";
 import PaymentPage from "./pages/PaymentPage";
-import TransactionHistoryPage from "./pages/TransactionHistoryPage";
+import InvoiceHistoryPage from "./pages/InvoiceHistoryPage";
 import PaymentResult from "./pages/PaymentResult";
 import ManagerLayout from "./layout/ManagerLayout";
 import DriverFeedback from "./pages/DriverFeedback";
 import Feedback from "./pages/Feedback";
-
+import UpdateUserInfo from "./pages/UpdateUserInfo";
+import TransactionHistory from "./pages/TransactionHistory";
+import StaffDashboard from "./pages/StaffDashboard";
+import UserDamageFeeView from "./pages/DamageFee";
 function App() {
   return (
     <>
       <Routes>
-        {/* PUBLIC ROUTES */}
+        {/* Trang công khai */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
         <Route path="/login/reset-password" element={<ResetPassword />} />
@@ -65,15 +67,11 @@ function App() {
         <Route path="/register/verify" element={<OtpVerify />} />
         <Route path="/register/info" element={<RegisterInfo />} />
         <Route path="/register/password" element={<RegisterPassword />} />
-
-        {/* 🔥 PAYMENT ROUTES — luôn ở ROOT */}
-        <Route path="/payment" element={<PaymentPage />} />
-        <Route path="/payment/:method/result" element={<PaymentResult />} />
-
-        {/* INVOICE PUBLIC (OPTIONAL) */}
         <Route path="/invoice-detail" element={<InvoiceDetail />} />
+        <Route path="/payment" element={<PaymentPage />} />
+        <Route path="payment/result" element={<PaymentResult />} />
 
-        {/* USER HOME LAYOUT */}
+        {/* Layout người dùng */}
         <Route
           path="/home"
           element={
@@ -97,19 +95,16 @@ function App() {
           <Route path="my-subscription-packages" element={<MySubcription />} />
           <Route path="support" element={<SupportTicketForm />} />
           <Route path="support-history" element={<SupportHistoryPage />} />
-          <Route
-            path="transaction-history"
-            element={<TransactionHistoryPage />}
-          />
+          <Route path="invoice-history" element={<InvoiceHistoryPage />} />
           <Route path="invoice/:id" element={<InvoiceDetail />} />
           <Route path="payment" element={<PaymentPage />} />
           <Route path="payment/result" element={<PaymentResult />} />
           <Route path="feedback/:invoiceId" element={<Feedback />} />
           <Route path="my-feedback" element={<DriverFeedback />} />
-          <Route path="pricing" element={<DamageFee />} />
+          <Route path="pricing" element={<UserDamageFeeView />} />
+          <Route path="transaction-history" element={<TransactionHistory />} />
         </Route>
-
-        {/* STAFF ROUTES */}
+        {/* === Staff Routes === */}
         <Route
           path="/staff"
           element={
@@ -127,6 +122,8 @@ function App() {
           <Route path="walkin-swap" element={<BatteryProcess />} />
           <Route path="swap-session" element={<SwapSessionManager />} />
           <Route path="manage-booking" element={<StaffBookingManagement />} />
+          <Route path="support" element={<SupportTicketForm />} />
+          <Route path="support-history" element={<SupportHistoryPage />} />
         </Route>
 
         {/* ADMIN ROUTES */}
@@ -139,10 +136,15 @@ function App() {
           }
         >
           <Route index element={<AdminDashboard />} />
+          <Route path="support" element={<SupportTicketForm />} />
+          <Route path="support-history" element={<SupportHistoryPage />} />
+          <Route path="profile" element={<UpdateUserInfo />} />
           <Route path="manage-users" element={<AdminUserManagement />} />
           <Route path="manage-stations" element={<AdminStationManagement />} />
           <Route path="manage-vehicles" element={<AdminVehicleManagement />} />
           <Route path="revenue-reports" element={<AdminRevenueManagement />} />
+          <Route path="support" element={<SupportTicketForm />} />
+          <Route path="support-history" element={<SupportHistoryPage />} />
           <Route
             path="manage-subscription"
             element={<AdminSubscriptionManagement />}
@@ -159,10 +161,11 @@ function App() {
             element={<AdminVehicleModelManagement />}
           />
           <Route path="manage-battery" element={<BatteryManagement />} />
+          <Route path="profile" element={<UpdateUserInfo />} />
+          <Route path="manage-booking" element={<StaffBookingManagement />} />
         </Route>
-      </Routes>
 
-      <Routes>
+        {/* === Manager Routes === */}
         <Route
           path="/manager"
           element={
@@ -190,11 +193,14 @@ function App() {
             element={<AdminSubscriptionManagement />}
           />
           <Route path="damage-fee" element={<AdminDamageFeeManagement />} />
+          <Route path="manage-users" element={<AdminUserManagement />} />
+          <Route path="profile" element={<UpdateUserInfo />} />
+          <Route path="support" element={<SupportTicketForm />} />
+          <Route path="support-history" element={<SupportHistoryPage />} />
 
           {/* Staff components */}
         </Route>
       </Routes>
-
       <Toaster richColors position="top-center" />
     </>
   );

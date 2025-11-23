@@ -70,13 +70,6 @@ export default function ManagerLayout() {
       icon: <FileText size={18} />,
     },
 
-    { name: "Báo cáo trạm", path: "reports", icon: <FileBarChart size={18} /> },
-    {
-      name: "Trung tâm hỗ trợ",
-      path: "support",
-      icon: <MessageSquare size={18} />,
-    },
-
     { name: "Thông báo", path: "notifications", icon: <Bell size={18} /> },
   ];
 
@@ -107,10 +100,9 @@ export default function ManagerLayout() {
               end={link.path === "/manager"}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-2 rounded-md font-medium transition-all duration-200
-                ${
-                  isActive
-                    ? "bg-[#E6F7F7] text-[#38A3A5] border-l-4 border-[#38A3A5]"
-                    : "text-gray-700 hover:bg-[#E6F7F7] hover:text-[#38A3A5]"
+                ${isActive
+                  ? "bg-[#E6F7F7] text-[#38A3A5] border-l-4 border-[#38A3A5]"
+                  : "text-gray-700 hover:bg-[#E6F7F7] hover:text-[#38A3A5]"
                 }`
               }
             >
@@ -123,18 +115,11 @@ export default function ManagerLayout() {
         {/* Footer Links */}
         <div className="mt-auto p-4 border-t text-sm space-y-2">
           <NavLink
-            to="/settings"
+            to="profile"
             className="flex items-center gap-2 text-[#38A3A5] hover:underline"
           >
             <Settings size={16} />
             Cài đặt cá nhân
-          </NavLink>
-          <NavLink
-            to="/support"
-            className="flex items-center gap-2 text-[#38A3A5] hover:underline"
-          >
-            <LifeBuoy size={16} />
-            Hỗ trợ kỹ thuật
           </NavLink>
           <button
             className="flex items-center gap-2 text-[#38A3A5] hover:underline"
