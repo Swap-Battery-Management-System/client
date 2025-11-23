@@ -96,13 +96,22 @@ export default function TransactionHistoryPage() {
                                         💳 Thanh toán
                                     </Button>
                                 ) : (
-                                    <Button
-                                        disabled
-                                        size="sm"
-                                        className="border-green-500 text-green-600"
-                                    >
-                                        ✔ Đã thanh toán
-                                    </Button>
+                                    <div>
+                                        <Button
+                                            disabled
+                                            size="sm"
+                                            className="border-green-500 text-green-600"
+                                        >
+                                            ✔ Đã thanh toán
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => navigate(`/home/invoice/${inv.id}`)}
+                                        >
+                                            👁 Xem chi tiết
+                                        </Button>
+                                    </div>
                                 )}
                             </td>
                         </tr>

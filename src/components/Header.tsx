@@ -235,10 +235,45 @@ export default function Header({ onMenuClick }: { onMenuClick: () => void }) {
                   <User className="w-6 h-6" />
                 </button>
               </DropdownMenuTrigger>
+
+              <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuLabel>Tài khoản</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem onClick={() => setActiveModal("profile")}>
+                  Thông tin cá nhân
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={() => setActiveModal("vehicles")}>
+                  Phương tiện của tôi
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={() => setActiveModal("security")}>
+                  Cài đặt bảo mật
+                </DropdownMenuItem>
+
+                <DropdownMenuItem onClick={() => setActiveModal("subscription")}>
+                  Gói thuê bao của tôi
+                </DropdownMenuItem>
+
+                <DropdownMenuSeparator />
+
+                <DropdownMenuItem
+                  onClick={handleLogout}
+                  className="text-red-500 cursor-pointer hover:bg-red-50"
+                >
+                  Đăng xuất
+                </DropdownMenuItem>
+              </DropdownMenuContent>
             </DropdownMenu>
+
           </div>
         </div>
       </header>
+      <AccountModal
+        type={activeModal}
+        onClose={() => setActiveModal(null)}
+      />
 
       {/* Modal chi tiết */}
       {openModal && selectedNoti && (
