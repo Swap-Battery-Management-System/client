@@ -55,6 +55,13 @@ import UpdateUserInfo from "./pages/UpdateUserInfo";
 import TransactionHistory from "./pages/TransactionHistory";
 import StaffDashboard from "./pages/StaffDashboard";
 import UserDamageFeeView from "./pages/DamageFee";
+import ManagerRevenueManagement from "./pages/ManagerRevenueManagement";
+import ManagerSubscriptionManagement from "./pages/ManagerSubscriptionManagement";
+import ManagerDamageFeeManagement from "./pages/ManagerDamageFeeManagement";
+import ManagerDashboard from "./pages/ManagerDashboard";
+import ManagerFeedbackManagement from "./pages/ManagerFeedbackManagement";
+
+
 function App() {
   return (
     <>
@@ -165,6 +172,7 @@ function App() {
           <Route path="manage-booking" element={<StaffBookingManagement />} />
         </Route>
 
+
         {/* === Manager Routes === */}
         <Route
           path="/manager"
@@ -176,29 +184,25 @@ function App() {
         >
           {/* Dashboard */}
           <Route index element={<StaffDashboard />} />
-          <Route path="manage-users" element={<AdminUserManagement />} />
           <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="manage-booking" element={<StaffBookingManagement />} />
           <Route path="swap-session" element={<SwapSessionManager />} />
+          <Route path="revenue-reports" element={<ManagerRevenueManagement />} />
           <Route
             path="manage-subscription"
-            element={<AdminSubscriptionManagement />}
+            element={<ManagerSubscriptionManagement />}
           />
-          <Route path="damage-fee" element={<AdminDamageFeeManagement />} />
           <Route path="support-tickets" element={<AdminSupportTickets />} />
           <Route path="support" element={<AdminSupport />} />
           <Route path="notifications" element={<NotificationPage />} />
-          <Route
-            path="manage-subscription"
-            element={<AdminSubscriptionManagement />}
-          />
-          <Route path="damage-fee" element={<AdminDamageFeeManagement />} />
           <Route path="manage-users" element={<AdminUserManagement />} />
           <Route path="profile" element={<UpdateUserInfo />} />
-          <Route path="support" element={<SupportTicketForm />} />
           <Route path="support-history" element={<SupportHistoryPage />} />
 
           {/* Staff components */}
+          <Route path="damage-fee" element={<ManagerDamageFeeManagement />} />
+          <Route path="manage-feedback" element={<ManagerFeedbackManagement />} />
+
         </Route>
       </Routes>
       <Toaster richColors position="top-center" />
