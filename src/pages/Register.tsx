@@ -91,8 +91,6 @@ export default function Register() {
       const user = res.data.data.user;
       setUser(user);
 
-      console.log("🟢 Google Register response:", res.data);
-
       // === CASE 1: TÀI KHOẢN GOOGLE MỚI → status = pending hoặc HTTP 201 ===
       if (res.status === 201 || user.status === "pending") {
         toast.success("Tài khoản Google mới được tạo, vui lòng hoàn tất thông tin!");

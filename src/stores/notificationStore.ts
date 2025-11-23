@@ -37,10 +37,10 @@ export const useNotificationStore = create<NotificationState>((set) => ({
 
     // ───── Cập nhật 5 thông báo mới nhất (Header) ─────
     setLatestNotifications: (list) =>
-        set((state) => ({
-            latestNotifications:
-                typeof list === "function" ? (list as any)(state.latestNotifications) : list,
+        set(() => ({
+            latestNotifications: Array.isArray(list) ? list : list([]),
         })),
+
 
     // ───── Cập nhật 1 thông báo đã đọc trong Header dropdown ─────
     updateOneAsRead: (id: string) =>

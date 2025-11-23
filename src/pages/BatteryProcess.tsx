@@ -41,7 +41,7 @@ export default function BatteryProcess() {
   };
 
   const goToNext = () => setCurrentStep((prev) => Math.min(prev + 1, 3));
-  const goToPrev = () => setCurrentStep((prev) => Math.max(prev - 0, 0));
+
 
   const steps = [
     { id: "checkin", title: "Check-in" },
@@ -150,7 +150,7 @@ export default function BatteryProcess() {
   useEffect(() => {
     const resumeFromSwap = async () => {
       if (!currentSwapId) return;
-      setLoading(true); // bật loading
+      setLoading(true); 
 
       try {
         const res = await api.get(`/swap-sessions/${currentSwapId}`, {
@@ -230,8 +230,6 @@ export default function BatteryProcess() {
         <Stepper
           currentStep={currentStep}
           steps={steps}
-          onNext={goToNext}
-          onPrev={goToPrev}
         />
 
         {loading ? (
@@ -273,14 +271,13 @@ export default function BatteryProcess() {
             {currentStep === 2 && (
               <Step3InstallPin
                 onNext={goToNext}
-                onPrev={goToPrev}
                 data={processData}
                 onCancelProcess={handleCancelProcess}
               />
             )}
 
             {currentStep === 3 && (
-              <Step4Payment onPrev={goToPrev} data={processData} />
+              <Step4Payment data={processData} />
             )}
           </div>
         )}

@@ -102,7 +102,6 @@ export default function StaffDashboard() {
         try {
             setLoading(true);
             const res = await api.get("/stations", { withCredentials: true });
-            console.log("API /stations response:", res.data);
 
             const apiStation = res.data?.data?.stations;
 
@@ -122,12 +121,10 @@ export default function StaffDashboard() {
                 }
 
                 // log tổng pin & status
-                console.log(`=== 🔋 Total batteries: ${s.batteries.length} ===`);
                 const statusSummary: Record<string, number> = {};
                 s.batteries.forEach((b) => {
                     statusSummary[b.status] = (statusSummary[b.status] || 0) + 1;
                 });
-                console.log("=== 🟣 Battery Status Summary ===", statusSummary);
             } else {
                 console.log("Station not assigned!");
                 toast.info("Bạn chưa được gán vào trạm nào.");
@@ -146,7 +143,6 @@ export default function StaffDashboard() {
         try {
             setLoadingBooking(true);
             const res = await api.get(`/bookings?stationId=${station.id}`, { withCredentials: true });
-            console.log("Bookings from API:", res.data);
             setBookings(res.data?.data?.bookings || []);
         } catch (err) {
             console.error("Failed to fetch bookings:", err);
@@ -191,7 +187,6 @@ export default function StaffDashboard() {
             counts[key] = (counts[key] || 0) + 1;
         });
 
-        console.log("Counts per key:", counts);
 
         // 2. Sắp xếp key từ ngày cũ → ngày mới
         const sortedKeys = Object.keys(counts).sort((a, b) => {
@@ -200,17 +195,14 @@ export default function StaffDashboard() {
             return da.valueOf() - db.valueOf(); // từ ngày cũ → ngày mới
         });
 
-        console.log("Sorted keys (old → new):", sortedKeys);
 
         // 3. Chuyển thành mảng để LineChart dùng
         const result = sortedKeys.map((key) => ({ name: key, bookings: counts[key] }));
-        console.log("Booking data for LineChart:", result);
         setBookingData(result);
 
         // 4. Lấy chi tiết của ngày mới nhất (hiển thị bảng)
         if (result.length > 0) {
             const latestKey = result[result.length - 1].name;
-            console.log("Latest key for details table:", latestKey);
 
             const details = bookings.filter((b) => {
                 const date = dayjs.utc(b.scheduleTime);
@@ -223,7 +215,6 @@ export default function StaffDashboard() {
                 return key === latestKey;
             });
 
-            console.log("Booking details for latest key:", details);
 
             setBookingDetails(details);
             setSelectedLabel(latestKey);

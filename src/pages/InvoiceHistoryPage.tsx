@@ -9,34 +9,56 @@ interface Invoice {
     amountTotal: string;
     createdAt: string;
     user: { fullName: string; email: string };
+    type: string;
 }
+
+interface Feedback {
+    id: string;
+    invoiceId: string;
+}
+
 
 export default function TransactionHistoryPage() {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [loading, setLoading] = useState(true);
+    const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+
     const navigate = useNavigate();
 
     useEffect(() => {
-        const fetchInvoices = async () => {
+        const fetchData = async () => {
             try {
-                const res = await api.get("/invoices?page=1&limit=50");
-                const list = res.data.data.invoices || [];
+                const [invoiceRes, feedbackRes] = await Promise.all([
+                    api.get("/invoices?page=1&limit=50"),
+                    api.get("/feedbacks"),
+                ]);
 
-                // chỉ lấy processing + paid
-                const filtered = list.filter(
+                const invoiceList = invoiceRes.data.data.invoices || [];
+                const feedbackList = feedbackRes.data.data.feedbacks || [];
+                console.log("feedback", feedbackList);
+
+                const filtered = invoiceList.filter(
                     (inv: Invoice) =>
                         inv.status === "processing" || inv.status === "paid"
                 );
 
                 setInvoices(filtered);
+                setFeedbacks(feedbackList);
             } catch (err) {
-                console.error("Lỗi tải hóa đơn:", err);
+                console.error("Lỗi tải dữ liệu:", err);
             } finally {
                 setLoading(false);
             }
         };
-        fetchInvoices();
+
+        fetchData();
     }, []);
+
+    const hasFeedback = (invoiceId: string) => {
+        return feedbacks.some((fb) => fb.invoiceId === invoiceId);
+    };
+
+
 
     if (loading)
         return <p className="text-center mt-10">⏳ Đang tải...</p>;
@@ -96,13 +118,22 @@ export default function TransactionHistoryPage() {
                                         💳 Thanh toán
                                     </Button>
                                 ) : (
-                                    <Button
-                                        disabled
-                                        size="sm"
-                                        className="border-green-500 text-green-600"
-                                    >
-                                        ✔ Đã thanh toán
-                                    </Button>
+                                    <div>
+                                        <Button
+                                            disabled
+                                            size="sm"
+                                            className="border-green-500 text-green-600"
+                                        >
+                                            ✔ Đã thanh toán
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => navigate(`/home/invoice/${inv.id}`)}
+                                        >
+                                            👁 Xem chi tiết
+                                        </Button>
+                                    </div>
                                 )}
                             </td>
                         </tr>

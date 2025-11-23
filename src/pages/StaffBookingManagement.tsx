@@ -121,7 +121,6 @@ export default function StaffBookingManagement() {
             try {
                 // 🔹 Lấy danh sách trạm
                 const res = await api.get("/stations", { withCredentials: true });
-                console.log("Dữ liệu trạm:", res.data);
                 const myStation: Station | undefined = res.data.data.stations;
 
                 if (!myStation) {
@@ -131,7 +130,6 @@ export default function StaffBookingManagement() {
                     return;
                 }
 
-                console.log("Trạm của staff:", myStation);
                 setStation(myStation);
 
                 // 🔹 Lấy danh sách pin tại trạm
@@ -141,7 +139,6 @@ export default function StaffBookingManagement() {
                         if (b.id && b.code) map.set(b.id, b.code);
                     });
                     setBatteriesMap(map);
-                    console.log("Battery map:", map);
                 } else {
                     // Nếu API không trả kèm batteries, gọi riêng endpoint /batteries
                     try {
@@ -152,7 +149,6 @@ export default function StaffBookingManagement() {
                             if (b.id && b.code) map.set(b.id, b.code);
                         });
                         setBatteriesMap(map);
-                        console.log("Battery map (from /batteries):", map);
                     } catch (err) {
                         console.warn("Không thể lấy danh sách pin:", err);
                     }
@@ -169,10 +165,9 @@ export default function StaffBookingManagement() {
                     stationBookings = allBookings.filter(b => b.stationId === myStation.id);
                 }
 
-                console.log("Bookings của trạm:", stationBookings);
                 setBookings(stationBookings);
 
-                // 🔹 Fetch thông tin user theo ID (an toàn hơn)
+                //  Fetch thông tin user theo ID (an toàn hơn)
                 const userIds = Array.from(new Set(stationBookings.map(b => b.userId)));
                 const userMap = new Map<string, string>();
 
@@ -189,7 +184,6 @@ export default function StaffBookingManagement() {
                 }
 
                 setUsersMap(userMap);
-                console.log("User map:", userMap);
 
                 // 🔹 Fetch thông tin vehicle theo ID
                 const vehicleIds = Array.from(new Set(stationBookings.map(b => b.vehicleId)));

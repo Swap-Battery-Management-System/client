@@ -42,7 +42,6 @@ export default function SwapSessionManager() {
         setLoading(true);
         const res = await api.get("/swap-sessions/", { withCredentials: true });
         const data = res.data.data;
-        console.log("list swapsession", res.data);
         const enrichedSessions = await Promise.all(
           data.map(async (s: SwapSession) => {
             const [userRes, stationRes, vehicleRes] = await Promise.all([
