@@ -51,6 +51,10 @@ export function Step4Payment({ data }: Step4PaymentProps) {
     }
   };
 
+  useEffect(()=>{
+    console.log("invoiceId",invoiceId);
+  })
+
   const cardBg = "bg-[#F0FAFA]"; 
   const textColor = "text-[#1F6161]"; 
 
@@ -113,11 +117,6 @@ export function Step4Payment({ data }: Step4PaymentProps) {
         <InvoiceDetail
           invoiceId={invoiceId}
           staffMode={true}
-          swapSessionId={swapSession?.id}
-          onPaid={() => {
-            setPaid(true);
-            setTransaction(null);
-          }}
         />
       )}
     </div>
