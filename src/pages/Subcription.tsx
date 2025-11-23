@@ -95,8 +95,10 @@ export default function Subscription() {
         subId,
         autoRenew: true,
       });
-      navigate(`/home/invoice/${res.data.data.invoiceId}`);
+      console.log("invoice: ",res.data);
+      navigate(`/home/invoice/${res.data.data.invoice.id}`);
     } catch (err: any) {
+      console.log("loi sub",err);
       console.error("Error subscribing:", err);
       if (
         err.response?.status === 400 &&

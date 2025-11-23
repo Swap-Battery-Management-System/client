@@ -9,11 +9,11 @@ interface InvoiceDetailProps {
 }
 
 export default function InvoiceDetail({
-  invoiceId: propInvoiceId,
+  invoiceId: InvoiceId,
   staffMode = false,
 }: InvoiceDetailProps) {
   const { id: paramId } = useParams();
-  const id = propInvoiceId || paramId;
+  const id = InvoiceId || paramId;
   const navigate = useNavigate();
 
   const [invoice, setInvoice] = useState<any>(null);
@@ -65,7 +65,7 @@ export default function InvoiceDetail({
 
       {/* Header */}
       <div className="flex justify-between border-b pb-3 mb-4">
-        <div className="font-bold text-2xl text-[#38A3A5]">🔋 SWAPNET</div>
+        <div className="font-bold text-2xl text-[#38A3A5]">SWAPNET</div>
         <div className="text-right text-sm">
           <p className="font-semibold text-lg">
             {isSubscription
