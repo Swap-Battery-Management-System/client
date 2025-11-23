@@ -141,6 +141,5 @@ export default function TransactionHistoryPage() {
                 </tbody>
             </table>
         </div>
-      </div>
     );
 }

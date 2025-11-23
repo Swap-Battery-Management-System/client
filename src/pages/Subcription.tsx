@@ -55,14 +55,12 @@ export default function Subscription() {
         }
 
         // ====== USER SUBSCRIPTIONS ======
-        let subs: any[] = [];
-        if (Array.isArray(subsRes.data?.data?.subscriptions)) {
-          subs = subsRes.data.data.subscriptions;
-        } else if (Array.isArray(subsRes.data?.data?.userSubscriptions)) {
-          subs = subsRes.data.data.userSubscriptions;
-        }
+        const subs: any[] = Array.isArray(subsRes.data?.data?.subscriptions)
+          ? subsRes.data.data.subscriptions
+          : Array.isArray(subsRes.data?.data?.userSubscriptions)
+          ? subsRes.data.data.userSubscriptions
+          : [];
 
-        // map plan.id -> userSubscription
         const userSubsMap: Record<string, any> = {};
         subs.forEach((sub) => {
           if (sub.subId) userSubsMap[sub.subId] = sub;
@@ -74,12 +72,8 @@ export default function Subscription() {
         const invoiceMap: Record<string, string> = {};
         invoices.forEach((inv) => {
           if (inv.status !== "processing" || !inv.subUserId) return;
-
           const userSub = subs.find((s) => s.id === inv.subUserId);
-          if (userSub?.subId) {
-            invoiceMap[userSub.subId] = inv.id; // map plan.id -> invoice.id
-            console.log("mapi", userSub?.subId);
-          }
+          if (userSub?.subId) invoiceMap[userSub.subId] = inv.id;
         });
         setPendingInvoices(invoiceMap);
       } catch (err) {
@@ -101,8 +95,7 @@ export default function Subscription() {
         subId,
         autoRenew: true,
       });
-      const invoiceId = res.data.data.invoiceId;
-      navigate(`/home/invoice/${invoiceId}`);
+      navigate(`/home/invoice/${res.data.data.invoiceId}`);
     } catch (err: any) {
       console.error("Error subscribing:", err);
       if (
@@ -231,13 +224,11 @@ export default function Subscription() {
                   className="w-full py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-[#57CC99] to-[#38A3A5] hover:opacity-90 hover:shadow-lg transition-all duration-300"
                   disabled={!!userSub && !pendingInvoiceId}
                   onClick={() => {
-                    if (pendingInvoiceId) {
+                    if (pendingInvoiceId)
                       navigate(
                         `/home/invoice/${pendingInvoiceId}?type=subscription`
                       );
-                    } else if (!userSub) {
-                      handleSubmit(plan.id);
-                    }
+                    else if (!userSub) handleSubmit(plan.id);
                   }}
                 >
                   {pendingInvoiceId
