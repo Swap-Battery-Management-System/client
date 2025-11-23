@@ -113,11 +113,6 @@ export function Step4Payment({ data }: Step4PaymentProps) {
         <InvoiceDetail
           invoiceId={invoiceId}
           staffMode={true}
-          swapSessionId={swapSession?.id}
-          onPaid={() => {
-            setPaid(true);
-            setTransaction(null);
-          }}
         />
       )}
     </div>

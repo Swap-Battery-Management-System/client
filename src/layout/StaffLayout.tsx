@@ -48,11 +48,6 @@ export default function StaffLayout() {
       icon: <RefreshCcw size={18} />,
     },
     { name: "Báo cáo trạm", path: "support", icon: <FileBarChart size={18} /> },
-    {
-      name: "Sự cố & kiểm tra an toàn",
-      path: "safety",
-      icon: <ShieldCheck size={18} />,
-    },
   ];
 
   return (
@@ -105,14 +100,6 @@ export default function StaffLayout() {
           >
             <Settings size={16} />
             Cài đặt cá nhân
-          </NavLink>
-
-          <NavLink
-            to="/support"
-            className="flex items-center gap-2 text-gray-600 hover:text-[#38A3A5]"
-          >
-            <LifeBuoy size={16} />
-            Hỗ trợ kỹ thuật
           </NavLink>
 
           <button
