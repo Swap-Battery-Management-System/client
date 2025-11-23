@@ -84,11 +84,10 @@ export default function StaffLayout() {
               end={link.path === "/staff"}
               className={({ isActive }) =>
                 `flex items-center gap-3 px-4 py-2 rounded-lg text-sm font-medium transition
-               ${
-                 isActive
-                   ? "bg-[#E6F7F7] text-[#38A3A5]"
-                   : "text-gray-700 hover:bg-[#F0FAFA] hover:text-[#38A3A5]"
-               }`
+               ${isActive
+                  ? "bg-[#E6F7F7] text-[#38A3A5]"
+                  : "text-gray-700 hover:bg-[#F0FAFA] hover:text-[#38A3A5]"
+                }`
               }
             >
               {link.icon}
@@ -100,19 +99,11 @@ export default function StaffLayout() {
         {/* Footer */}
         <div className="p-4 border-t text-sm space-y-2">
           <NavLink
-            to="/profile"
+            to="/staff/profile"
             className="flex items-center gap-2 text-[#38A3A5] hover:underline"
           >
             <Settings size={16} />
             Cài đặt cá nhân
-          </NavLink>
-
-          <NavLink
-            to="/support"
-            className="flex items-center gap-2 text-gray-600 hover:text-[#38A3A5]"
-          >
-            <LifeBuoy size={16} />
-            Hỗ trợ kỹ thuật
           </NavLink>
 
           <button

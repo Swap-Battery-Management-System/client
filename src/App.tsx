@@ -131,6 +131,7 @@ function App() {
           <Route path="manage-booking" element={<StaffBookingManagement />} />
           <Route path="support" element={<SupportTicketForm />} />
           <Route path="support-history" element={<SupportHistoryPage />} />
+          <Route path="profile" element={<UpdateUserInfo />} />
         </Route>
 
         {/* ADMIN ROUTES */}
@@ -198,7 +199,7 @@ function App() {
           <Route path="manage-users" element={<AdminUserManagement />} />
           <Route path="profile" element={<UpdateUserInfo />} />
           <Route path="support-history" element={<SupportHistoryPage />} />
-
+          <Route path="send-ticket" element={<SupportTicketForm />} />
           {/* Staff components */}
           <Route path="damage-fee" element={<ManagerDamageFeeManagement />} />
           <Route path="manage-feedback" element={<ManagerFeedbackManagement />} />

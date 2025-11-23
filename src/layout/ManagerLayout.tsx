@@ -73,6 +73,11 @@ export default function ManagerLayout() {
     { name: "Quản lý Feedback", path: "manage-feedback", icon: <FileBarChart size={18} /> },
 
     {
+      name: "Báo cáo trạm",
+      path: "send-ticket",
+      icon: <FileText size={18} />,
+    },
+    {
       name: "Trung tâm hỗ trợ",
       path: "support",
       icon: <MessageSquare size={18} />,

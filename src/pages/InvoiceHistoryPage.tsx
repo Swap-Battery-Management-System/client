@@ -4,17 +4,17 @@ import api from "@/lib/api";
 import { useNavigate } from "react-router-dom";
 
 interface Invoice {
-  id: string;
-  status: string;
-  amountTotal: string;
-  createdAt: string;
-  user: { fullName: string; email: string };
-  type: string;
+    id: string;
+    status: string;
+    amountTotal: string;
+    createdAt: string;
+    user: { fullName: string; email: string };
+    type: string;
 }
 
 interface Feedback {
-  id: string;
-  invoiceId: string;
+    id: string;
+    invoiceId: string;
 }
 
 
@@ -25,38 +25,38 @@ export default function TransactionHistoryPage() {
 
     const navigate = useNavigate();
 
-   useEffect(() => {
-     const fetchData = async () => {
-       try {
-         const [invoiceRes, feedbackRes] = await Promise.all([
-           api.get("/invoices?page=1&limit=50"),
-           api.get("/feedbacks"),
-         ]);
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const [invoiceRes, feedbackRes] = await Promise.all([
+                    api.get("/invoices?page=1&limit=50"),
+                    api.get("/feedbacks"),
+                ]);
 
-         const invoiceList = invoiceRes.data.data.invoices || [];
-         const feedbackList = feedbackRes.data.data.feedbacks || [];
-         console.log("feedback", feedbackList);
+                const invoiceList = invoiceRes.data.data.invoices || [];
+                const feedbackList = feedbackRes.data.data.feedbacks || [];
+                console.log("feedback", feedbackList);
 
-         const filtered = invoiceList.filter(
-           (inv: Invoice) =>
-             inv.status === "processing" || inv.status === "paid"
-         );
+                const filtered = invoiceList.filter(
+                    (inv: Invoice) =>
+                        inv.status === "processing" || inv.status === "paid"
+                );
 
-         setInvoices(filtered);
-         setFeedbacks(feedbackList);
-       } catch (err) {
-         console.error("Lỗi tải dữ liệu:", err);
-       } finally {
-         setLoading(false);
-       }
-     };
+                setInvoices(filtered);
+                setFeedbacks(feedbackList);
+            } catch (err) {
+                console.error("Lỗi tải dữ liệu:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
 
-     fetchData();
-   }, []);
+        fetchData();
+    }, []);
 
-   const hasFeedback = (invoiceId: string) => {
-     return feedbacks.some((fb) => fb.invoiceId === invoiceId);
-   };
+    const hasFeedback = (invoiceId: string) => {
+        return feedbacks.some((fb) => fb.invoiceId === invoiceId);
+    };
 
 
 
@@ -141,6 +141,5 @@ export default function TransactionHistoryPage() {
                 </tbody>
             </table>
         </div>
-      </div>
     );
 }
