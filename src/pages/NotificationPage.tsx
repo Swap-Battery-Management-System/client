@@ -1,3 +1,4 @@
+// ======================= IMPORTS =======================
 import { useEffect, useState, useCallback } from "react";
 import {
   Bell,
@@ -25,17 +26,21 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+
+// ======================= INTERFACES =======================
 interface Notification {
   notification_id: string;
   message: string;
   type: string;
   created_date: string;
-  status: string;
+  status: "Unread" | "Read";
 }
 
+// ======================= MAIN COMPONENT =======================
 export default function NotificationPage() {
   const { user } = useAuth();
-  const { socket } = useSocket(); // ⭐ Lấy socket từ provider
+  const { socket } = useSocket();
+
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [filter, setFilter] = useState("All");
   const [loading, setLoading] = useState(true);
@@ -49,11 +54,10 @@ export default function NotificationPage() {
     increaseUnread,
     resetUnread,
     setLatestNotifications,
-    updateOneAsRead
+    updateOneAsRead,
   } = useNotificationStore();
 
-
-  // ⭐ Icon hiển thị từng loại
+  // ======================= ICON MAPPING =======================
   const typeIcons: Record<string, React.ReactNode> = {
     Booking: <CalendarCheck className="w-5 h-5 text-emerald-500" />,
     Battery: <Battery className="w-5 h-5 text-cyan-500" />,
@@ -62,13 +66,12 @@ export default function NotificationPage() {
     Payment: <CreditCard className="w-5 h-5 text-amber-500" />,
   };
 
-  // ⭐ Hàm xử lý socket realtime
+  // ======================= SOCKET HANDLE =======================
   const handleNewNotification = useCallback((data: any) => {
-    console.log("📩 Realtime notification:", data);
     increaseUnread();
 
     const newItem: Notification = {
-      notification_id: data.id || Date.now().toString(),
+      notification_id: data.id,
       message: data.message,
       type: data.type || "Alert",
       created_date: new Date().toISOString(),
@@ -78,19 +81,15 @@ export default function NotificationPage() {
     setNotifications((prev) => [newItem, ...prev]);
   }, []);
 
-  // ⭐ LISTEN socket — KHÔNG CONNECT
   useEffect(() => {
     if (!socket) return;
 
     socket.on("notification", handleNewNotification);
-    console.log("🔔 NotificationPage: listening for notification...");
 
-    return () => {
-      socket.off("notification", handleNewNotification);
-    };
+    return () => socket.off("notification", handleNewNotification);
   }, [socket, handleNewNotification]);
 
-  // ⭐ Load lịch sử thông báo
+  // ======================= FETCH LIST =======================
   const fetchNotifications = useCallback(async () => {
     if (!user?.id) return;
 
@@ -99,14 +98,13 @@ export default function NotificationPage() {
       const res = await api.get(`/notifications?userId=${user.id}`);
       const raw = res.data?.data?.notifications || [];
 
-      const formatted = raw
+      const formatted: Notification[] = raw
         .map((n: any) => ({
-          notification_id: n.id || n.notification_id,
+          notification_id: n.id,
           message: n.message,
           type: n.type || "Alert",
-          created_date: n.createdAt || n.created_date,
-          status:
-            n.isRead === true || n.status === "Read" ? "Read" : "Unread",
+          created_date: n.createdAt,
+          status: n.isRead ? "Read" : "Unread",
         }))
         .sort(
           (a: any, b: any) =>
@@ -115,11 +113,10 @@ export default function NotificationPage() {
         );
 
       setNotifications(formatted);
-      setUnreadCount(formatted.filter((x: any) => x.status === "Unread").length);
+      setUnreadCount(formatted.filter((x) => x.status === "Unread").length);
       setLatestNotifications(formatted.slice(0, 5));
-
     } catch (err) {
-      console.error("❌ Lỗi khi tải thông báo:", err);
+      console.error("❌ Fetch notifications error:", err);
     } finally {
       setLoading(false);
     }
@@ -129,7 +126,7 @@ export default function NotificationPage() {
     fetchNotifications();
   }, [fetchNotifications]);
 
-  // ⭐ Xem chi tiết
+  // ======================= VIEW DETAIL (NO REFETCH) =======================
   const handleViewDetail = async (id: string) => {
     try {
       const res = await api.get(`/notifications/${id}`);
@@ -138,27 +135,41 @@ export default function NotificationPage() {
       setDetail(detailData);
       setOpen(true);
 
-      // Đánh dấu đã đọc
+      if (detailData.isRead) return;
+
       await api.patch(`/notifications/${id}/read`);
-      await fetchNotifications();
+
+      // Update UI directly
+      setNotifications((prev) =>
+        prev.map((n) =>
+          n.notification_id === id ? { ...n, status: "Read" } : n
+        )
+      );
+
+      decreaseUnread();
+      updateOneAsRead(id);
     } catch (err) {
-      console.error("❌ Lỗi khi lấy chi tiết:", err);
+      console.error("❌ View detail error:", err);
     }
   };
 
-  // ⭐ Xóa thông báo
+  // ======================= DELETE NOTIFICATION =======================
   const handleDelete = async (id: string) => {
     try {
       await api.delete(`/notifications/${id}`);
       toast.success("Đã xóa thông báo");
+
+      setNotifications((prev) =>
+        prev.filter((n) => n.notification_id !== id)
+      );
+
       setOpen(false);
-      await fetchNotifications();
-    } catch (err) {
+    } catch {
       toast.error("Không thể xóa thông báo!");
     }
   };
 
-  // ⭐ Lọc danh sách
+  // ======================= FILTER =======================
   const filtered =
     filter === "All"
       ? notifications
@@ -166,6 +177,7 @@ export default function NotificationPage() {
         ? notifications.filter((n) => n.status === "Unread")
         : notifications.filter((n) => n.status === "Read");
 
+  // ======================= UI LOADING =======================
   if (loading) {
     return (
       <div className="flex justify-center items-center h-80">
@@ -176,25 +188,28 @@ export default function NotificationPage() {
     );
   }
 
+  // ======================= RETURN UI =======================
   return (
     <div className="max-w-3xl mx-auto px-6 py-8">
+
+      {/* HEADER */}
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2 bg-gradient-to-r from-cyan-500 to-emerald-500 bg-clip-text text-transparent">
           <Bell className="w-6 h-6 text-emerald-500" />
           Trung tâm thông báo
         </h1>
+
         <Button
           variant="outline"
           size="sm"
           onClick={() => setConfirmOpen(true)}
-          className="border-emerald-400 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700 transition"
+          className="border-emerald-400 text-emerald-600 hover:bg-emerald-50"
         >
           Đánh dấu tất cả đã đọc
         </Button>
-
       </div>
 
-      {/* Bộ lọc */}
+      {/* FILTER */}
       <div className="flex gap-2 mb-4">
         {["All", "Unread", "Read"].map((f) => (
           <Button
@@ -202,20 +217,24 @@ export default function NotificationPage() {
             variant={filter === f ? "default" : "outline"}
             onClick={() => setFilter(f)}
             className={cn(
-              "rounded-full transition-all duration-200",
+              "rounded-full",
               filter === f
-                ? "bg-gradient-to-r from-cyan-500 to-emerald-500 text-white shadow"
-                : "border-emerald-300 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700"
+                ? "bg-gradient-to-r from-cyan-500 to-emerald-500 text-white"
+                : "border-emerald-300 text-emerald-600"
             )}
           >
-            {f === "All" ? "Tất cả" : f === "Unread" ? "Chưa đọc" : "Đã đọc"}
+            {f === "All"
+              ? "Tất cả"
+              : f === "Unread"
+                ? "Chưa đọc"
+                : "Đã đọc"}
           </Button>
         ))}
       </div>
 
       <Separator className="my-4" />
 
-      {/* Danh sách */}
+      {/* LIST */}
       {filtered.length === 0 ? (
         <div className="text-center py-20">
           <Bell className="w-10 h-10 text-gray-300 mx-auto mb-3" />
@@ -230,24 +249,30 @@ export default function NotificationPage() {
               key={n.notification_id}
               onClick={() => handleViewDetail(n.notification_id)}
               className={cn(
-                "flex items-start gap-3 p-4 rounded-lg border cursor-pointer transition-all duration-200 hover:shadow-md hover:-translate-y-[1px]",
+                "flex items-start gap-3 p-4 rounded-lg border cursor-pointer hover:shadow-md transition",
                 n.status === "Unread"
                   ? "bg-emerald-50 border-emerald-200"
                   : "bg-white border-gray-200"
               )}
             >
-              <div>{typeIcons[n.type] || <AlertCircle className="w-5 h-5 text-gray-400" />}</div>
+              <div>
+                {typeIcons[n.type] || (
+                  <AlertCircle className="w-5 h-5 text-gray-400" />
+                )}
+              </div>
 
               <div className="flex-1">
-                <p className="text-sm text-gray-800 leading-snug">{n.message}</p>
-                <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
-                  <span className="capitalize">{n.type}</span>
-                  <span>{new Date(n.created_date).toLocaleString("vi-VN")}</span>
+                <p className="text-sm text-gray-800">{n.message}</p>
+                <div className="flex justify-between text-xs text-gray-500 mt-2">
+                  <span>{n.type}</span>
+                  <span>
+                    {new Date(n.created_date).toLocaleString("vi-VN")}
+                  </span>
                 </div>
               </div>
 
               {n.status === "Unread" && (
-                <Badge className="bg-gradient-to-r from-cyan-500 to-emerald-500 text-white shadow">
+                <Badge className="bg-gradient-to-r from-cyan-500 to-emerald-500 text-white">
                   Mới
                 </Badge>
               )}
@@ -256,36 +281,37 @@ export default function NotificationPage() {
         </div>
       )}
 
-      {/* Dialog chi tiết */}
+      {/* ========== DIALOG ========== */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md rounded-2xl shadow-2xl border border-emerald-100 bg-white/95 backdrop-blur-sm">
-          <DialogHeader className="space-y-1">
-            <DialogTitle className="flex items-center gap-2 text-lg font-semibold text-gray-800">
-              <Bell className="w-5 h-5 text-emerald-500" />
+        <DialogContent className="max-w-md rounded-xl shadow-lg border border-emerald-100">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-lg">
+              <Bell className="w-5 h-5 text-emerald-600" />
               {detail?.title || "Chi tiết thông báo"}
             </DialogTitle>
 
-            <DialogDescription className="text-xs text-gray-500 flex items-center justify-between">
-              <span>{new Date(detail?.createdAt).toLocaleString("vi-VN")}</span>
+            <DialogDescription className="flex justify-between text-xs text-gray-500">
+              <span>
+                {new Date(detail?.createdAt).toLocaleString("vi-VN")}
+              </span>
+
               {detail?.type && (
-                <span className="px-2 py-[2px] rounded-full bg-emerald-100 text-emerald-600 text-[11px] font-medium">
+                <span className="px-2 py-1 bg-emerald-100 text-emerald-600 rounded-full text-[11px]">
                   {detail.type}
                 </span>
               )}
             </DialogDescription>
           </DialogHeader>
 
-          <div className="py-3">
-            <p className="whitespace-pre-line text-gray-700 leading-relaxed text-sm">
-              {detail?.message || "Không có nội dung chi tiết."}
-            </p>
-          </div>
+          <p className="text-gray-700 mt-4 whitespace-pre-line">
+            {detail?.message}
+          </p>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
+          <div className="flex justify-end gap-3 mt-6">
             <Button
               variant="outline"
-              onClick={() => handleDelete(detail?.id)}
-              className="border-rose-300 text-rose-600 hover:bg-rose-50 hover:border-rose-400 flex items-center gap-2 transition"
+              onClick={() => handleDelete(detail.id)}
+              className="border-rose-400 text-rose-600 hover:bg-rose-50"
             >
               <Trash2 className="w-4 h-4" /> Xóa
             </Button>
@@ -293,72 +319,77 @@ export default function NotificationPage() {
             <Button
               disabled={detail?.isRead}
               onClick={async () => {
-                if (detail?.id) {
-                  await api.patch(`/notifications/${detail.id}/read`);
-                  decreaseUnread();
-                  toast.success("Đã đánh dấu thông báo là đã đọc");
-                  await fetchNotifications();
-                }
-                setOpen(false);
+                await api.patch(`/notifications/${detail.id}/read`);
+
+                setNotifications((prev) =>
+                  prev.map((n) =>
+                    n.notification_id === detail.id
+                      ? { ...n, status: "Read" }
+                      : n
+                  )
+                );
+
+                updateOneAsRead(detail.id);
+                decreaseUnread();
+
+                setDetail({ ...detail, isRead: true });
+                toast.success("Đã đánh dấu là đã đọc");
               }}
               className={cn(
-                "flex items-center gap-2 shadow-md transition",
+                "flex items-center gap-2",
                 detail?.isRead
-                  ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-cyan-500 to-emerald-500 text-white hover:from-cyan-600 hover:to-emerald-600"
+                  ? "bg-gray-200 text-gray-400"
+                  : "bg-gradient-to-r from-cyan-500 to-emerald-500 text-white"
               )}
             >
-              <CheckCircle className="w-4 h-4" />
-              Đã đọc
+              <CheckCircle className="w-4 h-4" /> Đã đọc
             </Button>
-
           </div>
         </DialogContent>
       </Dialog>
 
+      {/* ========== DIALOG READ ALL ========== */}
       <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
-        <DialogContent className="max-w-sm rounded-2xl border border-emerald-100 bg-white shadow-lg">
+        <DialogContent className="max-w-sm rounded-xl border border-emerald-100 shadow">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-gray-800">
               <CheckCircle className="w-5 h-5 text-emerald-500" />
-              Xác nhận hành động
+              Xác nhận
             </DialogTitle>
-            <DialogDescription className="text-gray-500 text-sm">
-              Bạn có chắc chắn muốn đánh dấu <b>tất cả</b> thông báo là <b>đã đọc</b> không?
+
+            <DialogDescription className="text-gray-500">
+              Bạn muốn đánh dấu <b>tất cả</b> thông báo là đã đọc?
             </DialogDescription>
           </DialogHeader>
 
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
-
+          <div className="flex justify-end gap-3 mt-4">
             <Button
               variant="outline"
               onClick={() => setConfirmOpen(false)}
-              className="border-gray-300 text-gray-600 hover:bg-gray-50"
             >
               Hủy
             </Button>
 
             <Button
               onClick={async () => {
-                try {
-                  await api.patch("/notifications/read");
-                  resetUnread();
-                  toast.success("Tất cả thông báo đã được đánh dấu là đã đọc");
-                  setConfirmOpen(false);
-                  await fetchNotifications();
-                } catch (err) {
-                  toast.error("Không thể đánh dấu thông báo đã đọc!");
-                  console.error("❌ Lỗi khi cập nhật:", err);
-                }
+                await api.patch("/notifications/read");
+
+                setNotifications((prev) =>
+                  prev.map((n) => ({ ...n, status: "Read" }))
+                );
+
+                resetUnread();
+                toast.success("Đã đánh dấu tất cả đã đọc");
+
+                setConfirmOpen(false);
               }}
-              className="bg-gradient-to-r from-cyan-500 to-emerald-500 text-white shadow hover:from-cyan-600 hover:to-emerald-600"
+              className="bg-gradient-to-r from-cyan-500 to-emerald-500 text-white"
             >
               Xác nhận
             </Button>
           </div>
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }
