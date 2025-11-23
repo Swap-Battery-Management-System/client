@@ -76,7 +76,6 @@ export default function MyVehicles() {
       setLoading(true);
       const res = await api.get("/vehicles", { withCredentials: true });
       setVehicles(res.data.data?.vehicles || []);
-      console.log("vehicles", res.data);
     } catch {
       toast.error("Không thể tải danh sách xe!");
     } finally {

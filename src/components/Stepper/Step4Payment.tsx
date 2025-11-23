@@ -13,8 +13,6 @@ interface Step4PaymentProps {
 }
 
 export function Step4Payment({ data }: Step4PaymentProps) {
-  const navigate = useNavigate();
-  const { user } = useAuth();
   const stationId = data?.station?.id;
   const invoiceId = data?.invoiceId;
   const swapSession = data?.swapSession;
@@ -46,7 +44,6 @@ export function Step4Payment({ data }: Step4PaymentProps) {
         `/transactions/${transaction.id}/confirm`,
         {}
       );
-      console.log("confirm transaction", transactionRes.data);
       setPaid(true);
       setTransaction(null);
     } catch (err) {

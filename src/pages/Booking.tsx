@@ -109,28 +109,6 @@ export default function Booking() {
   const [dateError, setDateError] = useState<string | null>(null);
   const [noteError, setNoteError] = useState<string | null>(null);
 
-  useEffect(() => {
-    if (!user) return;
-
-    // const isComplete =
-    //   Boolean(user.fullName) &&
-    //   Boolean(user.phoneNumber) &&
-    //   Boolean(user.address);
-
-    // // Nếu form chưa complete và thông tin chưa đầy đủ → chỉ toast 1 lần
-    // if (!isComplete) {
-    //   if (isCompleteForm) {
-    //     toast.error(
-    //       "Vui lòng hoàn thiện thông tin cá nhân trước khi đặt lịch!"
-    //     );
-    //     setIsCompleteForm(false);
-    //   }
-    // } else {
-    //   setForm((prev) => ({ ...prev, userName: user.fullName as string}));
-    //   setIsCompleteForm(true);
-    // }
-  }, []);
-
   const checkPendingBooking = async () => {
     try {
       const res = await api.get("/bookings", { withCredentials: true });
@@ -140,7 +118,6 @@ export default function Booking() {
       );
       setHasPendingBooking(pending);
     } catch (err) {
-      console.log("không thể kiểm tra booking: ", err);
     } finally {
       setLoading(false);
     }
@@ -151,7 +128,6 @@ export default function Booking() {
     try {
       const res = await api.get("/vehicles", { withCredentials: true });
       const data = res.data.data.vehicles;
-      console.log(res.data);
 
       const filtered: Vehicle[] = data
         .filter((v: any) => v.status === "active" && v.userId === user?.id)
@@ -161,8 +137,6 @@ export default function Booking() {
           status: v.status,
           batteryTypeId: v.model.batteryType.id,
         }));
-      console.log(res.data);
-      console.log("payloadVehicle:", filtered);
       setVehicles(filtered);
     } catch (err) {
       console.log("khong the lay ds xe:", err);
@@ -173,7 +147,6 @@ export default function Booking() {
     fetchAllStation();
     fetchAllAvailableVehicle();
     checkPendingBooking();
-    console.log("user booking", user);
   }, []);
 
   //gọi hàm kiểm tra pin available khi stationId or VehicleId thay đổi
@@ -425,7 +398,6 @@ export default function Booking() {
       vehicleId,
       stationId,
     };
-    console.log("booking", payload);
 
     try {
       setSubmitting(true);

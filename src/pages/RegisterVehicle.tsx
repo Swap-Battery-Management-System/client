@@ -48,7 +48,6 @@ export default function RegisterVehicle() {
       const res = await api.get("/models", { withCredentials: true });
       const data: Model[] = res.data.data;
       setModels(data);
-      console.log("ds model:", res.data);
     } catch (err) {
       console.error("Không thể lấy danh sách model:", err);
       setMessage("Chúng tôi gặp chút lỗi. Bạn thử lại sau nhé");
@@ -60,41 +59,6 @@ export default function RegisterVehicle() {
   useEffect(() => {
     modelList();
   }, []);
-
-  // const handleOCR = async (file: File) => {
-  //   setOcrLoading(true);
-  //   toast.info("Đang đọc dữ liệu từ cavet xe...");
-
-  //   try {
-  //     const { data } = await Tesseract.recognize(file, "vie", {
-  //       logger: (m) => console.log(m),
-  //     });
-
-  //     const text = data.text;
-  //     console.log("OCR Result:", text);
-
-  //     // Ví dụ regex để lấy biển số và VIN
-  //     const licenseMatch = text.match(
-  //       /\b\d{2}[A-Z]{1,2}-\d{3,4}(\.\d{1,2})?\b/
-  //     );
-  //     const vinMatch = text.match(/[A-HJ-NPR-Z0-9]{17}/);
-
-  //     if (licenseMatch || vinMatch) {
-  //       if (licenseMatch) setPlate(licenseMatch[0]);
-  //       if (vinMatch) setVin(vinMatch[0]);
-  //       toast.success("Đã tự động điền thông tin từ cavet!");
-  //     } else {
-  //       // Không tìm thấy biển số hay VIN nào
-  //       toast.error("Không đọc được dữ liệu từ cavet. Vui lòng nhập thủ công.");
-  //       console.warn("OCR không tìm thấy biển số hoặc VIN trong ảnh.");
-  //     }
-  //   } catch (err) {
-  //     console.error("OCR Error:", err);
-  //     toast.error("Không đọc được dữ liệu từ cavet. Vui lòng nhập thủ công.");
-  //   } finally {
-  //     setOcrLoading(false);
-  //   }
-  // };
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -132,8 +96,6 @@ export default function RegisterVehicle() {
       validateField("cavet", data.secure_url);
       toast.success("Tải ảnh cavet thành công!");
 
-      // Bước OCR (nếu cần)
-      // await handleOCR(file);
     } catch (err) {
       console.error(err);
       toast.error("Không thể tải ảnh cavet lên cloud!");
@@ -214,7 +176,6 @@ export default function RegisterVehicle() {
     };
 
     setLoading(true);
-    console.log("Payload gửi đi:", payload);
 
     try {
       const res = await api.post("/vehicles", payload, {

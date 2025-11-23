@@ -32,7 +32,6 @@ export default function SetPassword() {
         setLoading(true);
         try {
             const res = await api.post("/auth/register", { email, password });
-            console.log("✅ Register response:", res.data);
 
             if (res.data?.data?.accessToken) {
                 useAuthStore.getState().setAccessToken(res.data.data.accessToken);

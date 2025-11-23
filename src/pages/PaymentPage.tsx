@@ -55,9 +55,6 @@ export default function PaymentPage() {
                 totalAmount: amount,
             });
 
-            console.log("📦 API trả về:", res.data);
-
-            // Nhận link redirect
             const paymentUrl =
                 res.data?.data?.paymentUrl ||
                 res.data?.paymentUrl ||
@@ -65,14 +62,12 @@ export default function PaymentPage() {
 
             // CASE 1 — CASH
             if (!paymentUrl) {
-                toast.success("Thanh toán tiền mặt thành công!");
-                navigate(`/home/invoice/${invoiceId}`);
+                navigate(`/home/payment/result`,{state:{method:"cash", invoiceId:`${invoiceId}`}});
                 return;
             }
 
-            // CASE 2 — ONLINE PAYMENT
+            // ❗ KHÔNG append invoiceId
             window.location.href = paymentUrl;
-
         } catch (err: any) {
             console.error("❌ Payment error:", err);
             toast.error(err.response?.data?.message || "Lỗi thanh toán.");
@@ -92,7 +87,7 @@ export default function PaymentPage() {
             <p className="text-lg font-semibold mb-4">
                 Số tiền:{" "}
                 <span className="text-[#38A3A5]">
-                    {amount.toLocaleString("vi-VN")}₫
+                    {amount?.toLocaleString("vi-VN")}₫
                 </span>
             </p>
 

@@ -4,39 +4,61 @@ import api from "@/lib/api";
 import { useNavigate } from "react-router-dom";
 
 interface Invoice {
-    id: string;
-    status: string;
-    amountTotal: string;
-    createdAt: string;
-    user: { fullName: string; email: string };
+  id: string;
+  status: string;
+  amountTotal: string;
+  createdAt: string;
+  user: { fullName: string; email: string };
+  type: string;
 }
+
+interface Feedback {
+  id: string;
+  invoiceId: string;
+}
+
 
 export default function TransactionHistoryPage() {
     const [invoices, setInvoices] = useState<Invoice[]>([]);
     const [loading, setLoading] = useState(true);
+    const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
+
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const fetchInvoices = async () => {
-            try {
-                const res = await api.get("/invoices?page=1&limit=50");
-                const list = res.data.data.invoices || [];
+   useEffect(() => {
+     const fetchData = async () => {
+       try {
+         const [invoiceRes, feedbackRes] = await Promise.all([
+           api.get("/invoices?page=1&limit=50"),
+           api.get("/feedbacks"),
+         ]);
 
-                // chỉ lấy processing + paid
-                const filtered = list.filter(
-                    (inv: Invoice) =>
-                        inv.status === "processing" || inv.status === "paid"
-                );
+         const invoiceList = invoiceRes.data.data.invoices || [];
+         const feedbackList = feedbackRes.data.data.feedbacks || [];
+         console.log("feedback", feedbackList);
 
-                setInvoices(filtered);
-            } catch (err) {
-                console.error("Lỗi tải hóa đơn:", err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchInvoices();
-    }, []);
+         const filtered = invoiceList.filter(
+           (inv: Invoice) =>
+             inv.status === "processing" || inv.status === "paid"
+         );
+
+         setInvoices(filtered);
+         setFeedbacks(feedbackList);
+       } catch (err) {
+         console.error("Lỗi tải dữ liệu:", err);
+       } finally {
+         setLoading(false);
+       }
+     };
+
+     fetchData();
+   }, []);
+
+   const hasFeedback = (invoiceId: string) => {
+     return feedbacks.some((fb) => fb.invoiceId === invoiceId);
+   };
+
+
 
     if (loading)
         return <p className="text-center mt-10">⏳ Đang tải...</p>;
@@ -119,5 +141,6 @@ export default function TransactionHistoryPage() {
                 </tbody>
             </table>
         </div>
+      </div>
     );
 }

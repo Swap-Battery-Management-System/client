@@ -10,9 +10,6 @@ type Step = {
 type StepperProps = {
   steps?: Step[];
   currentStep?: number; // 0-based index
-  onNext?: () => void;
-  onPrev?: () => void;
-  onGoToStep?: (index: number) => void; // tuỳ chọn, nếu bạn muốn click để nhảy đến step bất kỳ
 };
 
 export default function Stepper({
@@ -23,9 +20,6 @@ export default function Stepper({
     { id: "payment", title: "Payment" },
   ],
   currentStep = 0,
-  onNext,
-  onPrev,
-  onGoToStep,
 }: StepperProps) {
   return (
     <nav aria-label="Progress" className="py-6">
@@ -35,23 +29,11 @@ export default function Stepper({
             const isActive = idx === currentStep;
             const isCompleted = idx < currentStep;
 
-            const handleClick = () => {
-              if (idx === currentStep) return;
-              if (idx < currentStep) {
-                onPrev?.();
-                onGoToStep?.(idx);
-              } else {
-                onNext?.();
-                onGoToStep?.(idx);
-              }
-            };
-
             return (
               <li
                 key={step.id}
                 className="flex items-center gap-3 md:gap-6 select-none cursor-pointer"
                 aria-current={isActive ? "step" : undefined}
-                onClick={handleClick}
               >
                 <div
                   className={`flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200

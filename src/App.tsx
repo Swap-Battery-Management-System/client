@@ -42,17 +42,26 @@ import SupportTicketForm from "./pages/SupportTicketForm";
 import AdminSupportTickets from "./pages/AdminSupportTickets";
 
 import SupportHistoryPage from "./pages/SupportHistoryPage";
-import CreateInvoice from "./pages/CreateInvoice";
 import SwapSessionManager from "./pages/SwapSessionManagement";
 import AdminSupport from "./pages/AdminSupport";
 import InvoiceDetail from "./pages/InvoiceDetail";
 import PaymentPage from "./pages/PaymentPage";
 import InvoiceHistoryPage from "./pages/InvoiceHistoryPage";
 import PaymentResult from "./pages/PaymentResult";
-
 import ManagerLayout from "./layout/ManagerLayout";
+import DriverFeedback from "./pages/DriverFeedback";
+import Feedback from "./pages/Feedback";
 import UpdateUserInfo from "./pages/UpdateUserInfo";
 import TransactionHistory from "./pages/TransactionHistory";
+import StaffDashboard from "./pages/StaffDashboard";
+import UserDamageFeeView from "./pages/DamageFee";
+import ManagerRevenueManagement from "./pages/ManagerRevenueManagement";
+import ManagerSubscriptionManagement from "./pages/ManagerSubscriptionManagement";
+import ManagerDamageFeeManagement from "./pages/ManagerDamageFeeManagement";
+import ManagerDashboard from "./pages/ManagerDashboard";
+import ManagerFeedbackManagement from "./pages/ManagerFeedbackManagement";
+
+
 function App() {
   return (
     <>
@@ -96,7 +105,10 @@ function App() {
           <Route path="invoice-history" element={<InvoiceHistoryPage />} />
           <Route path="invoice/:id" element={<InvoiceDetail />} />
           <Route path="payment" element={<PaymentPage />} />
-          <Route path="payment/:method/result" element={<PaymentResult />} />
+          <Route path="payment/result" element={<PaymentResult />} />
+          <Route path="feedback/:invoiceId" element={<Feedback />} />
+          <Route path="my-feedback" element={<DriverFeedback />} />
+          <Route path="pricing" element={<UserDamageFeeView />} />
           <Route path="transaction-history" element={<TransactionHistory />} />
         </Route>
         {/* === Staff Routes === */}
@@ -108,6 +120,7 @@ function App() {
             </ProtectedRoute>
           }
         >
+          <Route index element={<StaffDashboard />} />
           <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="battery-process">
             <Route path="booking/:bookingId" element={<BatteryProcess />} />
@@ -157,12 +170,8 @@ function App() {
           <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="profile" element={<UpdateUserInfo />} />
           <Route path="manage-booking" element={<StaffBookingManagement />} />
-          {/* <Route index element={<StaffDashboard />} />
-         
-          <Route path="booking" element={<StaffBooking />} />
-          <Route path="report" element={<StaffReport />} />
-          <Route path="safety" element={<StaffSafety />} /> */}
         </Route>
+
 
         {/* === Manager Routes === */}
         <Route
@@ -173,49 +182,27 @@ function App() {
             </ProtectedRoute>
           }
         >
-          <Route path="manage-users" element={<AdminUserManagement />} />
-          <Route path="profile" element={<UpdateUserInfo />} />
-          <Route path="support" element={<SupportTicketForm />} />
-          <Route path="support-history" element={<SupportHistoryPage />} />
-        </Route>
-
-        <Route
-          path="/admin"
-          element={
-            <ProtectedRoute roles={["admin"]}>
-              <AdminLayout />
-            </ProtectedRoute>
-          }
-        >
-          <Route path="manage-users" element={<AdminUserManagement />} />
-          <Route path="manage-stations" element={<AdminStationManagement />} />
-          <Route path="manage-vehicles" element={<AdminVehicleManagement />} />
+          {/* Dashboard */}
+          <Route index element={<StaffDashboard />} />
+          <Route path="manage-battery" element={<BatteryManagement />} />
+          <Route path="manage-booking" element={<StaffBookingManagement />} />
+          <Route path="swap-session" element={<SwapSessionManager />} />
+          <Route path="revenue-reports" element={<ManagerRevenueManagement />} />
           <Route
             path="manage-subscription"
-            element={<AdminSubscriptionManagement />}
+            element={<ManagerSubscriptionManagement />}
           />
-          <Route path="damage-fee" element={<AdminDamageFeeManagement />} />
-          <Route path="dashboard" element={<AdminDashboard />} />
-
           <Route path="support-tickets" element={<AdminSupportTickets />} />
-          <Route path="manage-battery" element={<BatteryManagement />} />
           <Route path="support" element={<AdminSupport />} />
-          <Route
-            path="manage-battery"
-            element={
-              <ProtectedRoute roles={["staff", "admin"]}>
-                <BatteryManagement />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="battery-types"
-            element={<AdminBatteryTypeManagement />}
-          />
-          <Route
-            path="vehicle-models"
-            element={<AdminVehicleModelManagement />}
-          />
+          <Route path="notifications" element={<NotificationPage />} />
+          <Route path="manage-users" element={<AdminUserManagement />} />
+          <Route path="profile" element={<UpdateUserInfo />} />
+          <Route path="support-history" element={<SupportHistoryPage />} />
+
+          {/* Staff components */}
+          <Route path="damage-fee" element={<ManagerDamageFeeManagement />} />
+          <Route path="manage-feedback" element={<ManagerFeedbackManagement />} />
+
         </Route>
       </Routes>
       <Toaster richColors position="top-center" />
