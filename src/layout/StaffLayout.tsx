@@ -48,11 +48,6 @@ export default function StaffLayout() {
       icon: <RefreshCcw size={18} />,
     },
     { name: "Báo cáo trạm", path: "support", icon: <FileBarChart size={18} /> },
-    {
-      name: "Sự cố & kiểm tra an toàn",
-      path: "safety",
-      icon: <ShieldCheck size={18} />,
-    },
   ];
 
   return (

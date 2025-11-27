@@ -26,87 +26,92 @@ export default function Subscription() {
     "Dung lượng": [],
     "Số lần": [],
   });
+  const [userSubs, setUserSubs] = useState<Record<string, any>>({});
   const [pendingInvoices, setPendingInvoices] = useState<
     Record<string, string>
   >({});
-  const [loadingPlans, setLoadingPlans] = useState(true);
-  const [loadingInvoices, setLoadingInvoices] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   const navigate = useNavigate();
 
-  // Fetch pending invoices
+  // ================= FETCH DATA =================
   useEffect(() => {
-    const fetchPendingInvoices = async () => {
-      setLoadingInvoices(true);
+    const fetchData = async () => {
+      setLoading(true);
       try {
-        const res = await api.get(
-          "/invoices?type=subscription"
-        );
-        console.log("dtata", res.data);
-        const map: Record<string, string> = {};
-        res.data.data.invoices.forEach((inv: any) => {
-          if (inv.type === "subscription" && inv.status === "processing") {
-            map[inv.subscriptionId] = inv.id;
-          }
-        });
-        setPendingInvoices(map);
-      } catch (err) {
-        console.error("Error fetching pending invoices:", err);
-      } finally {
-        setLoadingInvoices(false);
-      }
-    };
-    fetchPendingInvoices();
-  }, []);
+        const [plansRes, subsRes, invoicesRes] = await Promise.all([
+          api.get("/subscriptions"),
+          api.get("/users/me/subscription"),
+          api.get("/invoices?type=subscription&status=processing"),
+        ]);
 
-  // Fetch subscription plans
-  useEffect(() => {
-    const fetchPlans = async () => {
-      setLoadingPlans(true);
-      try {
-        const res = await api.get("/subscriptions");
-        if (res.data.status === "success") {
-          const allPlans: Plan[] = res.data.data.subscriptions;
+        // ====== PLANS ======
+        if (plansRes.data.status === "success") {
+          const allPlans: Plan[] = plansRes.data.data.subscriptions;
           setPlans({
             "Dung lượng": allPlans.filter((p) => p.type === "capacity"),
             "Số lần": allPlans.filter((p) => p.type === "usage"),
           });
         }
+
+        // ====== USER SUBSCRIPTIONS ======
+        const subs: any[] = Array.isArray(subsRes.data?.data?.subscriptions)
+          ? subsRes.data.data.subscriptions
+          : Array.isArray(subsRes.data?.data?.userSubscriptions)
+          ? subsRes.data.data.userSubscriptions
+          : [];
+
+        const userSubsMap: Record<string, any> = {};
+        subs.forEach((sub) => {
+          if (sub.subId) userSubsMap[sub.subId] = sub;
+        });
+        setUserSubs(userSubsMap);
+
+        // ====== PENDING INVOICES ======
+        const invoices: any[] = invoicesRes.data?.data?.invoices || [];
+        const invoiceMap: Record<string, string> = {};
+        invoices.forEach((inv) => {
+          if (inv.status !== "processing" || !inv.subUserId) return;
+          const userSub = subs.find((s) => s.id === inv.subUserId);
+          if (userSub?.subId) invoiceMap[userSub.subId] = inv.id;
+        });
+        setPendingInvoices(invoiceMap);
       } catch (err) {
-        console.error("Error fetching subscriptions:", err);
-        setPlans({ "Dung lượng": [], "Số lần": [] });
+        console.error("Error fetching data:", err);
+        toast.error("Có lỗi khi tải dữ liệu gói dịch vụ.");
       } finally {
-        setLoadingPlans(false);
+        setLoading(false);
       }
     };
-    fetchPlans();
+
+    fetchData();
   }, []);
 
+  // ================= SUBMIT SUBSCRIPTION =================
   const handleSubmit = async (subId?: string) => {
     if (!subId) return;
-
     try {
       const res = await api.post("/users/me/subscription", {
         subId,
         autoRenew: true,
       });
-      const invoiceId = res.data.data.invoiceId;
-      navigate(`/home/invoice/${invoiceId}`);
+      console.log("invoice: ",res.data);
+      navigate(`/home/invoice/${res.data.data.invoice.id}`);
     } catch (err: any) {
+      console.log("loi sub",err);
       console.error("Error subscribing:", err);
       if (
         err.response?.status === 400 &&
         err.response?.data?.message === "Đã đăng ký"
       ) {
-        // Nếu đã đăng ký, chuyển sang thanh toán hóa đơn
-        toast.error("Bạn đã đăng ký gói, vui lòng thanh toán hóa đơn.");
+        toast.error("Bạn đã đăng ký gói này rồi.");
       } else {
         toast.error("Có lỗi xảy ra khi đăng ký gói.");
       }
     }
   };
 
-  if (loadingPlans || loadingInvoices) {
+  if (loading) {
     return (
       <div className="min-h-screen flex justify-center items-center text-gray-500 text-lg">
         Đang tải dữ liệu gói dịch vụ...
@@ -120,8 +125,8 @@ export default function Subscription() {
         Gói dịch vụ trạm đổi pin
       </h1>
       <p className="text-gray-600 mb-8 text-center max-w-2xl">
-        Lựa chọn gói phù hợp để tối ưu chi phí và tận hưởng trải nghiệm đổi pin
-        nhanh chóng, tiện lợi.
+        Lựa chọn gói phù hợp để tối ưu chi phí và trải nghiệm đổi pin nhanh
+        chóng.
       </p>
 
       {/* Toggle */}
@@ -153,7 +158,9 @@ export default function Subscription() {
       {plans[planType]?.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8 w-[90%] max-w-6xl">
           {plans[planType].map((plan, i) => {
+            const userSub = plan.id ? userSubs[plan.id] : null;
             const pendingInvoiceId = plan.id ? pendingInvoices[plan.id] : null;
+
             return (
               <Card
                 key={plan.id || i}
@@ -217,15 +224,20 @@ export default function Subscription() {
 
                 <Button
                   className="w-full py-3 rounded-xl font-semibold text-white bg-gradient-to-r from-[#57CC99] to-[#38A3A5] hover:opacity-90 hover:shadow-lg transition-all duration-300"
-                  onClick={() =>
-                    pendingInvoiceId
-                      ? navigate(
-                          `/home/invoice/${pendingInvoiceId}?type=subscription`
-                        )
-                      : handleSubmit(plan.id)
-                  }
+                  disabled={!!userSub && !pendingInvoiceId}
+                  onClick={() => {
+                    if (pendingInvoiceId)
+                      navigate(
+                        `/home/invoice/${pendingInvoiceId}?type=subscription`
+                      );
+                    else if (!userSub) handleSubmit(plan.id);
+                  }}
                 >
-                  {pendingInvoiceId ? "Thanh toán hóa đơn" : "Đăng ký ngay"}
+                  {pendingInvoiceId
+                    ? "Thanh toán hóa đơn"
+                    : userSub
+                    ? "Đã đăng ký"
+                    : "Đăng ký ngay"}
                 </Button>
               </Card>
             );

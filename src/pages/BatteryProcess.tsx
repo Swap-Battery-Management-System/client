@@ -162,8 +162,9 @@ export default function BatteryProcess() {
 
         handleUpdateData("swapSession", session);
         //luu invoiceId
-        if (session?.invoice?.id)
-          handleUpdateData("invoiceId", session.invoice.id);
+        if (Array.isArray(session.invoice) && session.invoice.length > 0) {
+          handleUpdateData("invoiceId", session.invoice[0].id);
+        }
 
         const [vehicleRes, userRes, stationRes] = await Promise.all([
           api.get(`/vehicles/${session.vehicleId}`, { withCredentials: true }),

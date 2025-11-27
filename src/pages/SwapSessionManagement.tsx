@@ -42,6 +42,7 @@ export default function SwapSessionManager() {
         setLoading(true);
         const res = await api.get("/swap-sessions/", { withCredentials: true });
         const data = res.data.data;
+        console.log("swap",res.data);
         const enrichedSessions = await Promise.all(
           data.map(async (s: SwapSession) => {
             const [userRes, stationRes, vehicleRes] = await Promise.all([
@@ -91,17 +92,11 @@ export default function SwapSessionManager() {
             }
 
             // Hóa đơn
-            let invoice = null;
-            if (s.invoice) {
-              try {
-                const invoiceRes = await api.get(`/invoices/${s.invoice.id}`, {
-                  withCredentials: true,
-                });
-                invoice = invoiceRes.data.data.invoice;
-              } catch {
-                invoice = null;
-              }
-            }
+          const invoice =
+            Array.isArray(s.invoice) && s.invoice.length > 0
+              ? s.invoice[0]
+              : null;
+
 
             return {
               ...s,
